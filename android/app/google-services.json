@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "537574602213",
+    "project_id": "royal-academy-6c411",
+    "storage_bucket": "royal-academy-6c411.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537574602213:android:f2cb7b5107adc544cf2b0c",
+        "android_client_info": {
+          "package_name": "com.example.royal_academy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGFI4fouqeoeUaMQsN5qfVkY5lGB9-7CY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537574602213:android:9f36b8061d84f7c7cf2b0c",
+        "android_client_info": {
+          "package_name": "com.royal.academy.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGFI4fouqeoeUaMQsN5qfVkY5lGB9-7CY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

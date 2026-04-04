@@ -1,0 +1,55 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    /// ================== 🔐 FUNCTIONS ==================
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        firestore.get(
+          /databases/(default)/documents/users/$(request.auth.uid)
+        ).data.isAdmin == true;
+    }
+
+    /// ================== 💳 PAYMENT IMAGES ==================
+    match /payments/{userId}/{fileName} {
+
+      /// 📥 Upload (User يرفع لنفسه فقط)
+      allow write: if isLoggedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024; // max 5MB
+
+      /// 👀 Read (Admin فقط)
+      allow read: if isAdmin();
+
+      /// ❌ Delete (Admin فقط)
+      allow delete: if isAdmin();
+    }
+
+    /// ================== 🎓 COURSES ==================
+    match /courses/{allPaths=**} {
+
+      /// 👀 قراءة لأي مستخدم مسجل
+      allow read: if isLoggedIn();
+
+      /// ✏️ كتابة Admin فقط
+      allow write: if isAdmin();
+    }
+
+    /// ================== 🧾 CERTIFICATES ==================
+    match /certificates/{allPaths=**} {
+
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    /// ================== 🧱 DEFAULT BLOCK ==================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,360 @@
+// 🔥 FINAL ULTRA ADD COURSE PAGE (FIXED 100%)
+
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../core/firebase_service.dart';
+import '../core/colors.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_textfield.dart';
+import '../payment/payment_service.dart';
+
+class AddCoursePage extends StatefulWidget {
+  const AddCoursePage({super.key});
+
+  @override
+  State<AddCoursePage> createState() => _AddCoursePageState();
+}
+
+class _AddCoursePageState extends State<AddCoursePage> {
+
+  final title = TextEditingController();
+  final description = TextEditingController();
+  final price = TextEditingController();
+
+  bool isFree = true;
+  bool loading = false;
+  bool loadingUser = true;
+
+  String? selectedCategoryId;
+
+  File? imageFile;
+  Uint8List? webImage;
+
+  final picker = ImagePicker();
+
+  Map<String, dynamic> userData = {};
+
+  Future loadUser() async {
+    try {
+      userData = await FirebaseService.getUserData();
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => loadingUser = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future pickImage() async {
+    try {
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked == null) return;
+
+      if (kIsWeb) {
+        webImage = await picked.readAsBytes();
+      } else {
+        imageFile = File(picked.path);
+      }
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      showSnack("فشل اختيار الصورة ❌");
+    }
+  }
+
+  Future<String?> uploadImage() async {
+    return await PaymentService.uploadImage(
+      file: imageFile,
+      webImage: webImage,
+    );
+  }
+
+  bool validate() {
+
+    if (title.text.trim().isEmpty) {
+      showSnack("اكتب اسم الكورس ❗");
+      return false;
+    }
+
+    if (selectedCategoryId == null) {
+      showSnack("اختار تصنيف ❗");
+      return false;
+    }
+
+    if (!isFree) {
+      int p = int.tryParse(price.text.trim()) ?? 0;
+      if (p <= 0) {
+        showSnack("سعر غير صحيح ❗");
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool canCreateCourse() {
+    return userData['isAdmin'] == true ||
+        userData['instructorApproved'] == true;
+  }
+
+  Future addCourse() async {
+
+    if (loading) return;
+
+    if (!canCreateCourse()) {
+      showSnack("❌ غير مسموح لك بإضافة كورسات");
+      return;
+    }
+
+    if (!validate()) return;
+
+    setState(() => loading = true);
+
+    try {
+
+      String? imageUrl;
+
+      if (imageFile != null || webImage != null) {
+        imageUrl = await uploadImage();
+      }
+
+      final user = FirebaseService.auth.currentUser;
+      final isAdminUser = userData['isAdmin'] == true;
+      final courseStatus = isAdminUser ? "approved" : "pending";
+      final courseApproved = isAdminUser ? true : false;
+
+      final courseRef =
+          FirebaseService.firestore.collection("courses").doc();
+
+      await courseRef.set({
+
+        "title": title.text.trim(),
+        "description": description.text.trim(),
+        "categoryId": selectedCategoryId,
+
+        "price": isFree ? 0 : int.tryParse(price.text.trim()) ?? 0,
+        "isFree": isFree,
+
+        "image": imageUrl ?? "",
+
+        "lessonsCount": 0,
+        "rating": 4.5,
+        "students": 0,
+        "views": 0,
+
+        "instructorId": user?.uid ?? "",
+        "instructorName": userData['name'] ?? "Instructor",
+
+        "status": courseStatus,
+        "approved": courseApproved,
+        "rejectReason": "",
+
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      await FirebaseService.firestore
+          .collection("users")
+          .doc(user!.uid)
+          .set({
+        "enrolledCourses": FieldValue.arrayUnion([courseRef.id]),
+        "unlockedCourses": FieldValue.arrayUnion([courseRef.id]),
+      }, SetOptions(merge: true));
+
+      showSnack(isAdminUser ? "تمت إضافة الكورس بنجاح 🚀" : "تم إرسال الكورس للمراجعة 🚀");
+
+      title.clear();
+      description.clear();
+      price.clear();
+
+      if (mounted) {
+        setState(() {
+          imageFile = null;
+          webImage = null;
+          selectedCategoryId = null;
+        });
+      }
+
+    } catch (e) {
+
+      print(e);
+      showSnack("خطأ: $e");
+
+    }
+
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
+
+  void showSnack(String text) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.black,
+        content: Text(text, style: const TextStyle(color: Colors.white)),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    title.dispose();
+    description.dispose();
+    price.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    if (loadingUser) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    bool allowed = canCreateCourse();
+
+    return Scaffold(
+      backgroundColor: AppColors.background,
+
+      appBar: AppBar(
+        title: const Text("➕ إضافة كورس",
+            style: TextStyle(color: AppColors.gold)),
+        backgroundColor: AppColors.black,
+      ),
+
+      body: !allowed
+          ? const Center(
+              child: Text(
+                "❌ غير مسموح لك بإضافة كورسات",
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(15),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      height: 160,
+                      width: double.infinity,
+                      decoration: AppColors.premiumCard,
+                      child: (kIsWeb && webImage != null)
+                          ? Image.memory(webImage!, fit: BoxFit.cover)
+                          : (imageFile != null)
+                              ? Image.file(imageFile!, fit: BoxFit.cover)
+                              : const Center(
+                                  child: Text("📷 اختر صورة الكورس",
+                                      style: TextStyle(color: Colors.white)),
+                                ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  CustomTextField(
+                    hint: "اسم الكورس",
+                    controller: title,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  CustomTextField(
+                    hint: "وصف الكورس",
+                    controller: description,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseService.firestore
+                        .collection("categories")
+                        .orderBy("order")
+                        .snapshots(),
+                    builder: (context, snapshot) {
+
+                      if (!snapshot.hasData) {
+                        return const CircularProgressIndicator();
+                      }
+
+                      return DropdownButtonFormField<String>(
+                        value: selectedCategoryId,
+                        dropdownColor: AppColors.black,
+                        style: const TextStyle(color: Colors.white),
+
+                        decoration: const InputDecoration(
+                          hintText: "اختار التصنيف",
+                        ),
+
+                        items: snapshot.data!.docs.map((c) {
+                          final data = c.data() as Map<String, dynamic>;
+
+                          return DropdownMenuItem<String>(
+                            value: c.id,
+                            child: Text(data['title'] ?? ""),
+                          );
+                        }).toList(),
+
+                        onChanged: (v) {
+                          setState(() => selectedCategoryId = v);
+                        },
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  if (!isFree)
+                    CustomTextField(
+                      hint: "السعر",
+                      controller: price,
+                      keyboardType: TextInputType.number,
+                    ),
+
+                  const SizedBox(height: 10),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("كورس مجاني",
+                          style: TextStyle(color: Colors.white)),
+                      Switch(
+                        value: isFree,
+                        onChanged: (v) {
+                          setState(() => isFree = v);
+                        },
+                      )
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  loading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: AppColors.gold),
+                        )
+                      : CustomButton(
+                          text: "🚀 إضافة الكورس",
+                          onPressed: addCourse,
+                        ),
+                ],
+              ),
+            ),
+    );
+  }
+}

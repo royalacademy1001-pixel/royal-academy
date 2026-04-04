@@ -1,0 +1,140 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ================= 🔐 HELPERS =================
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email == "admin@gmail.com";
+    }
+
+    // ================= USERS =================
+    match /users/{userId} {
+
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId);
+
+      // 🔥 IMPORTANT: منع التلاعب بالـ role
+      allow update: if isOwner(userId)
+        && !( "isAdmin" in request.resource.data )
+        && !( "subscribed" in request.resource.data )
+        && !( "subscriptionEnd" in request.resource.data )
+        && !( "blocked" in request.resource.data );
+
+      allow delete: if false;
+    }
+
+    // ================= COURSES =================
+    match /courses/{courseId} {
+
+      allow read: if isLoggedIn();
+
+      allow create, update, delete: if isAdmin();
+
+      match /lessons/{lessonId} {
+
+        allow read: if isLoggedIn();
+
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // ================= PROGRESS =================
+    match /progress/{docId} {
+
+      allow read: if isLoggedIn() &&
+                  resource.data.userId == request.auth.uid;
+
+      allow create: if isLoggedIn()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.lessonId is string
+        && request.resource.data.courseId is string;
+
+      // 🔥 منع التعديل (anti cheating)
+      allow update: if false;
+
+      allow delete: if false;
+    }
+
+    // ================= LAST WATCH =================
+    match /lastWatch/{docId} {
+
+      allow read: if isLoggedIn() &&
+                  resource.data.userId == request.auth.uid;
+
+      allow create: if isLoggedIn()
+        && request.auth.uid == request.resource.data.userId;
+
+      allow update: if isLoggedIn()
+        && request.auth.uid == resource.data.userId;
+
+      allow delete: if false;
+    }
+
+    // ================= PAYMENTS =================
+    match /payments/{paymentId} {
+
+      allow read: if isLoggedIn() &&
+                  resource.data.userId == request.auth.uid;
+
+      allow create: if isLoggedIn()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.price is int
+        && request.resource.data.paid is int
+        && request.resource.data.price >= request.resource.data.paid;
+
+      // 🔥 admin only + منع تغيير userId
+      allow update: if isAdmin()
+        && request.resource.data.userId == resource.data.userId;
+
+      allow delete: if false;
+    }
+
+    // ================= NOTIFICATIONS =================
+    match /notifications/{id} {
+
+      allow read: if isLoggedIn();
+
+      // 🔥 admin only
+      allow create: if isAdmin();
+
+      // 🔥 user يقدر يعمل seen بس
+      allow update: if isLoggedIn()
+        && request.resource.data.keys().hasOnly(['seen']);
+
+      allow delete: if isAdmin();
+    }
+
+    // ================= CATEGORIES =================
+    match /categories/{categoryId} {
+
+      allow read: if isLoggedIn();
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ================= CERTIFICATES (NEW SAFE) =================
+    match /certificates/{certId} {
+
+      allow read: if true; // public verify
+
+      allow create: if isAdmin();
+
+      allow update, delete: if isAdmin();
+    }
+
+    // ================= 🔥 BLOCK EVERYTHING ELSE =================
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

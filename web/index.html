@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+
+  <meta name="description" content="Royal Academy">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Royal Academy</title>
+
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="icon" type="image/png" href="favicon.png">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: #000000;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(212,175,55,0.10), rgba(0,0,0,0.98) 60%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      z-index: 9999;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    #splash.hidden {
+      opacity: 0;
+      transform: scale(1.02);
+      pointer-events: none;
+    }
+
+    .logo-wrap {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(212, 175, 55, 0.22);
+      box-shadow: 0 0 40px rgba(212, 175, 55, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: float 2.8s ease-in-out infinite;
+      margin-bottom: 22px;
+    }
+
+    .logo-wrap img {
+      width: 105px;
+      height: 105px;
+      object-fit: contain;
+      display: block;
+    }
+
+    .app-title {
+      color: #d4af37;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin: 0;
+    }
+
+    .app-subtitle {
+      color: rgba(255,255,255,0.72);
+      font-size: 14px;
+      margin: 10px 0 0;
+      text-align: center;
+      padding: 0 24px;
+      line-height: 1.6;
+    }
+
+    .spinner {
+      width: 34px;
+      height: 34px;
+      margin-top: 26px;
+      border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.14);
+      border-top-color: #d4af37;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div id="splash">
+    <div class="logo-wrap">
+      <img src="assets/logo.png" alt="Royal Academy">
+    </div>
+    <p class="app-title">Royal Academy</p>
+    <p class="app-subtitle">منصة تعليمية احترافية للعلوم والتكنولوجيا</p>
+    <div class="spinner"></div>
+  </div>
+
+  <script src="flutter.js"></script>
+
+  <script>
+    function hideSplash() {
+      const splash = document.getElementById('splash');
+      if (splash && !splash.classList.contains('hidden')) {
+        splash.classList.add('hidden');
+        setTimeout(function () {
+          if (splash && splash.parentNode) {
+            splash.parentNode.removeChild(splash);
+          }
+        }, 450);
+      }
+    }
+
+    window.addEventListener('flutter-first-frame', function () {
+      hideSplash();
+    });
+
+    window.addEventListener('load', function () {
+      _flutter.loader.loadEntrypoint({
+        onEntrypointLoaded: function (engineInitializer) {
+          engineInitializer.initializeEngine().then(function (appRunner) {
+            appRunner.runApp();
+            setTimeout(hideSplash, 500);
+          });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

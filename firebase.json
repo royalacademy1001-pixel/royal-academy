@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "royal-academy-6c411",
+          "appId": "1:537574602213:android:9f36b8061d84f7c7cf2b0c",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "royal-academy-6c411",
+          "configurations": {
+            "android": "1:537574602213:android:9f36b8061d84f7c7cf2b0c",
+            "web": "1:537574602213:web:4ed5f04c01163931cf2b0c"
+          }
+        }
+      }
+    }
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

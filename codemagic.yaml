@@ -11,11 +11,11 @@ workflows:
           flutter clean
           flutter pub get
 
-      - - name: Build iOS (no signing)
-          script: |
-            flutter build ios --release --no-codesign
-            cd build/ios/iphoneos
-            zip -r Runner.app.zip Runner.app
+      - name: Build iOS (no signing)
+        script: |
+          flutter build ios --release --no-codesign
+          cd build/ios/iphoneos
+          zip -r Runner.app.zip Runner.app
 
     artifacts:
-      - build/ios/iphonesos/Runner.app.zip
+      - build/ios/iphoneos/Runner.app.zip

@@ -11,14 +11,25 @@ workflows:
           flutter clean
           flutter pub get
 
-      - name: Fix CocoaPods
+      - name: Fix CocoaPods (حل نهائي)
         script: |
           cd ios
-          rm -rf Pods Podfile.lock
+          rm -rf Pods
+          rm -rf Podfile.lock
+          rm -rf .symlinks
+          rm -rf Flutter/Flutter.framework
+          rm -rf Flutter/Flutter.podspec
+          pod deintegrate
+          pod setup
           pod repo update
-          pod install
+          pod install --repo-update
           cd ..
 
       - name: Build iOS (no signing)
         script: |
           flutter build ios --release --no-codesign
+
+      - name: Zip Runner.app
+        script: |
+          cd build/ios/iphoneos
+          zip -r Runner.app.zip Runner.app

@@ -58,41 +58,39 @@ class _SplashPageState extends State<SplashPage>
     await Future.delayed(const Duration(milliseconds: 300));
 
     try {
-      sub = FirebaseAuth.instance.authStateChanges().listen((user) async {
-        if (!mounted || navigated) return;
 
-        navigated = true;
+      final user = FirebaseAuth.instance.currentUser;
 
-        final elapsed = DateTime.now().difference(startTime).inMilliseconds;
+      final elapsed = DateTime.now().difference(startTime).inMilliseconds;
 
-        if (elapsed < 700) {
-          await Future.delayed(Duration(milliseconds: 700 - elapsed));
-        }
+      if (elapsed < 700) {
+        await Future.delayed(Duration(milliseconds: 700 - elapsed));
+      }
 
-        if (!mounted) return;
+      if (!mounted || navigated) return;
 
-        if (user != null) {
-          _goTo(const MainNavigationPage());
-        } else {
-          _goTo(const LoginPage());
-        }
+      navigated = true;
 
-        await sub?.cancel();
-      });
+      if (user != null) {
+        _goTo(const MainNavigationPage());
+      } else {
+        _goTo(const LoginPage());
+      }
 
-      Future.delayed(const Duration(seconds: 3), () {
-        if (!mounted || navigated) return;
-        navigated = true;
-
-        final user = FirebaseAuth.instance.currentUser;
-
-        if (user != null) {
-          _goTo(const MainNavigationPage());
-        } else {
-          _goTo(const LoginPage());
-        }
-      });
     } catch (_) {}
+
+    Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted || navigated) return;
+      navigated = true;
+
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        _goTo(const MainNavigationPage());
+      } else {
+        _goTo(const LoginPage());
+      }
+    });
   }
 
   void _goTo(Widget page) {

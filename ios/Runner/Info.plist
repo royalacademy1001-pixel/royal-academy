@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>هذا التطبيق يحتاج الكاميرا لتسجيل الحضور باستخدام QR</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>هذا التطبيق يحتاج الوصول إلى الصور</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

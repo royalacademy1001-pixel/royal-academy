@@ -17,23 +17,31 @@ class QRAttendancePage extends StatefulWidget {
 
 class _QRAttendancePageState extends State<QRAttendancePage> {
 
+  final MobileScannerController scannerController = MobileScannerController();
   bool scanned = false;
   bool loading = false;
   String lastCode = "";
+  String errorMessage = "";
 
   Future<void> handleScan(String code) async {
 
-    if (scanned) return;
+    if (scanned || loading) return;
+
+    if (!mounted) return;
 
     setState(() {
       scanned = true;
       loading = true;
       lastCode = code;
+      errorMessage = "";
     });
 
     try {
       final user = FirebaseService.auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        showSnack("لم يتم تسجيل الدخول ❌", color: Colors.red);
+        return;
+      }
 
       await FirebaseService.firestore.collection("attendance").add({
         "userId": user.uid,
@@ -48,6 +56,11 @@ class _QRAttendancePageState extends State<QRAttendancePage> {
 
     } catch (e) {
       debugPrint("QR Error: $e");
+      if (mounted) {
+        setState(() {
+          errorMessage = "فشل تسجيل الحضور";
+        });
+      }
       showSnack("فشل تسجيل الحضور ❌", color: Colors.red);
     }
 
@@ -68,6 +81,12 @@ class _QRAttendancePageState extends State<QRAttendancePage> {
   }
 
   @override
+  void dispose() {
+    scannerController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
 
     return Scaffold(
@@ -85,6 +104,7 @@ class _QRAttendancePageState extends State<QRAttendancePage> {
         children: [
 
           MobileScanner(
+            controller: scannerController,
             onDetect: (barcodeCapture) {
               final List<Barcode> barcodes = barcodeCapture.barcodes;
               if (barcodes.isNotEmpty) {
@@ -93,6 +113,21 @@ class _QRAttendancePageState extends State<QRAttendancePage> {
                   handleScan(code);
                 }
               }
+            },
+            errorBuilder: (context, error) {
+              return Container(
+                color: Colors.black,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      "تعذر تشغيل الكاميرا\n$error",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ),
+              );
             },
           ),
 
@@ -113,6 +148,25 @@ class _QRAttendancePageState extends State<QRAttendancePage> {
               child: const Center(
                 child: CircularProgressIndicator(
                   color: AppColors.gold,
+                ),
+              ),
+            ),
+
+          if (errorMessage.isNotEmpty)
+            Positioned(
+              bottom: 90,
+              left: 20,
+              right: 20,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white),
                 ),
               ),
             ),

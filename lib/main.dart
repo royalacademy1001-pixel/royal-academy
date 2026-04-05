@@ -116,7 +116,11 @@ void main() async {
         _firebaseMessagingBackgroundHandler);
   }
 
-  runApp(const RoyalApp());
+  runZonedGuarded(() {
+    runApp(const RoyalApp());
+  }, (error, stack) {
+    debugPrint("🔥 GLOBAL ERROR: $error");
+  });
 }
 
 /// ================= APP =================

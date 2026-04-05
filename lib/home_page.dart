@@ -8,6 +8,7 @@ import 'payment/payment_page.dart';
 import 'notifications/notifications_page.dart';
 import 'leaderboard_page.dart';
 import 'admin/admin_page.dart';
+import 'admin/pages/center_management_page.dart';
 
 import '../widgets/course_card.dart';
 
@@ -461,6 +462,13 @@ class _HomePageState extends State<HomePage>
               _NavGuard.go(() => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AdminPage()),
+                  ));
+            }),
+          if (isAdmin)
+            _btn("إدارة السنتر", "assets/images/admin.png", () {
+              _NavGuard.go(() => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CenterManagementPage()),
                   ));
             }),
         ],

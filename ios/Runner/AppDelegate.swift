@@ -9,8 +9,6 @@ import Firebase
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
 
-    FirebaseApp.configure()
-
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

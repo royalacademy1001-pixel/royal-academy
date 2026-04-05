@@ -16,6 +16,7 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController controller = PageController();
   int currentIndex = 0;
+  bool finished = false;
 
   final List<Map<String, dynamic>> pages = [
     {
@@ -45,11 +46,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
         curve: Curves.easeInOut,
       );
     } else {
+      if (finished) return;
+      finished = true;
       widget.onFinish();
     }
   }
 
   void skip() {
+    if (finished) return;
+    finished = true;
     widget.onFinish();
   }
 

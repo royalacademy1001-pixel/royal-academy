@@ -79,24 +79,15 @@ class _SplashPageState extends State<SplashPage>
               Duration(milliseconds: 700 - elapsed));
         }
 
-        if (user == null) {
-          _goTo(const LoginPage());
-        } else {
-          _goTo(const MainNavigationPage());
-        }
-
         await sub?.cancel();
       });
 
       Future.delayed(const Duration(seconds: 3), () {
         if (!mounted || navigated) return;
         navigated = true;
-        _goTo(const LoginPage());
       });
 
-    } catch (_) {
-      _goTo(const LoginPage());
-    }
+    } catch (_) {}
   }
 
   void _goTo(Widget page) {

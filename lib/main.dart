@@ -126,10 +126,17 @@ class _RoyalAppState extends State<RoyalApp> {
 
   bool initialized = false;
   bool showOnboarding = false;
+  bool splashDone = false;
 
   @override
   void initState() {
     super.initState();
+
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => splashDone = true);
+      }
+    });
 
     Future.microtask(() async {
       try {
@@ -286,7 +293,7 @@ class _RoyalAppState extends State<RoyalApp> {
       debugShowCheckedModeBanner: false,
       title: "Royal Academy",
       theme: _darkTheme(),
-      home: initialized ? _authWrapper() : const SplashPage(),
+      home: (!initialized || !splashDone) ? const SplashPage() : _authWrapper(),
       onGenerateRoute: onGenerateRoute,
     );
   }

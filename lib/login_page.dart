@@ -108,13 +108,14 @@ class _LoginPageState extends State<LoginPage> {
 
     if (loading || _pressed) return;
 
+    _pressed = true;
+
     if (_lastLoginAttempt != null &&
         DateTime.now().difference(_lastLoginAttempt!).inSeconds < 2) {
+      _pressed = false;
       return;
     }
     _lastLoginAttempt = DateTime.now();
-
-    _pressed = true;
 
     FocusScope.of(context).unfocus();
 

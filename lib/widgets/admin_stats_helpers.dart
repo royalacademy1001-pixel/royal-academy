@@ -156,7 +156,7 @@ class AdminStatsHelper {
     try {
       if (value is Map) {
         final map = <String, int>{};
-        (value as Map).forEach((key, val) {
+        value.forEach((key, val) {
           map[key.toString()] = safe({'v': val}, 'v');
         });
         final list = map.entries.toList();

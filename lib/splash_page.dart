@@ -1,15 +1,10 @@
-// 🔥 FINAL SPLASH (PRO ANIMATION FAST + PREMIUM)
-
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// 🔥 Pages
+import 'core/colors.dart';
 import 'login_page.dart';
 import 'main_navigation_page.dart';
-
-// 🔥 Design
-import 'core/colors.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -60,23 +55,26 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Future<void> startApp() async {
-
     await Future.delayed(const Duration(milliseconds: 300));
 
     try {
-
       sub = FirebaseAuth.instance.authStateChanges().listen((user) async {
-
         if (!mounted || navigated) return;
 
         navigated = true;
 
-        final elapsed =
-            DateTime.now().difference(startTime).inMilliseconds;
+        final elapsed = DateTime.now().difference(startTime).inMilliseconds;
 
         if (elapsed < 700) {
-          await Future.delayed(
-              Duration(milliseconds: 700 - elapsed));
+          await Future.delayed(Duration(milliseconds: 700 - elapsed));
+        }
+
+        if (!mounted) return;
+
+        if (user != null) {
+          _goTo(const MainNavigationPage());
+        } else {
+          _goTo(const LoginPage());
         }
 
         await sub?.cancel();
@@ -85,8 +83,15 @@ class _SplashPageState extends State<SplashPage>
       Future.delayed(const Duration(seconds: 3), () {
         if (!mounted || navigated) return;
         navigated = true;
-      });
 
+        final user = FirebaseAuth.instance.currentUser;
+
+        if (user != null) {
+          _goTo(const MainNavigationPage());
+        } else {
+          _goTo(const LoginPage());
+        }
+      });
     } catch (_) {}
   }
 
@@ -99,9 +104,7 @@ class _SplashPageState extends State<SplashPage>
         transitionDuration: const Duration(milliseconds: 350),
         pageBuilder: (_, __, ___) => page,
         transitionsBuilder: (_, anim, __, child) {
-
-          final fadeAnim =
-              Tween(begin: 0.0, end: 1.0).animate(anim);
+          final fadeAnim = Tween(begin: 0.0, end: 1.0).animate(anim);
 
           final slideAnim = Tween(
             begin: const Offset(0, 0.05),
@@ -129,7 +132,6 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -141,7 +143,6 @@ class _SplashPageState extends State<SplashPage>
             ],
           ),
         ),
-
         child: Center(
           child: FadeTransition(
             opacity: fade,
@@ -150,7 +151,6 @@ class _SplashPageState extends State<SplashPage>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-
                   AnimatedBuilder(
                     animation: glow,
                     builder: (context, child) {
@@ -173,9 +173,7 @@ class _SplashPageState extends State<SplashPage>
                       height: 100,
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   const Text(
                     "Royal Academy",
                     style: TextStyle(
@@ -184,9 +182,7 @@ class _SplashPageState extends State<SplashPage>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
                   const Text(
                     "ابدأ رحلتك التعليمية 🚀",
                     style: TextStyle(
@@ -194,9 +190,7 @@ class _SplashPageState extends State<SplashPage>
                       fontSize: 13,
                     ),
                   ),
-
                   const SizedBox(height: 25),
-
                   const SizedBox(
                     width: 28,
                     height: 28,

@@ -5,11 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'courses_page.dart';
 import 'payment/payment_page.dart';
-import 'student_profile_page.dart';
 import 'notifications/notifications_page.dart';
 import 'leaderboard_page.dart';
 import 'admin/admin_page.dart';
-import 'course_details_page.dart';
 
 import '../widgets/course_card.dart';
 

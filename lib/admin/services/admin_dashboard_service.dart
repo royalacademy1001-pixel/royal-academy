@@ -27,7 +27,6 @@ Future<T?> safeCall<T>(Future<T> Function() fn) async {
 class AdminStatsService {
 
   static Map<String, dynamic>? _cache;
-  static DateTime? _lastFetch;
   static bool _fetching = false;
 
   static int _toInt(dynamic v) {
@@ -255,7 +254,6 @@ class AdminStatsService {
       };
 
       _cache = result;
-      _lastFetch = DateTime.now();
 
       return result;
 
@@ -291,6 +289,5 @@ class AdminStatsService {
 
   static void clearCache() {
     _cache = null;
-    _lastFetch = null;
   }
 }

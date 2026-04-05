@@ -240,6 +240,10 @@ class _RoyalAppState extends State<RoyalApp> {
 
               final isVIP = data?['isVIP'] == true;
 
+              if (isVIP) {
+                return const MainNavigationPage();
+              }
+
               return const MainNavigationPage();
             },
           );

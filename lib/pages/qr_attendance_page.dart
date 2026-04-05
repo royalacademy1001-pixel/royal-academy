@@ -6,7 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 // 🔥 CORE
 import '../core/firebase_service.dart';
-import '../core/constants.dart';
 import '../core/colors.dart';
 
 class QRAttendancePage extends StatefulWidget {

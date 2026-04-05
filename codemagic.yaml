@@ -11,16 +11,11 @@ workflows:
           flutter clean
           flutter pub get
 
-      - name: Fix CocoaPods (حل نهائي)
+      - name: Fix CocoaPods
         script: |
           cd ios
-          rm -rf Pods
-          rm -rf Podfile.lock
-          rm -rf .symlinks
-          rm -rf Flutter/Flutter.framework
-          rm -rf Flutter/Flutter.podspec
+          rm -rf Pods Podfile.lock .symlinks
           pod deintegrate
-          pod setup
           pod repo update
           pod install --repo-update
           cd ..
@@ -33,3 +28,6 @@ workflows:
         script: |
           cd build/ios/iphoneos
           zip -r Runner.app.zip Runner.app
+
+    artifacts:
+      - build/ios/iphoneos/Runner.app.zip

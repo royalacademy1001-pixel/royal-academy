@@ -1,5 +1,3 @@
-// 🔥 FINAL ULTRA ADD COURSE PAGE (FIXED 100%)
-
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -170,6 +168,8 @@ class _AddCoursePageState extends State<AddCoursePage> {
         "unlockedCourses": FieldValue.arrayUnion([courseRef.id]),
       }, SetOptions(merge: true));
 
+      if (!mounted) return;
+
       showSnack(isAdminUser ? "تمت إضافة الكورس بنجاح 🚀" : "تم إرسال الكورس للمراجعة 🚀");
 
       title.clear();
@@ -187,6 +187,9 @@ class _AddCoursePageState extends State<AddCoursePage> {
     } catch (e) {
 
       print(e);
+
+      if (!mounted) return;
+
       showSnack("خطأ: $e");
 
     }

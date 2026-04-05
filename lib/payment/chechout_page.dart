@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/colors.dart';
 import '../core/firebase_service.dart';
-import '../core/constants.dart';
 import '../core/utils.dart';
 import 'payment_service.dart';
 
@@ -39,6 +38,8 @@ class CheckoutPage extends StatelessWidget {
       userId: user?.uid ?? '',
       email: user?.email ?? '',
     );
+
+    if (!Navigator.of(context).mounted) return;
 
     showSnack(context, "تم إرسال الطلب بنجاح 🎉");
 

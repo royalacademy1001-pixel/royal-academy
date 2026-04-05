@@ -320,7 +320,7 @@ class PaymentService {
         "price": price,
         "paid": finalPaid,
         "remaining": finalRemaining,
-        "imageUrl": imageUrl ?? "",
+        "imageUrl": imageUrl,
         "status": "pending",
         "paymentType": finalPaid < price ? "partial" : "full",
         "subscriptionEnd": endDate.toIso8601String(),

@@ -13,7 +13,6 @@ import 'course_details_page.dart';
 import 'payment/payment_page.dart';
 
 import 'widgets/loading_widget.dart';
-import 'widgets/animated_course_card.dart';
 
 
 /// 🔥🔥🔥 COURSES SUPER ENGINE UPGRADE 🔥🔥🔥

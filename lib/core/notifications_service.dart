@@ -89,11 +89,13 @@ class NotificationsService {
         debugPrint("📩 Foreground: $title");
 
         final context = navigatorKey.currentContext;
-        if (context != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("$title\n$body")),
-          );
-        }
+        if (context == null) return;
+
+        if (navigatorKey.currentState == null) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("$title\n$body")),
+        );
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen(_handleNavigation);

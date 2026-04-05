@@ -308,6 +308,8 @@ if (selectedBytes != null || selectedFile != null) {
         "lessonsCount": FieldValue.increment(1),
       });
 
+      if (!mounted) return;
+
       showSnack(context, "تمت الإضافة ✅");
 
       titleController.clear();
@@ -321,8 +323,13 @@ if (selectedBytes != null || selectedFile != null) {
       });
 
     } catch (_) {
+
+      if (!mounted) return;
+
       showSnack(context, "خطأ ❌", color: Colors.red);
     }
+
+    if (!mounted) return;
 
     setState(() => loading = false);
   }

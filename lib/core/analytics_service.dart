@@ -1,14 +1,11 @@
-import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 
 class AnalyticsService {
-  static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   static Future<void> init() async {
     try {
-      await _analytics.setAnalyticsCollectionEnabled(true);
       debugPrint("🔥 Analytics Initialized");
     } catch (e) {
       debugPrint("🔥 Analytics Init Error: $e");
@@ -18,12 +15,6 @@ class AnalyticsService {
   static Future<void> logEvent(String name,
       {Map<String, Object?>? params}) async {
     try {
-      await _analytics.logEvent(
-        name: name,
-        parameters: (params ?? {}).map(
-          (key, value) => MapEntry(key, (value ?? '') as Object),
-        ),
-      );
 
       final user = FirebaseService.auth.currentUser;
 
@@ -40,7 +31,6 @@ class AnalyticsService {
 
   static Future<void> logScreen(String name) async {
     try {
-      await _analytics.logScreenView(screenName: name);
 
       final user = FirebaseService.auth.currentUser;
 
@@ -57,7 +47,6 @@ class AnalyticsService {
 
   static Future<void> logLogin() async {
     try {
-      await _analytics.logLogin(loginMethod: "email");
 
       final user = FirebaseService.auth.currentUser;
 
@@ -73,13 +62,6 @@ class AnalyticsService {
 
   static Future<void> logCourseView(String courseId, {String? title}) async {
     try {
-      await _analytics.logEvent(
-        name: "view_course",
-        parameters: {
-          "course_id": courseId,
-          if (title != null) "course_title": title,
-        },
-      );
 
       final user = FirebaseService.auth.currentUser;
 
@@ -104,13 +86,6 @@ class AnalyticsService {
 
   static Future<void> logLessonOpen(String lessonId, {String? courseId}) async {
     try {
-      await _analytics.logEvent(
-        name: "lesson_open",
-        parameters: {
-          "lesson_id": lessonId,
-          if (courseId != null) "course_id": courseId,
-        },
-      );
 
       final user = FirebaseService.auth.currentUser;
 
@@ -128,10 +103,6 @@ class AnalyticsService {
 
   static Future<void> logPurchase(int amount, {String? courseId}) async {
     try {
-      await _analytics.logPurchase(
-        value: amount.toDouble(),
-        currency: "EGP",
-      );
 
       final user = FirebaseService.auth.currentUser;
 
@@ -157,7 +128,6 @@ class AnalyticsService {
 
   static Future<void> logRegister() async {
     try {
-      await _analytics.logSignUp(signUpMethod: "email");
 
       final user = FirebaseService.auth.currentUser;
 

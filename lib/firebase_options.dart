@@ -56,6 +56,7 @@ class DefaultFirebaseOptions {
     projectId: 'royal-academy-6c411',
     authDomain: 'royal-academy-6c411.firebaseapp.com',
     storageBucket: 'royal-academy-6c411.firebasestorage.app',
+    measurementId: 'G-1GC8V3S9V8',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -65,4 +66,5 @@ class DefaultFirebaseOptions {
     projectId: 'royal-academy-6c411',
     storageBucket: 'royal-academy-6c411.firebasestorage.app',
   );
+
 }

@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'core/firebase_service.dart';
-import 'core/colors.dart';
+import 'package:royal_academy/core/firebase_service.dart';
+import 'package:royal_academy/core/colors.dart';
 
 class QuizLeaderboardPage extends StatelessWidget {
   final String lessonId;

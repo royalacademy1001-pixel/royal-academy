@@ -1,7 +1,6 @@
 // 🔥 ADMIN NAVIGATION CONTROL (ULTRA PRO MAX)
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
@@ -414,7 +413,7 @@ class _AdminNavigationControlPageState
         labelText: "اختار الصفحة",
         labelStyle: const TextStyle(color: Colors.grey),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: Colors.white.withValues(alpha: 0.05),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(15),
         ),

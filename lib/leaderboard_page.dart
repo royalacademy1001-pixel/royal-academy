@@ -186,7 +186,7 @@ class LeaderboardPage extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: rankColor, width: isMain ? 4 : 2),
                 boxShadow: [
-                  if (rank == 1) BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 20, spreadRadius: 2)
+                  if (rank == 1) BoxShadow(color: AppColors.gold.withValues(alpha: 0.3), blurRadius: 20, spreadRadius: 2)
                 ],
               ),
               child: CircleAvatar(
@@ -221,9 +221,9 @@ class LeaderboardPage extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: isMe ? AppColors.gold.withOpacity(0.1) : Colors.white.withOpacity(0.03),
+        color: isMe ? AppColors.gold.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isMe ? AppColors.gold : Colors.white.withOpacity(0.05)),
+        border: Border.all(color: isMe ? AppColors.gold : Colors.white.withValues(alpha: 0.05)),
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),

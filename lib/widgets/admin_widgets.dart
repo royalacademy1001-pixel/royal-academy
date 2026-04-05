@@ -169,12 +169,12 @@ class _AdminCardState extends State<_AdminCard> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(22),
           gradient: AppColors.cardGradient,
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(
               color: pressed
                   ? Colors.black
-                  : color.withOpacity(0.4),
+                  : color.withValues(alpha: 0.4),
               blurRadius: pressed ? 8 : 28,
               spreadRadius: 1,
             )
@@ -216,7 +216,7 @@ class _AdminCardState extends State<_AdminCard> {
                 Container(
                   padding: const EdgeInsets.all(13),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
+                    color: color.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

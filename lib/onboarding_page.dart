@@ -73,7 +73,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withOpacity(0.10),
+                color: AppColors.gold.withValues(alpha: 0.10),
               ),
             ),
           ),
@@ -85,7 +85,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withOpacity(0.05),
+                color: AppColors.gold.withValues(alpha: 0.05),
               ),
             ),
           ),
@@ -147,20 +147,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      AppColors.gold.withOpacity(0.18),
-                                      Colors.white.withOpacity(0.03),
+                                      AppColors.gold.withValues(alpha: 0.18),
+                                      Colors.white.withValues(alpha: 0.03),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: AppColors.gold.withOpacity(0.25),
+                                    color: AppColors.gold.withValues(alpha: 0.25),
                                     width: 1,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.gold.withOpacity(0.12),
+                                      color: AppColors.gold.withValues(alpha: 0.12),
                                       blurRadius: 30,
                                       spreadRadius: 1,
                                     ),
@@ -181,11 +181,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                       height: 145,
                                       width: 145,
                                       decoration: BoxDecoration(
-                                        color: AppColors.black.withOpacity(0.38),
+                                        color: AppColors.black.withValues(alpha: 0.38),
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.gold.withOpacity(0.18),
+                                            color: AppColors.gold.withValues(alpha: 0.18),
                                             blurRadius: 28,
                                             spreadRadius: 3,
                                           ),
@@ -310,9 +310,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
       ),
       child: Text(
         text,

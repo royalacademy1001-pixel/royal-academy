@@ -57,8 +57,8 @@ class AppColors {
 
   static LinearGradient cardGradient = LinearGradient(
     colors: [
-      Colors.white.withOpacity(0.06),
-      Colors.white.withOpacity(0.015),
+      Colors.white.withValues(alpha: 0.06),
+      Colors.white.withValues(alpha: 0.015),
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -67,7 +67,7 @@ class AppColors {
   // ================== ✨ SHADOWS ==================
   static List<BoxShadow> goldShadow = [
     BoxShadow(
-      color: gold.withOpacity(0.25),
+      color: gold.withValues(alpha: 0.25),
       blurRadius: 20,
       spreadRadius: 1,
     )
@@ -75,7 +75,7 @@ class AppColors {
 
   static List<BoxShadow> softShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withValues(alpha: 0.5),
       blurRadius: 15,
       offset: const Offset(0, 5),
     )
@@ -84,7 +84,7 @@ class AppColors {
   /// 🔥 NEW
   static List<BoxShadow> lightShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.2),
+      color: Colors.black.withValues(alpha: 0.2),
       blurRadius: 8,
       offset: const Offset(0, 3),
     )
@@ -92,16 +92,16 @@ class AppColors {
 
   // ================== 🧊 GLASS ==================
   static BoxDecoration glassDecoration = BoxDecoration(
-    color: Colors.white.withOpacity(0.05),
+    color: Colors.white.withValues(alpha: 0.05),
     borderRadius: BorderRadius.circular(20),
-    border: Border.all(color: Colors.white.withOpacity(0.1)),
+    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
   );
 
   // ================== 🎴 CARD STYLE ==================
   static BoxDecoration premiumCard = BoxDecoration(
     borderRadius: BorderRadius.circular(20),
     gradient: cardGradient,
-    border: Border.all(color: gold.withOpacity(0.25)),
+    border: Border.all(color: gold.withValues(alpha: 0.25)),
     boxShadow: goldShadow,
   );
 

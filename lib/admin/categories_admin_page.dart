@@ -80,7 +80,7 @@ class _CategoriesAdminPageState
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.white.withOpacity(0.05),
+            fillColor: Colors.white.withValues(alpha: 0.05),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
           ),
         ),
@@ -199,9 +199,9 @@ class _CategoriesAdminPageState
                 margin: const EdgeInsets.all(12),
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  color: AppColors.black.withOpacity(0.5),
+                  color: AppColors.black.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +218,7 @@ class _CategoriesAdminPageState
                               hintText: "مثال: قسم التمريض",
                               hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                               filled: true,
-                              fillColor: Colors.white.withOpacity(0.05),
+                              fillColor: Colors.white.withValues(alpha: 0.05),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                             ),
@@ -260,7 +260,7 @@ class _CategoriesAdminPageState
                     hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                     prefixIcon: const Icon(Icons.search, color: AppColors.gold, size: 20),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
                   ),
@@ -321,7 +321,7 @@ class _CategoriesAdminPageState
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.folder_off_outlined, size: 60, color: Colors.white.withOpacity(0.1)),
+                            Icon(Icons.folder_off_outlined, size: 60, color: Colors.white.withValues(alpha: 0.1)),
                             const SizedBox(height: 10),
                             const Text("لا يوجد تصنيفات حالياً",
                                 style: TextStyle(color: Colors.grey)),
@@ -353,7 +353,7 @@ class _CategoriesAdminPageState
                           key: ValueKey(doc.id),
                           margin: const EdgeInsets.only(bottom: 10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: Colors.white.withValues(alpha: 0.03),
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(color: Colors.white10),
                           ),
@@ -365,7 +365,7 @@ class _CategoriesAdminPageState
                             ),
                             leading: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.1), shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.1), shape: BoxShape.circle),
                               child: const Icon(Icons.reorder_rounded, color: AppColors.gold, size: 20),
                             ),
                             trailing: Row(
@@ -397,7 +397,7 @@ class _CategoriesAdminPageState
           
           if (loading)
              Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                 child: const Center(child: CircularProgressIndicator(color: AppColors.gold)),

@@ -87,9 +87,9 @@ class AdminStats extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: isGold ? AppColors.gold.withOpacity(0.05) : Colors.white.withOpacity(0.03),
+          color: isGold ? AppColors.gold.withValues(alpha: 0.05) : Colors.white.withValues(alpha: 0.03),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: isGold ? AppColors.gold.withOpacity(0.3) : Colors.white10),
+          border: Border.all(color: isGold ? AppColors.gold.withValues(alpha: 0.3) : Colors.white10),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -109,9 +109,9 @@ class AdminStats extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
       decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.05),
+        color: Colors.green.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.green.withOpacity(0.2)),
+        border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -178,7 +178,7 @@ class AdminStats extends StatelessWidget {
             value: percent,
             minHeight: 6,
             color: color,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
           ),
         ),
       ],
@@ -201,7 +201,7 @@ class AdminStats extends StatelessWidget {
   Widget _topBox(String title, List items, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(color: const Color(0xFF0F0F0F), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withOpacity(0.05))),
+      decoration: BoxDecoration(color: const Color(0xFF0F0F0F), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white.withValues(alpha: 0.05))),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

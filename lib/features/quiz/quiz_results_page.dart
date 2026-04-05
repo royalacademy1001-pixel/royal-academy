@@ -251,7 +251,7 @@ class QuizResultsPageState extends State<QuizResultsPage> {
               margin: const EdgeInsets.symmetric(horizontal: 12),
               padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.2),
+                color: Colors.purple.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(

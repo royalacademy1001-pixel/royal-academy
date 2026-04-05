@@ -20,7 +20,9 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: name,
-        parameters: params ?? {},
+        parameters: (params ?? {}).map(
+          (key, value) => MapEntry(key, (value ?? '') as Object),
+        ),
       );
 
       final user = FirebaseService.auth.currentUser;

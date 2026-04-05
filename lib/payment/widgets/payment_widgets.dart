@@ -57,7 +57,7 @@ Widget buildPlan({
           border: Border.all(
             color: selected
                 ? AppColors.gold
-                : Colors.white.withOpacity(0.1),
+                : Colors.white.withValues(alpha: 0.1),
           ),
           boxShadow: selected ? AppColors.goldShadow : [],
         ),
@@ -109,7 +109,7 @@ Widget buildPaymentType({
         border: Border.all(
           color: selected
               ? AppColors.gold
-              : Colors.white.withOpacity(0.1),
+              : Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Row(
@@ -213,7 +213,7 @@ Widget courseSelector({
                       border: Border.all(
                         color: selected
                             ? Colors.green
-                            : AppColors.gold.withOpacity(0.4),
+                            : AppColors.gold.withValues(alpha: 0.4),
                         width: selected ? 2 : 1,
                       ),
                       boxShadow:

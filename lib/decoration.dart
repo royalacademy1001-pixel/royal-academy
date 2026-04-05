@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'colors.dart';
+import 'core/colors.dart';
 
 BoxDecoration royalCardDecoration() {
   return BoxDecoration(
@@ -16,7 +16,7 @@ BoxDecoration royalCardDecoration() {
     // 🔥 الجلو (أهم حاجة)
     boxShadow: [
       BoxShadow(
-        color: AppColors.gold.withOpacity(0.4),
+        color: AppColors.gold.withValues(alpha: 0.4),
         blurRadius: 20,
         spreadRadius: 2,
       ),

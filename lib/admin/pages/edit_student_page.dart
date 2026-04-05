@@ -116,7 +116,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
                     hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                     prefixIcon: const Icon(Icons.search, color: AppColors.gold),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.05),
+                    fillColor: Colors.white.withValues(alpha: 0.05),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
@@ -163,7 +163,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.search_off_rounded, size: 60, color: Colors.white.withOpacity(0.1)),
+                            Icon(Icons.search_off_rounded, size: 60, color: Colors.white.withValues(alpha: 0.1)),
                             const SizedBox(height: 10),
                             const Text(
                               "لا يوجد كورسات",
@@ -193,7 +193,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.03),
+                            color: Colors.white.withValues(alpha: 0.03),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.white10),
                           ),
@@ -204,7 +204,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
                               height: 60,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: AppColors.gold.withOpacity(0.1),
+                                color: AppColors.gold.withValues(alpha: 0.1),
                               ),
                               child: image.isNotEmpty
                                   ? ClipRRect(
@@ -276,7 +276,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
           /// 🔥 LOADING OVERLAY
           if (loading)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                 child: const Center(
@@ -296,7 +296,7 @@ class _EditStudentPageState extends State<EditStudentPage> {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: color, size: 22),

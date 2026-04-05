@@ -438,7 +438,7 @@ class _MainNavigationPageState
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.gold.withOpacity(0.14) : Colors.transparent,
+                      color: selected ? AppColors.gold.withValues(alpha: 0.14) : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected ? AppColors.gold : Colors.transparent,

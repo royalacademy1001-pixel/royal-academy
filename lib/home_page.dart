@@ -133,7 +133,7 @@ class _HomePageState extends State<HomePage>
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withOpacity(0.08),
+                color: AppColors.gold.withValues(alpha: 0.08),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
@@ -149,7 +149,7 @@ class _HomePageState extends State<HomePage>
               height: 260,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.gold.withOpacity(0.04),
+                color: AppColors.gold.withValues(alpha: 0.04),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
@@ -168,7 +168,7 @@ class _HomePageState extends State<HomePage>
                   expandedHeight: 105,
                   floating: true,
                   pinned: true,
-                  backgroundColor: Colors.black.withOpacity(0.7),
+                  backgroundColor: Colors.black.withValues(alpha: 0.7),
                   elevation: 0,
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: false,
@@ -253,7 +253,7 @@ class _HomePageState extends State<HomePage>
                       margin: const EdgeInsets.only(right: 15),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                         color: const Color(0xFF151515),
                       ),
                       child: ClipRRect(
@@ -285,7 +285,7 @@ class _HomePageState extends State<HomePage>
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withOpacity(0.85),
+                                      Colors.black.withValues(alpha: 0.85),
                                     ],
                                   ),
                                 ),
@@ -326,7 +326,7 @@ class _HomePageState extends State<HomePage>
       builder: (context) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Dialog(
-          backgroundColor: AppColors.black.withOpacity(0.8),
+          backgroundColor: AppColors.black.withValues(alpha: 0.8),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -418,7 +418,7 @@ class _HomePageState extends State<HomePage>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         shape: BoxShape.circle,
       ),
       child: IconButton(
@@ -476,7 +476,7 @@ class _HomePageState extends State<HomePage>
         decoration: BoxDecoration(
           color: const Color(0xFF151515),
           borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -486,7 +486,7 @@ class _HomePageState extends State<HomePage>
               width: 40,
               height: 40,
               errorBuilder: (_, __, ___) =>
-                  Icon(Icons.image_not_supported, color: AppColors.gold.withOpacity(0.7), size: 35),
+                  Icon(Icons.image_not_supported, color: AppColors.gold.withValues(alpha: 0.7), size: 35),
             ),
             const SizedBox(height: 12),
             Text(
@@ -526,7 +526,7 @@ class _HomePageState extends State<HomePage>
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: AppColors.gold.withOpacity(0.2),
+            color: AppColors.gold.withValues(alpha: 0.2),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -593,7 +593,7 @@ class _HomePageState extends State<HomePage>
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1A),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -624,7 +624,7 @@ class _HomePageState extends State<HomePage>
       decoration: BoxDecoration(
         color: const Color(0xFF111111),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'certificate_page.dart';
 import '../video_page.dart';
 import 'reviews_page.dart';
 import '../admin/add_lesson_page.dart';
@@ -278,8 +276,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.black.withOpacity(0.2),
-                Colors.black.withOpacity(0.85),
+                Colors.black.withValues(alpha: 0.2),
+                Colors.black.withValues(alpha: 0.85),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -483,7 +481,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
           ),
           Container(
             decoration: BoxDecoration(
-              color: AppColors.black.withOpacity(0.4),
+              color: AppColors.black.withValues(alpha: 0.4),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(25)),
             ),
@@ -564,7 +562,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.black.withOpacity(0.4),
+                          color: AppColors.black.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: ListTile(
@@ -605,7 +603,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: BoxDecoration(
-                          color: AppColors.black.withOpacity(0.4),
+                          color: AppColors.black.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: ListTile(

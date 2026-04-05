@@ -37,14 +37,14 @@ class AdminButtons extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withOpacity(0.05),
-            Colors.white.withOpacity(0.01),
+            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.01),
           ],
         ),
-        border: Border.all(color: AppColors.gold.withOpacity(0.15), width: 1),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.15), width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
@@ -60,8 +60,8 @@ class AdminButtons extends StatelessWidget {
               MaterialPageRoute(builder: (_) => page),
             );
           },
-          splashColor: AppColors.gold.withOpacity(0.1),
-          highlightColor: AppColors.gold.withOpacity(0.05),
+          splashColor: AppColors.gold.withValues(alpha: 0.1),
+          highlightColor: AppColors.gold.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -71,7 +71,7 @@ class AdminButtons extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.07),
+                    color: AppColors.gold.withValues(alpha: 0.07),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

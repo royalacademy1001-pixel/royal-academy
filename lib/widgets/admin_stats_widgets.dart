@@ -59,21 +59,21 @@ BoxDecoration _enhancedDecoration(bool highlight, Color color) {
     gradient: highlight
         ? LinearGradient(
             colors: [
-              color.withOpacity(0.15),
-              Colors.black.withOpacity(0.9),
+              color.withValues(alpha: 0.15),
+              Colors.black.withValues(alpha: 0.9),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           )
         : null,
     border: Border.all(
-      color: highlight ? color.withOpacity(0.4) : Colors.transparent,
+      color: highlight ? color.withValues(alpha: 0.4) : Colors.transparent,
       width: 1,
     ),
     boxShadow: [
       if (highlight)
         BoxShadow(
-          color: color.withOpacity(0.25),
+          color: color.withValues(alpha: 0.25),
           blurRadius: 10,
         ),
     ],
@@ -85,7 +85,7 @@ Widget _iconBox(IconData icon, Color color, bool highlight) {
   return Container(
     padding: const EdgeInsets.all(10),
     decoration: BoxDecoration(
-      color: color.withOpacity(0.12),
+      color: color.withValues(alpha: 0.12),
       shape: BoxShape.circle,
     ),
     child: Icon(
@@ -161,7 +161,7 @@ Widget miniStat(String title, String value, Color color) {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
       ),
       child: Column(
         children: [

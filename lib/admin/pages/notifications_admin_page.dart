@@ -261,7 +261,7 @@ class _NotificationsAdminPageState
           
           if (loading)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                 child: const Center(
@@ -279,9 +279,9 @@ class _NotificationsAdminPageState
       margin: const EdgeInsets.all(15),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.black.withOpacity(0.5),
+        color: AppColors.black.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(25),
-        border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,7 +452,7 @@ class _NotificationsAdminPageState
           return Center(
             child: Column(
               children: [
-                Icon(Icons.history_toggle_off_rounded, size: 50, color: Colors.white.withOpacity(0.1)),
+                Icon(Icons.history_toggle_off_rounded, size: 50, color: Colors.white.withValues(alpha: 0.1)),
                 const SizedBox(height: 10),
                 const Text("لا يوجد إشعارات في السجل", style: TextStyle(color: Colors.grey)),
               ],
@@ -482,7 +482,7 @@ class _NotificationsAdminPageState
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.03),
+                color: Colors.white.withValues(alpha: 0.03),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.white10),
               ),
@@ -512,7 +512,7 @@ class _NotificationsAdminPageState
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: type == "all" ? Colors.blue.withOpacity(0.1) : type == "course" ? Colors.orange.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+                            color: type == "all" ? Colors.blue.withValues(alpha: 0.1) : type == "course" ? Colors.orange.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -553,7 +553,7 @@ class _NotificationsAdminPageState
       labelText: label,
       labelStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.white.withValues(alpha: 0.05),
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(15),

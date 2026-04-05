@@ -166,12 +166,6 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  Future<Map<String, dynamic>> _loadStats() async {
-    final data = await admin_service.AdminStatsService.getStats();
-    AdminCache.stats = data;
-    return data;
-  }
-
   Future<void> refresh() async {
     if (loadingRefresh) return;
 
@@ -217,9 +211,9 @@ class _AdminPageState extends State<AdminPage> {
         return Container(
           padding: const EdgeInsets.all(15),
           decoration: BoxDecoration(
-            color: AppColors.black.withOpacity(0.4),
+            color: AppColors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.05)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
           ),
           child: Column(
             children: [
@@ -312,10 +306,10 @@ class _AdminPageState extends State<AdminPage> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.black.withOpacity(0.9),
+              color: AppColors.black.withValues(alpha: 0.4),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(30)),
-              border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -378,6 +372,8 @@ class _AdminPageState extends State<AdminPage> {
 
                     String? lessonId = await pickLesson();
 
+                    if (!mounted) return;
+
                     if (lessonId == null || lessonId.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("❌ لم يتم اختيار درس")),
@@ -394,6 +390,8 @@ class _AdminPageState extends State<AdminPage> {
                         ),
                       ),
                     );
+
+                    if (!mounted) return;
 
                     refresh();
                   },
@@ -436,15 +434,15 @@ class _AdminPageState extends State<AdminPage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12)),
           child: Icon(icon, color: color),
         ),
@@ -524,7 +522,7 @@ class _AdminPageState extends State<AdminPage> {
               width: 300,
               height: 300,
               decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.03),
+                color: AppColors.gold.withValues(alpha: 0.03),
                 shape: BoxShape.circle,
               ),
               child: BackdropFilter(
@@ -591,10 +589,10 @@ class _AdminPageState extends State<AdminPage> {
                           const SizedBox(height: 15),
                           Container(
                             decoration: BoxDecoration(
-                              color: AppColors.black.withOpacity(0.4),
+                              color: AppColors.black.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(25),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.05)),
+                                  color: Colors.white.withValues(alpha: 0.05)),
                             ),
                             child: ListTile(
                               leading:
@@ -631,10 +629,10 @@ class _AdminPageState extends State<AdminPage> {
                           const SizedBox(height: 15),
                           Container(
                             decoration: BoxDecoration(
-                              color: AppColors.black.withOpacity(0.4),
+                              color: AppColors.black.withValues(alpha: 0.4),
                               borderRadius: BorderRadius.circular(25),
                               border: Border.all(
-                                  color: Colors.white.withOpacity(0.05)),
+                                  color: Colors.white.withValues(alpha: 0.05)),
                             ),
                             child: AdminButtons(
                               pages: [

@@ -291,7 +291,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         color: seen
                             ? AppColors.black
                             : AppColors.gold
-                                .withOpacity(0.12),
+                                .withValues(alpha: 0.12),
                         borderRadius:
                             BorderRadius.circular(18),
                         border: Border.all(
@@ -311,7 +311,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.gold
-                                  .withOpacity(0.2),
+                                  .withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(

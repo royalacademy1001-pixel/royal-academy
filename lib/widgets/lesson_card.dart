@@ -352,7 +352,7 @@ class _LessonCardState extends State<LessonCard> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: widget.isLocked ? Colors.red.withOpacity(0.2) : AppColors.gold.withOpacity(0.15),
+                    color: widget.isLocked ? Colors.red.withValues(alpha: 0.2) : AppColors.gold.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(mainIcon, color: widget.isLocked ? Colors.red : AppColors.gold),

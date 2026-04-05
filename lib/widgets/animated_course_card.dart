@@ -113,10 +113,10 @@ class _AnimatedCourseCardState extends State<AnimatedCourseCard> {
                   boxShadow: [
                     BoxShadow(
                       color: pressed
-                          ? AppColors.gold.withOpacity(0.6)
+                          ? AppColors.gold.withValues(alpha: 0.6)
                           : widget.hasAccess
-                              ? Colors.black.withOpacity(0.5)
-                              : Colors.red.withOpacity(0.3),
+                              ? Colors.black.withValues(alpha: 0.5)
+                              : Colors.red.withValues(alpha: 0.3),
                       blurRadius: pressed
                           ? 35
                           : hovered
@@ -209,7 +209,7 @@ class _AnimatedCourseCardState extends State<AnimatedCourseCard> {
                                 child: IgnorePointer(
                                   ignoring: true,
                                   child: Container(
-                                    color: Colors.black.withOpacity(0.6),
+                                    color: Colors.black.withValues(alpha: 0.6),
                                     child: const Center(
                                       child: Text(
                                         "🔒 محتوى مدفوع",
@@ -242,8 +242,8 @@ class _AnimatedCourseCardState extends State<AnimatedCourseCard> {
                                     boxShadow: [
                                       BoxShadow(
                                         color: isCompleted
-                                            ? Colors.green.withOpacity(0.6)
-                                            : AppColors.gold.withOpacity(0.6),
+                                            ? Colors.green.withValues(alpha: 0.6)
+                                            : AppColors.gold.withValues(alpha: 0.6),
                                         blurRadius: 20,
                                       ),
                                     ],
@@ -360,7 +360,7 @@ class _AnimatedCourseCardState extends State<AnimatedCourseCard> {
       padding:
           const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.65),
+        color: Colors.black.withValues(alpha: 0.65),
         borderRadius: BorderRadius.circular(10),
       ),
       child: child,

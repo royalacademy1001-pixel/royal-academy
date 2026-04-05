@@ -274,7 +274,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 220,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.gold.withOpacity(0.08),
+                  color: AppColors.gold.withValues(alpha: 0.08),
                 ),
               ),
             ),
@@ -287,7 +287,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 height: 240,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.gold.withOpacity(0.05),
+                  color: AppColors.gold.withValues(alpha: 0.05),
                 ),
               ),
             ),
@@ -305,7 +305,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.gold.withOpacity(0.4),
+                            color: AppColors.gold.withValues(alpha: 0.4),
                             blurRadius: 40,
                           )
                         ],

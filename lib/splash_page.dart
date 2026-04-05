@@ -168,7 +168,7 @@ class _SplashPageState extends State<SplashPage>
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.gold.withOpacity(0.4 * glow.value),
+                              color: AppColors.gold.withValues(alpha: 0.4 * glow.value),
                               blurRadius: 40 * glow.value,
                               spreadRadius: 5 * glow.value,
                             )

@@ -6,8 +6,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 
-import '../../course_details_page.dart';
-
 class InstructorRequestsPage extends StatefulWidget {
   const InstructorRequestsPage({super.key});
 
@@ -205,10 +203,17 @@ class _InstructorRequestsPageState
                           CrossAxisAlignment.start,
                       children: [
 
-                        Text(email,
+                        Text(title,
                             style: const TextStyle(
                               color: AppColors.white,
                               fontWeight: FontWeight.bold,
+                            )),
+
+                        const SizedBox(height: 5),
+
+                        Text(email,
+                            style: const TextStyle(
+                              color: Colors.white70,
                             )),
 
                         const SizedBox(height: 10),

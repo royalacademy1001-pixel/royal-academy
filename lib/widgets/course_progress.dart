@@ -159,7 +159,7 @@ class _CourseProgressState extends State<CourseProgress> {
                           borderRadius: BorderRadius.circular(12),
                           gradient: LinearGradient(
                             colors: [
-                              progressColor.withOpacity(0.7),
+                              progressColor.withValues(alpha: 0.7),
                               progressColor,
                             ],
                           ),
@@ -175,7 +175,7 @@ class _CourseProgressState extends State<CourseProgress> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: progressColor.withOpacity(0.7),
+                              color: progressColor.withValues(alpha: 0.7),
                               blurRadius: 12,
                             ),
                           ],

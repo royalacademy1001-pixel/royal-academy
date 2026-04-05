@@ -66,7 +66,7 @@ class CourseCard extends StatelessWidget {
               boxShadow: [
                 ...AppColors.goldShadow,
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.4),
+                  color: Colors.black.withValues(alpha: 0.4),
                   blurRadius: 12,
                   offset: const Offset(0, 6),
                 ),
@@ -107,7 +107,7 @@ class CourseCard extends StatelessWidget {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    Colors.black.withOpacity(0.85),
+                                    Colors.black.withValues(alpha: 0.85),
                                     Colors.transparent
                                   ],
                                   begin: Alignment.bottomCenter,
@@ -129,7 +129,7 @@ class CourseCard extends StatelessWidget {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Row(

@@ -26,6 +26,8 @@ class CheckoutPage extends StatelessWidget {
   });
 
   Future confirm(BuildContext context) async {
+    final user = FirebaseService.auth.currentUser;
+
     await PaymentService.submitPayment(
       phone: phone,
       price: price,
@@ -34,6 +36,8 @@ class CheckoutPage extends StatelessWidget {
       plan: plan,
       courseId: courseId,
       imageUrl: imageUrl,
+      userId: user?.uid ?? '',
+      email: user?.email ?? '',
     );
 
     showSnack(context, "تم إرسال الطلب بنجاح 🎉");
@@ -46,25 +50,20 @@ class CheckoutPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("تأكيد الدفع"),
         backgroundColor: AppColors.black,
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-
             buildItem("📱 الهاتف", phone),
             buildItem("💼 الباقة", plan),
             buildItem("💰 السعر", "$price جنيه"),
             buildItem("💵 المدفوع", "$paid جنيه"),
             buildItem("📉 المتبقي", "$remaining جنيه"),
-
             const Spacer(),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,

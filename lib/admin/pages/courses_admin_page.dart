@@ -423,7 +423,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           ),
           if (loading)
             Container(
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                 child: const Center(child: CircularProgressIndicator(color: AppColors.gold)),
@@ -447,7 +447,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
                 prefixIcon: const Icon(Icons.search, color: AppColors.gold),
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
               ),
               onChanged: (val) => setState(() => searchText = val),
@@ -500,7 +500,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                   return Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.03),
+                      color: Colors.white.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: selectedCourseId == c.id ? AppColors.gold : Colors.white10),
                     ),
@@ -511,7 +511,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                         height: 55,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          color: AppColors.gold.withOpacity(0.1),
+                          color: AppColors.gold.withValues(alpha: 0.1),
                         ),
                         child: image.isNotEmpty
                             ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(image, fit: BoxFit.cover))
@@ -568,7 +568,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
         child: Icon(icon, color: color, size: 20),
       ),
     );
@@ -583,7 +583,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
         children: [
           Container(
             padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.05), borderRadius: BorderRadius.circular(15), border: Border.all(color: AppColors.gold.withOpacity(0.2))),
+            decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15), border: Border.all(color: AppColors.gold.withValues(alpha: 0.2))),
             child: Row(
               children: [
                 const Icon(Icons.info_outline, color: AppColors.gold),
@@ -602,7 +602,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(15)),
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15)),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: selectedType,
@@ -626,7 +626,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withOpacity(0.1), padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.1), padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
                   onPressed: pickFile,
                   icon: const Icon(Icons.upload_file, color: Colors.white),
                   label: const Text("رفع ملف", style: TextStyle(color: Colors.white)),
@@ -662,7 +662,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         prefixIcon: Icon(icon, color: AppColors.gold),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: Colors.white.withValues(alpha: 0.05),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
       ),
     );

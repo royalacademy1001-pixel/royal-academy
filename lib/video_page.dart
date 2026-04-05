@@ -457,7 +457,7 @@ class VideoPageState extends State<VideoPage> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.05),
+                              color: Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: TextField(
@@ -503,7 +503,7 @@ class VideoPageState extends State<VideoPage> {
                                         const EdgeInsets.symmetric(vertical: 6),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.05),
+                                      color: Colors.white.withValues(alpha: 0.05),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(d['text'] ?? "",

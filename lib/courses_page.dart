@@ -210,7 +210,7 @@ class _CoursesPageState extends State<CoursesPage> {
               width: 200,
               height: 200,
               decoration: BoxDecoration(
-                color: AppColors.gold.withOpacity(0.05),
+                color: AppColors.gold.withValues(alpha: 0.05),
                 shape: BoxShape.circle,
               ),
               child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50), child: const SizedBox()),
@@ -222,9 +222,9 @@ class _CoursesPageState extends State<CoursesPage> {
                 padding: const EdgeInsets.fromLTRB(15, 15, 15, 10),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.05),
+                    color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                   ),
                   child: TextField(
                     onChanged: _onSearchChanged,
@@ -260,11 +260,11 @@ class _CoursesPageState extends State<CoursesPage> {
                         margin: const EdgeInsets.symmetric(horizontal: 5),
                         padding: const EdgeInsets.symmetric(horizontal: 18),
                         decoration: BoxDecoration(
-                          color: selected ? AppColors.gold : Colors.white.withOpacity(0.05),
+                          color: selected ? AppColors.gold : Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: selected ? AppColors.gold : Colors.white.withOpacity(0.1)),
+                          border: Border.all(color: selected ? AppColors.gold : Colors.white.withValues(alpha: 0.1)),
                           boxShadow: [
-                            if (selected) BoxShadow(color: AppColors.gold.withOpacity(0.3), blurRadius: 8)
+                            if (selected) BoxShadow(color: AppColors.gold.withValues(alpha: 0.3), blurRadius: 8)
                           ],
                         ),
                         alignment: Alignment.center,
@@ -350,7 +350,7 @@ class _CoursesPageState extends State<CoursesPage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.auto_stories_outlined, color: Colors.white.withOpacity(0.2), size: 80),
+                            Icon(Icons.auto_stories_outlined, color: Colors.white.withValues(alpha: 0.2), size: 80),
                             const SizedBox(height: 15),
                             const Text("لا توجد كورسات متاحة حالياً", style: TextStyle(color: Colors.grey)),
                           ],
@@ -425,7 +425,7 @@ class _CoursesPageState extends State<CoursesPage> {
                                       ),
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.1), borderRadius: BorderRadius.circular(5)),
+                                        decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(5)),
                                         child: Text("${list.length}", style: const TextStyle(color: AppColors.gold, fontSize: 12, fontWeight: FontWeight.bold)),
                                       )
                                     ],
@@ -532,11 +532,11 @@ class _CoursesPageState extends State<CoursesPage> {
           color: const Color(0xFF141414),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: hasAccess ? AppColors.gold.withOpacity(0.18) : Colors.white.withOpacity(0.06),
+            color: hasAccess ? AppColors.gold.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.06),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withValues(alpha: 0.25),
               blurRadius: 16,
               offset: const Offset(0, 8),
             ),
@@ -553,7 +553,7 @@ class _CoursesPageState extends State<CoursesPage> {
                         child: Center(
                           child: Icon(
                             Icons.video_library_rounded,
-                            color: AppColors.gold.withOpacity(0.5),
+                            color: AppColors.gold.withValues(alpha: 0.5),
                             size: 42,
                           ),
                         ),
@@ -572,7 +572,7 @@ class _CoursesPageState extends State<CoursesPage> {
                           child: Center(
                             child: Icon(
                               Icons.broken_image_rounded,
-                              color: AppColors.gold.withOpacity(0.5),
+                              color: AppColors.gold.withValues(alpha: 0.5),
                               size: 42,
                             ),
                           ),
@@ -586,9 +586,9 @@ class _CoursesPageState extends State<CoursesPage> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.05),
-                        Colors.black.withOpacity(0.55),
-                        Colors.black.withOpacity(0.92),
+                        Colors.black.withValues(alpha: 0.05),
+                        Colors.black.withValues(alpha: 0.55),
+                        Colors.black.withValues(alpha: 0.92),
                       ],
                     ),
                   ),
@@ -600,7 +600,7 @@ class _CoursesPageState extends State<CoursesPage> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.45),
+                    color: Colors.black.withValues(alpha: 0.45),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -617,7 +617,7 @@ class _CoursesPageState extends State<CoursesPage> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.55),
+                      color: Colors.black.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: const Row(
@@ -665,7 +665,7 @@ class _CoursesPageState extends State<CoursesPage> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: AppColors.gold.withOpacity(0.95),
+                              color: AppColors.gold.withValues(alpha: 0.95),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -676,7 +676,7 @@ class _CoursesPageState extends State<CoursesPage> {
                             margin: const EdgeInsets.only(left: 6),
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.08),
+                              color: Colors.white.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(

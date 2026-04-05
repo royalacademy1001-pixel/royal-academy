@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
-import '../core/firebase_service.dart';
-import '../core/constants.dart';
-import '../core/colors.dart';
+import 'package:royal_academy/core/firebase_service.dart';
+import 'package:royal_academy/core/constants.dart';
+import 'package:royal_academy/core/colors.dart';
 
 class CommentsPage extends StatefulWidget {
   final String lessonId;

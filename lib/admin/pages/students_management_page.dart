@@ -137,7 +137,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: AppColors.black.withOpacity(0.5),
+        color: AppColors.black.withValues(alpha: 0.5),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
       ),
       child: Column(
@@ -149,7 +149,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
               hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
               prefixIcon: const Icon(Icons.search, color: AppColors.gold, size: 20),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              fillColor: Colors.white.withValues(alpha: 0.05),
               contentPadding: const EdgeInsets.symmetric(vertical: 0),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
             ),
@@ -192,7 +192,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.person_search_rounded, size: 80, color: Colors.white.withOpacity(0.1)),
+          Icon(Icons.person_search_rounded, size: 80, color: Colors.white.withValues(alpha: 0.1)),
           const SizedBox(height: 10),
           Text(msg, style: const TextStyle(color: Colors.grey)),
         ],
@@ -202,7 +202,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
 
   Widget _buildLoadingOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.7),
+      color: Colors.black.withValues(alpha: 0.7),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
         child: const Center(

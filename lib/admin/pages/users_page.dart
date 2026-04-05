@@ -215,7 +215,7 @@ class _UsersPageState extends State<UsersPage> {
             child: Container(
               width: 200,
               height: 200,
-              decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.05), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.05), shape: BoxShape.circle),
               child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50), child: const SizedBox()),
             ),
           ),
@@ -225,7 +225,7 @@ class _UsersPageState extends State<UsersPage> {
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withValues(alpha: 0.5),
                   borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
                 ),
                 child: Column(
@@ -338,7 +338,7 @@ class _UsersPageState extends State<UsersPage> {
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A1A1A),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: isMe ? AppColors.gold.withOpacity(0.5) : Colors.white.withOpacity(0.05)),
+                            border: Border.all(color: isMe ? AppColors.gold.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.05)),
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
@@ -359,25 +359,25 @@ class _UsersPageState extends State<UsersPage> {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(color: (isBlocked ? Colors.red : Colors.green).withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: (isBlocked ? Colors.red : Colors.green).withOpacity(0.5), width: 0.5)),
+                                      decoration: BoxDecoration(color: (isBlocked ? Colors.red : Colors.green).withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: (isBlocked ? Colors.red : Colors.green).withValues(alpha: 0.5), width: 0.5)),
                                       child: Text(isBlocked ? "محظور" : "نشط", style: TextStyle(color: isBlocked ? Colors.red : Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
                                     ),
                                     if (subscribed)
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(color: AppColors.gold.withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.gold.withOpacity(0.5), width: 0.5)),
+                                        decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.gold.withValues(alpha: 0.5), width: 0.5)),
                                         child: const Text("VIP", style: TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     if (instructorApproved)
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(color: Colors.blue.withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withOpacity(0.5), width: 0.5)),
+                                        decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withValues(alpha: 0.5), width: 0.5)),
                                         child: const Text("مدرس", style: TextStyle(color: Colors.blue, fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                     if (instructorRequest && !instructorApproved)
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(color: Colors.orange.withOpacity(0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.withOpacity(0.5), width: 0.5)),
+                                        decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.orange.withValues(alpha: 0.5), width: 0.5)),
                                         child: const Text("طلب مدرس", style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
                                   ],

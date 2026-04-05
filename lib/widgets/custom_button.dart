@@ -54,7 +54,7 @@ class CustomButton extends StatelessWidget {
               ? []
               : [
                   BoxShadow(
-                    color: AppColors.gold.withOpacity(0.4),
+                    color: AppColors.gold.withValues(alpha: 0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   )
@@ -72,7 +72,7 @@ class CustomButton extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(radius),
                   border: Border.all(
-                    color: AppColors.gold.withOpacity(0.2),
+                    color: AppColors.gold.withValues(alpha: 0.2),
                   ),
                 ),
               ),

@@ -6,6 +6,7 @@ import 'attendance_report_page.dart';
 import 'students_crm_page.dart';
 import 'payments_admin_page.dart';
 import 'top_students_page.dart';
+import 'package:royal_academy/admin/pages/attendance_take_page.dart';
 
 class CenterManagementPage extends StatelessWidget {
   const CenterManagementPage({super.key});

@@ -1,6 +1,7 @@
 workflows:
   ios-workflow:
     name: iOS Workflow
+
     environment:
       flutter: stable
 
@@ -10,9 +11,9 @@ workflows:
           flutter clean
           flutter pub get
 
-      - name: Build IPA
+      - name: Build iOS (no signing)
         script: |
-          flutter build ipa --release
+          flutter build ios --release --no-codesign
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ios/iphoneos/Runner.app

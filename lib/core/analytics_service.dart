@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 
 class AnalyticsService {
-
   static final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   static Future<void> init() async {
@@ -21,7 +20,7 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: name,
-        parameters: params,
+        parameters: params ?? {},
       );
 
       final user = FirebaseService.auth.currentUser;
@@ -32,7 +31,6 @@ class AnalyticsService {
         "params": params ?? {},
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Analytics Event Error: $e");
     }
@@ -50,7 +48,6 @@ class AnalyticsService {
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Screen Error: $e");
     }
@@ -67,14 +64,12 @@ class AnalyticsService {
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Login Error: $e");
     }
   }
 
-  static Future<void> logCourseView(String courseId,
-      {String? title}) async {
+  static Future<void> logCourseView(String courseId, {String? title}) async {
     try {
       await _analytics.logEvent(
         name: "view_course",
@@ -94,22 +89,18 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
-      await FirebaseService.firestore
-          .collection("analytics_events")
-          .add({
+      await FirebaseService.firestore.collection("analytics_events").add({
         "type": "course_view_extra",
         "courseId": courseId,
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Course View Error: $e");
     }
   }
 
-  static Future<void> logLessonOpen(String lessonId,
-      {String? courseId}) async {
+  static Future<void> logLessonOpen(String lessonId, {String? courseId}) async {
     try {
       await _analytics.logEvent(
         name: "lesson_open",
@@ -128,14 +119,12 @@ class AnalyticsService {
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Lesson Open Error: $e");
     }
   }
 
-  static Future<void> logPurchase(int amount,
-      {String? courseId}) async {
+  static Future<void> logPurchase(int amount, {String? courseId}) async {
     try {
       await _analytics.logPurchase(
         value: amount.toDouble(),
@@ -152,16 +141,13 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
-      await FirebaseService.firestore
-          .collection("analytics_events")
-          .add({
+      await FirebaseService.firestore.collection("analytics_events").add({
         "type": "purchase_log",
         "amount": amount,
         "courseId": courseId,
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Purchase Error: $e");
     }
@@ -178,7 +164,6 @@ class AnalyticsService {
         "userId": user?.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
-
     } catch (e) {
       debugPrint("🔥 Register Error: $e");
     }
@@ -190,9 +175,7 @@ class AnalyticsService {
 
       if (user == null) return;
 
-      await FirebaseService.firestore
-          .collection("analytics_events")
-          .add({
+      await FirebaseService.firestore.collection("analytics_events").add({
         "type": "active_user",
         "userId": user.uid,
         "timestamp": FieldValue.serverTimestamp(),

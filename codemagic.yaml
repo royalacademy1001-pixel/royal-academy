@@ -10,9 +10,9 @@ workflows:
           flutter clean
           flutter pub get
 
-      - name: Build iOS Simulator
+      - name: Build IPA
         script: |
-          flutter build ios --simulator --debug
+          flutter build ipa --release
 
     artifacts:
-      - build/ios/iphonesimulator/*.a
+      - build/ios/ipa/*.ipa

@@ -13,10 +13,10 @@ dependencies:
 
   # ================= 🔥 FIREBASE =================
   firebase_core: ^2.32.0
-  firebase_auth: ^4.19.0
+  firebase_auth: ^4.16.0
   cloud_firestore: ^4.17.0
   firebase_storage: ^11.7.5
-  firebase_messaging: ^14.9.0
+  firebase_messaging: ^14.7.0
   cloud_functions: ^4.7.0
   firebase_analytics: ^10.8.10
 
@@ -31,7 +31,7 @@ dependencies:
   # ================= 📄 PDF + CERT =================
   qr_flutter: ^4.1.0
   pdf: ^3.10.8
-  syncfusion_flutter_pdfviewer: ^27.2.5
+  syncfusion_flutter_pdfviewer: ^27.2.3
   path_provider: ^2.1.3
   share_plus: ^7.2.2
 

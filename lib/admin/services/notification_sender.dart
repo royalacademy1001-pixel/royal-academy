@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../core/firebase_service.dart';
+import 'package:royal_academy/core/firebase_service.dart';
 
 class NotificationSender {
 

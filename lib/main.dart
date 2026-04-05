@@ -84,6 +84,10 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+  };
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -130,9 +134,12 @@ class _RoyalAppState extends State<RoyalApp> {
     Future.microtask(() async {
       try {
         if (!kIsWeb) {
-          await NotificationsService.init();
-
-          await FirebaseMessaging.instance.requestPermission();
+          try {
+            await NotificationsService.init();
+            await FirebaseMessaging.instance.requestPermission();
+          } catch (e) {
+            debugPrint("🔥 Notification Error: $e");
+          }
 
           String? token = await FirebaseMessaging.instance.getToken();
 
@@ -161,8 +168,12 @@ class _RoyalAppState extends State<RoyalApp> {
           });
         }
 
-        await AnalyticsService.logEvent("app_started");
-        await AnalyticsService.trackUserActive();
+        try {
+          await AnalyticsService.logEvent("app_started");
+          await AnalyticsService.trackUserActive();
+        } catch (e) {
+          debugPrint("🔥 Analytics Error: $e");
+        }
 
         FirebaseService.firestore.collection("analytics_events").add({
           "type": "app_started",

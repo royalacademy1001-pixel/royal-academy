@@ -11,11 +11,12 @@ workflows:
           flutter clean
           flutter pub get
 
+      - name: Install CocoaPods
+        script: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
       - name: Build iOS (no signing)
         script: |
           flutter build ios --release --no-codesign
-          cd build/ios/iphoneos
-          zip -r Runner.app.zip Runner.app
-
-    artifacts:
-      - build/ios/iphoneos/Runner.app.zip

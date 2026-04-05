@@ -21,7 +21,7 @@ def flutter_root
   raise "FLUTTER_ROOT not found"
 end
 
-require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper'), FILE)
+require File.expand_path(File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper'), __FILE__)
 
 flutter_ios_podfile_setup
 

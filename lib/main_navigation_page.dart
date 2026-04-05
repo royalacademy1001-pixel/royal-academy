@@ -72,6 +72,7 @@ class _MainNavigationPageState
 
   bool _isLoadingUser = true;
   bool _deepLinkHandled = false;
+  bool _redirectedToLogin = false;
 
   Stream<QuerySnapshot>? _notificationStream;
 
@@ -157,42 +158,53 @@ class _MainNavigationPageState
           .snapshots();
     }
 
-    FirebaseService.firestore
-        .collection("app_settings")
-        .doc("navigation")
-        .snapshots()
-        .listen((doc) {
-      final data = doc.data();
+    try {
+      FirebaseService.firestore
+          .collection("app_settings")
+          .doc("navigation")
+          .snapshots()
+          .listen((doc) {
+        try {
+          final data = doc.data();
 
-      if (data == null || data['items'] == null) {
-        dynamicNav = fallbackNav;
-        if (mounted) setState(() {});
-        return;
-      }
+          if (data == null || data['items'] == null) {
+            dynamicNav = fallbackNav;
+            if (mounted) setState(() {});
+            return;
+          }
 
-      List items = data['items'];
+          List items = data['items'];
 
-      if (items.isEmpty) {
-        dynamicNav = fallbackNav;
-        if (mounted) setState(() {});
-        return;
-      }
+          if (items.isEmpty) {
+            dynamicNav = fallbackNav;
+            if (mounted) setState(() {});
+            return;
+          }
 
-      items = items.where((e) => (e['enabled'] ?? true) == true).toList();
+          items = items.where((e) => (e['enabled'] ?? true) == true).toList();
 
-      if (items.isEmpty) {
-        dynamicNav = fallbackNav;
-        if (mounted) setState(() {});
-        return;
-      }
+          if (items.isEmpty) {
+            dynamicNav = fallbackNav;
+            if (mounted) setState(() {});
+            return;
+          }
 
-      items.sort((a, b) =>
-          (a['order'] ?? 0).compareTo(b['order'] ?? 0));
+          items.sort((a, b) =>
+              (a['order'] ?? 0).compareTo(b['order'] ?? 0));
 
-      dynamicNav = items.cast<Map<String, dynamic>>();
+          dynamicNav = items.cast<Map<String, dynamic>>();
 
-      if (mounted) setState(() {});
-    });
+          if (mounted) setState(() {});
+        } catch (e) {
+          debugPrint("Nav Stream Error: $e");
+          dynamicNav = fallbackNav;
+          if (mounted) setState(() {});
+        }
+      });
+    } catch (e) {
+      debugPrint("Nav Listen Error: $e");
+      dynamicNav = fallbackNav;
+    }
 
     if (mounted) {
       setState(() => _isLoadingUser = false);
@@ -492,10 +504,14 @@ class _MainNavigationPageState
 
     final user = FirebaseService.auth.currentUser;
     if (user == null) {
-      Future.microtask(() {
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/login', (_) => false);
-      });
+      if (!_redirectedToLogin) {
+        _redirectedToLogin = true;
+        Future.microtask(() {
+          if (!mounted) return;
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/login', (_) => false);
+        });
+      }
       return const SizedBox();
     }
 

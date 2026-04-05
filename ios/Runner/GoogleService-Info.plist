@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.royal.academy.app</string>
+	<string>com.example.royalNew</string>
 	<key>PROJECT_ID</key>
 	<string>royal-academy-6c411</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:537574602213:ios:9848353ebff93864cf2b0c</string>
+	<string>1:537574602213:ios:3935d195a0a09a4bcf2b0c</string>
 </dict>
 </plist>

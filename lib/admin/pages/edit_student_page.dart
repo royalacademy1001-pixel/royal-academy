@@ -74,8 +74,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
     }
   }
 
-  // ================== ACTION ==================
-
   Future updateCourse(String courseId, String type, bool add) async {
     setState(() => loading = true);
 
@@ -127,8 +125,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
       ),
     );
   }
-
-  // ================== UI ==================
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +180,31 @@ class _EditStudentPageState extends State<EditStudentPage> {
                       return const Center(
                         child: CircularProgressIndicator(
                             color: AppColors.gold),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return const Center(
+                        child: Text(
+                          "❌ خطأ في تحميل الكورسات",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      );
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off_rounded, size: 60, color: Colors.white.withValues(alpha: 0.1)),
+                            const SizedBox(height: 10),
+                            const Text(
+                              "لا يوجد كورسات",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ],
+                        ),
                       );
                     }
 

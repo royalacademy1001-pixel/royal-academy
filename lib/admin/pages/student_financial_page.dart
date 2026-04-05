@@ -23,6 +23,8 @@ class _StudentFinancialPageState
     extends State<StudentFinancialPage> {
 
   String search = "";
+  String selectedUserId = "";
+  List<QueryDocumentSnapshot> users = [];
 
   void show(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -30,49 +32,100 @@ class _StudentFinancialPageState
     );
   }
 
+  Future loadUsers() async {
+    try {
+      final snap = await FirebaseService.firestore
+          .collection("users")
+          .get();
+      users = snap.docs;
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadUsers();
+  }
+
   Future addPayment(String userId) async {
 
     final amountController = TextEditingController();
+    String localSelectedUserId = userId;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.black,
-        title: const Text("إضافة دفعة",
-            style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: amountController,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: Colors.white),
-          decoration:
-              const InputDecoration(hintText: "المبلغ"),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("إلغاء")),
-          ElevatedButton(
-            onPressed: () async {
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.black,
+            title: const Text("إضافة دفعة",
+                style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: localSelectedUserId.isEmpty ? null : localSelectedUserId,
+                  dropdownColor: AppColors.black,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(hintText: "اختر الطالب"),
+                  items: users.map((u) {
+                    final data = u.data() as Map<String, dynamic>;
+                    return DropdownMenuItem<String>(
+                      value: u.id,
+                      child: Text(
+                        data['name'] ?? "Student",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setDialogState(() {
+                      localSelectedUserId = val ?? "";
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration:
+                      const InputDecoration(hintText: "المبلغ"),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("إلغاء")),
+              ElevatedButton(
+                onPressed: () async {
 
-              int amount =
-                  int.tryParse(amountController.text) ?? 0;
+                  int amount =
+                      int.tryParse(amountController.text) ?? 0;
 
-              if (amount <= 0) return;
+                  if (amount <= 0) return;
+                  if (localSelectedUserId.isEmpty) return;
 
-              await FirebaseService.firestore
-                  .collection("financial")
-                  .add({
-                "userId": userId,
-                "amount": amount,
-                "timestamp": FieldValue.serverTimestamp(),
-              });
+                  await FirebaseService.firestore
+                      .collection("financial")
+                      .add({
+                    "userId": localSelectedUserId,
+                    "amount": amount,
+                    "timestamp": FieldValue.serverTimestamp(),
+                  });
 
-              Navigator.pop(context);
-              show("تم إضافة الدفع ✅");
-            },
-            child: const Text("حفظ"),
-          )
-        ],
+                  Navigator.pop(context);
+                  show("تم إضافة الدفع ✅");
+                },
+                child: const Text("حفظ"),
+              )
+            ],
+          );
+        },
       ),
     );
   }
@@ -105,7 +158,6 @@ class _StudentFinancialPageState
       body: Column(
         children: [
 
-          /// 🔍 SEARCH
           Padding(
             padding: const EdgeInsets.all(15),
             child: TextField(
@@ -135,8 +187,26 @@ class _StudentFinancialPageState
                   .snapshots(),
               builder: (context, snapshot) {
 
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const LoadingWidget();
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      "❌ خطأ في تحميل البيانات",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "📭 لا توجد معاملات مالية حالياً",
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
                 }
 
                 var docs = snapshot.data!.docs;
@@ -162,8 +232,12 @@ class _StudentFinancialPageState
                       future: getUserName(userId),
                       builder: (context, snap) {
 
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return const SizedBox();
+                        }
+
                         String name =
-                            snap.data ?? "Loading...";
+                            snap.data ?? "Student";
 
                         if (search.isNotEmpty &&
                             !name.toLowerCase().contains(search)) {

@@ -37,6 +37,9 @@ import 'features/quiz/quiz_results_page.dart';
 // 🔥 WEB
 import 'web/verify_web_page.dart';
 
+// 🔥 NEW CENTER MANAGEMENT
+import 'admin/pages/center_management_page.dart';
+
 
 /// 🔥 GUARD
 class AppGuard {
@@ -92,6 +95,8 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  await FirebaseService.initNotifications();
+
   try {
     await AnalyticsService.init();
     await AnalyticsService.logEvent("app_open");
@@ -140,6 +145,9 @@ class _RoyalAppState extends State<RoyalApp> {
 
     Future.microtask(() async {
       try {
+
+        await FirebaseService.initNotifications();
+
         if (!kIsWeb) {
           try {
             await NotificationsService.init();
@@ -287,6 +295,10 @@ class _RoyalAppState extends State<RoyalApp> {
         return MaterialPageRoute(
             builder: (_) =>
                 VerifyWebPage(certId: certId ?? ""));
+
+      case '/center':
+        return MaterialPageRoute(
+            builder: (_) => const CenterManagementPage());
 
       default:
         return MaterialPageRoute(

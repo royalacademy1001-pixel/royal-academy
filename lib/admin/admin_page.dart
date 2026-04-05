@@ -25,6 +25,7 @@ import 'pages/analytics_dashboard_page.dart' as analytics;
 import 'add_news_page.dart';
 import 'pages/news_admin_page.dart';
 import 'pick_lesson_page.dart';
+import 'pages/students_crm_page.dart';
 
 // 🔥 QUIZ
 import '../features/quiz/admin_add_quiz_page.dart';
@@ -96,6 +97,7 @@ class _AdminPageState extends State<AdminPage> {
     {"id": "admin_requests", "title": "طلبات المدرسين", "icon": "instructor"},
     {"id": "admin_analytics", "title": "Analytics", "icon": "analytics"},
     {"id": "admin_news", "title": "إدارة الأخبار", "icon": "news"},
+    {"id": "admin_crm", "title": "CRM", "icon": "analytics"},
   ];
 
   @override
@@ -671,6 +673,10 @@ class _AdminPageState extends State<AdminPage> {
                                 {
                                   "title": "📰 إدارة الأخبار",
                                   "page": NewsAdminPage()
+                                },
+                                {
+                                  "title": "📊 CRM الطلاب",
+                                  "page": const StudentsCRMPage()
                                 },
                               ],
                             ),

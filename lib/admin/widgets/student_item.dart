@@ -31,14 +31,20 @@ class StudentItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     List enrolled = data['enrolledCourses'] ?? [];
     List unlocked = data['unlockedCourses'] ?? [];
+    int enrolledCount = enrolled.length;
+    int unlockedCount = unlocked.length;
 
     bool subscribed = data['subscribed'] ?? false;
+    bool vip = data['isVIP'] ?? false;
+    bool linked = data['linked'] == true || data['linkedByAdmin'] == true;
     bool blocked = data['blocked'] ?? false;
 
     String image = (data['image'] ?? "").toString();
+    String name = (data['name'] ?? "Student").toString();
+    String phone = (data['phone'] ?? "").toString();
+    String email = (data['email'] ?? "").toString();
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -59,113 +65,104 @@ class StudentItem extends StatelessWidget {
           )
         ],
       ),
-
       child: Column(
         children: [
-
           Row(
             children: [
-
               CircleAvatar(
                 radius: 28,
                 backgroundColor: AppColors.gold,
-                backgroundImage:
-                    image.isNotEmpty ? NetworkImage(image) : null,
-                child: image.isEmpty
+                backgroundImage: image.isNotEmpty && image.startsWith("http")
+                    ? NetworkImage(image)
+                    : null,
+                child: image.isEmpty || !image.startsWith("http")
                     ? const Icon(Icons.person, color: Colors.black)
                     : null,
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     Text(
-                      data['email'] ?? "User",
+                      name,
                       style: const TextStyle(
                         color: AppColors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
-
                     const SizedBox(height: 4),
-
                     Text(
-                      extraInfo ??
-                          "📚 ${enrolled.length} | 🔓 ${unlocked.length}",
+                      email.isNotEmpty ? email : "User",
                       style: const TextStyle(
                         color: Colors.grey,
                         fontSize: 12,
                       ),
                     ),
-
+                    const SizedBox(height: 3),
+                    Text(
+                      phone.isNotEmpty ? phone : "لا يوجد رقم",
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 5),
-
                     Row(
                       children: [
-
-                        if (subscribed)
-                          badge("VIP", Colors.green),
-
-                        if (blocked)
-                          badge("BLOCKED", Colors.red),
-
+                        if (subscribed || vip) badge("VIP", Colors.green),
+                        if (linked) badge("LINKED", Colors.blue),
+                        if (blocked) badge("BLOCKED", Colors.red),
                       ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      extraInfo ??
+                          "📚 $enrolledCount | 🔓 $unlockedCount",
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),
               ),
-
               IconButton(
-                icon: const Icon(Icons.settings,
-                    color: Colors.blue),
+                icon: const Icon(Icons.settings, color: Colors.blue),
                 onPressed: onEdit,
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-
               actionBtn(
                 icon: Icons.add,
                 color: Colors.green,
                 onTap: onEnroll,
               ),
-
               actionBtn(
                 icon: Icons.lock_open,
                 color: Colors.orange,
                 onTap: onUnlock,
               ),
-
               actionBtn(
                 icon: Icons.star,
                 color: Colors.amber,
                 onTap: onVip,
               ),
-
               actionBtn(
-                icon: blocked
-                    ? Icons.lock_open
-                    : Icons.block,
+                icon: blocked ? Icons.lock_open : Icons.block,
                 color: Colors.red,
                 onTap: () => onBlock(blocked),
               ),
-
               actionBtn(
                 icon: Icons.link,
                 color: Colors.blue,
                 onTap: onLink,
               ),
-
               actionBtn(
                 icon: Icons.bar_chart,
                 color: Colors.purple,
@@ -181,8 +178,7 @@ class StudentItem extends StatelessWidget {
   Widget badge(String text, Color color) {
     return Container(
       margin: const EdgeInsets.only(right: 6),
-      padding:
-          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(8),

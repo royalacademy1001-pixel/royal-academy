@@ -11,12 +11,10 @@ class VerifyWebPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final id = certId.trim();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       body: Center(
         child: id.isEmpty
             ? _invalid("❌ Invalid Certificate")
@@ -26,21 +24,16 @@ class VerifyWebPage extends StatelessWidget {
                     .where("certId", isEqualTo: id)
                     .limit(1)
                     .get(),
-
                 builder: (context, snapshot) {
-
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const CircularProgressIndicator(
-                        color: Colors.amber);
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator(color: Colors.amber);
                   }
 
                   if (snapshot.hasError) {
                     return _invalid("❌ Connection Error");
                   }
 
-                  if (!snapshot.hasData ||
-                      snapshot.data!.docs.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return _invalid("❌ Certificate Not Found");
                   }
 
@@ -58,7 +51,7 @@ class VerifyWebPage extends StatelessWidget {
     );
   }
 
-  Widget _valid(name, course, date, id) {
+  Widget _valid(String name, String course, String date, String id) {
     return Container(
       padding: const EdgeInsets.all(30),
       margin: const EdgeInsets.all(20),
@@ -70,11 +63,8 @@ class VerifyWebPage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-
           const Icon(Icons.verified, color: Colors.green, size: 90),
-
           const SizedBox(height: 15),
-
           const Text(
             "Certificate Verified ✅",
             style: TextStyle(
@@ -83,22 +73,12 @@ class VerifyWebPage extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-
           const SizedBox(height: 20),
-
-          Text("👤 $name",
-              style: const TextStyle(color: Colors.white)),
-
-          Text("📚 $course",
-              style: const TextStyle(color: Colors.white)),
-
-          Text("📅 $date",
-              style: const TextStyle(color: Colors.grey)),
-
+          Text("👤 $name", style: const TextStyle(color: Colors.white)),
+          Text("📚 $course", style: const TextStyle(color: Colors.white)),
+          Text("📅 $date", style: const TextStyle(color: Colors.grey)),
           const SizedBox(height: 10),
-
-          Text("ID: $id",
-              style: const TextStyle(color: Colors.grey)),
+          Text("ID: $id", style: const TextStyle(color: Colors.grey)),
         ],
       ),
     );

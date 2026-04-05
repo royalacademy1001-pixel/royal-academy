@@ -284,11 +284,17 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
                       .collection(AppConstants.users)
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting)
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const LoadingWidget();
+                    }
 
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+                    if (snapshot.hasError) {
+                      return _buildEmptyState("❌ حدث خطأ في تحميل المستخدمين");
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return _buildEmptyState("لا يوجد مستخدمين حالياً");
+                    }
 
                     var filteredUsers = snapshot.data!.docs.where((u) {
                       var data = u.data() as Map<String, dynamic>;
@@ -306,8 +312,9 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
                       return matchSearch && matchFilter;
                     }).toList();
 
-                    if (filteredUsers.isEmpty)
+                    if (filteredUsers.isEmpty) {
                       return _buildEmptyState("لم نجد نتائج لهذا البحث");
+                    }
 
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(

@@ -18,8 +18,45 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
 
   String search = "";
 
+  bool isAdmin = false;
+  bool loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future loadUser() async {
+    try {
+      final data = await FirebaseService.getUserData();
+      isAdmin = data['isAdmin'] == true;
+    } catch (_) {}
+    if (mounted) {
+      setState(() => loadingUser = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+
+    if (loadingUser) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!isAdmin) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            "❌ غير مسموح",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
 
@@ -60,9 +97,21 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                   .snapshots(),
               builder: (context, snapshot) {
 
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
                     child: CircularProgressIndicator(color: AppColors.gold),
+                  );
+                }
+
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text("❌ خطأ في تحميل المستخدمين"),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text("📭 لا يوجد طلاب"),
                   );
                 }
 
@@ -71,13 +120,22 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                 var filtered = users.where((u) {
                   var data = u.data() as Map<String, dynamic>;
 
+                  bool vip = data['isVIP'] ?? false;
+
                   String name = (data['name'] ?? "").toLowerCase();
                   String email = (data['email'] ?? "").toLowerCase();
 
-                  return search.isEmpty ||
+                  return vip &&
+                      (search.isEmpty ||
                       name.contains(search.toLowerCase()) ||
-                      email.contains(search.toLowerCase());
+                      email.contains(search.toLowerCase()));
                 }).toList();
+
+                if (filtered.isEmpty) {
+                  return const Center(
+                    child: Text("📭 لا يوجد طلاب VIP"),
+                  );
+                }
 
                 return ListView.builder(
                   itemCount: filtered.length,
@@ -226,8 +284,16 @@ class StudentAttendancePage extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
 
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text("خطأ في التحميل"));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("لا يوجد حضور"));
           }
 
           var data = snapshot.data!.docs;
@@ -260,13 +326,21 @@ class StudentFinancePage extends StatelessWidget {
       appBar: AppBar(title: const Text("💰 الحسابات")),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseService.firestore
-            .collection("payments")
+            .collection("financial")
             .where("userId", isEqualTo: userId)
             .snapshots(),
         builder: (context, snapshot) {
 
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return const Center(child: Text("خطأ في التحميل"));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("لا توجد مدفوعات"));
           }
 
           var data = snapshot.data!.docs;
@@ -277,8 +351,8 @@ class StudentFinancePage extends StatelessWidget {
               var d = data[i].data() as Map<String, dynamic>;
 
               return ListTile(
-                title: Text("مدفوع: ${d['paid'] ?? 0}"),
-                subtitle: Text("باقي: ${d['remaining'] ?? 0}"),
+                title: Text("مدفوع: ${d['amount'] ?? 0}"),
+                subtitle: Text(d['timestamp']?.toDate().toString() ?? ""),
               );
             },
           );

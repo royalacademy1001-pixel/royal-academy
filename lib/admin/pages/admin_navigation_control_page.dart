@@ -15,7 +15,6 @@ class AdminNavigationControlPage extends StatefulWidget {
 
 class _AdminNavigationControlPageState
     extends State<AdminNavigationControlPage> {
-
   List<Map<String, dynamic>> items = [];
 
   bool loading = true;
@@ -123,6 +122,12 @@ class _AdminNavigationControlPageState
       "icon": "news",
       "roles": ["admin"],
     },
+    {
+      "id": "admin_crm",
+      "title": "CRM",
+      "icon": "analytics",
+      "roles": ["admin"],
+    },
   ];
 
   final List<Map<String, dynamic>> fallbackNav = [
@@ -156,6 +161,14 @@ class _AdminNavigationControlPageState
       "icon": "profile",
       "order": 4,
       "roles": ["all"],
+      "enabled": true,
+    },
+    {
+      "id": "admin_crm",
+      "title": "CRM",
+      "icon": "analytics",
+      "order": 5,
+      "roles": ["admin"],
       "enabled": true,
     },
   ];
@@ -225,7 +238,6 @@ class _AdminNavigationControlPageState
         .doc("navigation")
         .snapshots()
         .listen((doc) async {
-
       final data = doc.data();
 
       if (data == null || data['items'] == null) {
@@ -283,8 +295,7 @@ class _AdminNavigationControlPageState
         return;
       }
 
-      raw.sort((a, b) =>
-          (a['order'] ?? 0).compareTo(b['order'] ?? 0));
+      raw.sort((a, b) => (a['order'] ?? 0).compareTo(b['order'] ?? 0));
 
       items = raw.cast<Map<String, dynamic>>();
 
@@ -307,8 +318,12 @@ class _AdminNavigationControlPageState
 
     final sortedItems = List<Map<String, dynamic>>.from(items);
     sortedItems.sort((a, b) {
-      final aOrder = a['order'] is int ? a['order'] : int.tryParse(a['order'].toString()) ?? 0;
-      final bOrder = b['order'] is int ? b['order'] : int.tryParse(b['order'].toString()) ?? 0;
+      final aOrder = a['order'] is int
+          ? a['order']
+          : int.tryParse(a['order'].toString()) ?? 0;
+      final bOrder = b['order'] is int
+          ? b['order']
+          : int.tryParse(b['order'].toString()) ?? 0;
       return aOrder.compareTo(bOrder);
     });
 
@@ -385,8 +400,7 @@ class _AdminNavigationControlPageState
   }
 
   void toggleEnabled(int index) {
-    items[index]['enabled'] =
-        !(items[index]['enabled'] ?? true);
+    items[index]['enabled'] = !(items[index]['enabled'] ?? true);
     saveAll();
     setState(() {});
   }
@@ -460,10 +474,8 @@ class _AdminNavigationControlPageState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("⚙️ التحكم في الناف بار",
             style: TextStyle(color: AppColors.gold)),
@@ -481,7 +493,6 @@ class _AdminNavigationControlPageState
             )
         ],
       ),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : items.isEmpty
@@ -490,50 +501,46 @@ class _AdminNavigationControlPageState
                   padding: const EdgeInsets.all(15),
                   child: Column(
                     children: [
-
                       Container(
                         padding: const EdgeInsets.all(15),
                         decoration: AppColors.premiumCard,
                         child: Column(
                           children: [
-
                             _pageSelector(),
-
                             const SizedBox(height: 10),
-
                             TextField(
                               controller: idController,
                               style: const TextStyle(color: Colors.white),
                               decoration: const InputDecoration(
                                   hintText: "id (home, courses...)"),
                               onChanged: (v) {
-                                final found = availablePages.where((e) => e['id'] == v.trim()).toList();
-                                if (found.isNotEmpty && titleController.text.isEmpty) {
-                                  titleController.text = found.first['title'].toString();
-                                  iconController.text = found.first['icon'].toString();
+                                final found = availablePages
+                                    .where((e) => e['id'] == v.trim())
+                                    .toList();
+                                if (found.isNotEmpty &&
+                                    titleController.text.isEmpty) {
+                                  titleController.text =
+                                      found.first['title'].toString();
+                                  iconController.text =
+                                      found.first['icon'].toString();
                                 }
                               },
                             ),
-
                             TextField(
                               controller: titleController,
                               style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                  hintText: "title"),
+                              decoration:
+                                  const InputDecoration(hintText: "title"),
                             ),
-
                             TextField(
                               controller: iconController,
                               style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                  hintText: "icon name"),
+                              decoration:
+                                  const InputDecoration(hintText: "icon name"),
                             ),
-
                             const SizedBox(height: 10),
-
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceAround,
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 roleChip("all"),
                                 roleChip("admin"),
@@ -542,9 +549,7 @@ class _AdminNavigationControlPageState
                                 roleChip("user"),
                               ],
                             ),
-
                             const SizedBox(height: 10),
-
                             ElevatedButton(
                               style: AppColors.goldButton,
                               onPressed: addItem,
@@ -553,20 +558,18 @@ class _AdminNavigationControlPageState
                           ],
                         ),
                       ),
-
                       const SizedBox(height: 20),
-
                       ReorderableListView(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         buildDefaultDragHandles: false,
                         onReorder: reorder,
                         children: items.asMap().entries.map((entry) {
-
                           int index = entry.key;
                           var item = entry.value;
 
-                          final isHome = (item['id'] ?? "").toString() == "home";
+                          final isHome =
+                              (item['id'] ?? "").toString() == "home";
 
                           return Container(
                             key: ValueKey("${item['id']}_$index"),
@@ -574,10 +577,8 @@ class _AdminNavigationControlPageState
                             padding: const EdgeInsets.all(15),
                             decoration: AppColors.premiumCard,
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-
                                 Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -591,13 +592,14 @@ class _AdminNavigationControlPageState
                                     if (!isHome)
                                       Switch(
                                         value: item['enabled'] ?? true,
-                                        onChanged: (_) =>
-                                            toggleEnabled(index),
+                                        onChanged: (_) => toggleEnabled(index),
                                       )
                                     else
                                       const Padding(
-                                        padding: EdgeInsets.symmetric(horizontal: 8),
-                                        child: Icon(Icons.lock, color: Colors.green),
+                                        padding:
+                                            EdgeInsets.symmetric(horizontal: 8),
+                                        child: Icon(Icons.lock,
+                                            color: Colors.green),
                                       ),
                                     ReorderableDragStartListener(
                                       index: index,
@@ -608,9 +610,7 @@ class _AdminNavigationControlPageState
                                     ),
                                   ],
                                 ),
-
                                 const SizedBox(height: 10),
-
                                 TextField(
                                   controller: TextEditingController(
                                       text: item['title']),
@@ -618,38 +618,37 @@ class _AdminNavigationControlPageState
                                       updateField(index, "title", v),
                                   style: const TextStyle(color: Colors.white),
                                 ),
-
                                 TextField(
-                                  controller: TextEditingController(
-                                      text: item['icon']),
+                                  controller:
+                                      TextEditingController(text: item['icon']),
                                   onChanged: (v) =>
                                       updateField(index, "icon", v),
                                   style: const TextStyle(color: Colors.white),
                                 ),
-
                                 TextField(
                                   controller: TextEditingController(
                                       text: item['order'].toString()),
                                   keyboardType: TextInputType.number,
-                                  onChanged: (v) => updateOrder(
-                                      index,
-                                      int.tryParse(v) ?? 0),
+                                  onChanged: (v) =>
+                                      updateOrder(index, int.tryParse(v) ?? 0),
                                   style: const TextStyle(color: Colors.white),
                                 ),
-
                                 const SizedBox(height: 10),
-
                                 Wrap(
                                   spacing: 5,
-                                  children: ["all","admin","instructor","vip","user"]
+                                  children: [
+                                    "all",
+                                    "admin",
+                                    "instructor",
+                                    "vip",
+                                    "user"
+                                  ]
                                       .map((r) => FilterChip(
                                             label: Text(r),
-                                            selected:
-                                                (item['roles'] ?? [])
-                                                    .contains(r),
+                                            selected: (item['roles'] ?? [])
+                                                .contains(r),
                                             onSelected: (_) {
-                                              List list =
-                                                  item['roles'] ?? [];
+                                              List list = item['roles'] ?? [];
 
                                               if (list.contains(r)) {
                                                 list.remove(r);
@@ -657,24 +656,24 @@ class _AdminNavigationControlPageState
                                                 list.add(r);
                                               }
 
-                                              updateField(
-                                                  index, "roles", list);
+                                              updateField(index, "roles", list);
                                             },
                                           ))
                                       .toList(),
                                 ),
-
                                 const SizedBox(height: 10),
-
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     IconButton(
-                                      icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
+                                      icon: const Icon(Icons.keyboard_arrow_up,
+                                          color: Colors.white),
                                       onPressed: () => _moveUp(index),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                                      icon: const Icon(
+                                          Icons.keyboard_arrow_down,
+                                          color: Colors.white),
                                       onPressed: () => _moveDown(index),
                                     ),
                                     if (!isHome)
@@ -702,16 +701,14 @@ class _AdminNavigationControlPageState
     return GestureDetector(
       onTap: () => toggleRole(role),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-            horizontal: 10, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: selected ? AppColors.gold : AppColors.black,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           role,
-          style: TextStyle(
-              color: selected ? Colors.black : Colors.white),
+          style: TextStyle(color: selected ? Colors.black : Colors.white),
         ),
       ),
     );

@@ -20,6 +20,8 @@ import 'admin/pages/notifications_admin_page.dart';
 import 'admin/pages/students_management_page.dart';
 import 'admin/pages/news_admin_page.dart';
 import 'admin/pages/students_crm_page.dart';
+import 'admin/pages/attendance_report_page.dart';
+import 'admin/pages/center_management_page.dart';
 
 // 🔥 Instructor
 import 'instructor/instructor_dashboard_page.dart';
@@ -33,8 +35,6 @@ import 'core/colors.dart';
 import 'core/firebase_service.dart';
 import 'core/constants.dart';
 
-
-// 🔥 NAV GUARD (مهم بس آمن)
 class NavGuard {
   static bool locked = false;
 
@@ -54,21 +54,15 @@ class NavGuard {
   }
 }
 
-
-// ================= MAIN NAV =================
-
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
 
   @override
-  State<MainNavigationPage> createState() =>
-      _MainNavigationPageState();
+  State<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
-class _MainNavigationPageState
-    extends State<MainNavigationPage>
+class _MainNavigationPageState extends State<MainNavigationPage>
     with TickerProviderStateMixin {
-
   int currentIndex = 0;
 
   bool isAdmin = false;
@@ -136,11 +130,35 @@ class _MainNavigationPageState
       "enabled": true,
     },
     {
+      "id": "admin_center",
+      "title": "إدارة السنتر",
+      "icon": "admin",
+      "roles": ["admin"],
+      "order": 7,
+      "enabled": true,
+    },
+    {
+      "id": "admin_students",
+      "title": "إدارة الطلاب",
+      "icon": "users",
+      "roles": ["admin"],
+      "order": 8,
+      "enabled": true,
+    },
+    {
+      "id": "admin_attendance",
+      "title": "تقارير الحضور",
+      "icon": "attendance",
+      "roles": ["admin"],
+      "order": 9,
+      "enabled": true,
+    },
+    {
       "id": "admin_crm",
       "title": "CRM",
       "icon": "analytics",
       "roles": ["admin"],
-      "order": 7,
+      "order": 10,
       "enabled": true,
     },
   ];
@@ -164,14 +182,12 @@ class _MainNavigationPageState
   }
 
   Future<void> _initAll() async {
-
     try {
       final data = await FirebaseService.getUserData(refresh: true);
 
       isAdmin = data['isAdmin'] == true;
       isInstructor = data['instructorApproved'] == true;
       isVIP = data['isVIP'] == true;
-
     } catch (e) {
       debugPrint("User Load Error: $e");
     }
@@ -218,8 +234,7 @@ class _MainNavigationPageState
             return;
           }
 
-          items.sort((a, b) =>
-              (a['order'] ?? 0).compareTo(b['order'] ?? 0));
+          items.sort((a, b) => (a['order'] ?? 0).compareTo(b['order'] ?? 0));
 
           dynamicNav = items.cast<Map<String, dynamic>>();
 
@@ -245,7 +260,6 @@ class _MainNavigationPageState
   }
 
   void _checkDeepLink() {
-
     if (_deepLinkHandled) return;
     _deepLinkHandled = true;
 
@@ -253,11 +267,9 @@ class _MainNavigationPageState
       final uri = Uri.base;
 
       if (uri.pathSegments.contains("verify")) {
-
         final index = uri.pathSegments.indexOf("verify");
 
         if (uri.pathSegments.length > index + 1) {
-
           final certId = uri.pathSegments[index + 1];
 
           if (!mounted) return;
@@ -265,8 +277,7 @@ class _MainNavigationPageState
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  VerifyCertificatePage(certId: certId),
+              builder: (_) => VerifyCertificatePage(certId: certId),
             ),
           );
         }
@@ -277,17 +288,14 @@ class _MainNavigationPageState
   }
 
   void _onTap(int index) {
-
     if (currentIndex == index) return;
 
     NavGuard.run(() {
-
       HapticFeedback.selectionClick();
 
       setState(() {
         currentIndex = index;
       });
-
     });
   }
 
@@ -307,6 +315,10 @@ class _MainNavigationPageState
         return const StudentProfilePage();
       case "admin_crm":
         return const StudentsCRMPage();
+      case "admin_center":
+        return const CenterManagementPage();
+      case "admin_attendance":
+        return const AttendanceReportPage();
       case "instructor":
         return const InstructorDashboardPage();
       case "admin_payments":
@@ -364,6 +376,8 @@ class _MainNavigationPageState
         return Icons.notifications;
       case "news":
         return Icons.campaign;
+      case "attendance":
+        return Icons.fact_check;
       default:
         return Icons.circle;
     }
@@ -414,21 +428,17 @@ class _MainNavigationPageState
   }
 
   Widget _notificationWrapper(Widget child) {
-
     if (_notificationStream == null) return child;
 
     return Stack(
       children: [
-
         child,
-
         Positioned(
           top: 10,
           right: 10,
           child: StreamBuilder<QuerySnapshot>(
             stream: _notificationStream,
             builder: (context, snapshot) {
-
               final count = snapshot.data?.docs.length ?? 0;
 
               if (count == 0) return const SizedBox();
@@ -493,9 +503,12 @@ class _MainNavigationPageState
                     duration: const Duration(milliseconds: 200),
                     width: itemWidth,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppColors.gold.withValues(alpha: 0.14) : Colors.transparent,
+                      color: selected
+                          ? AppColors.gold.withValues(alpha: 0.14)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: selected ? AppColors.gold : Colors.transparent,
@@ -523,7 +536,8 @@ class _MainNavigationPageState
                           style: TextStyle(
                             color: selected ? AppColors.gold : Colors.white70,
                             fontSize: 12,
-                            fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                            fontWeight:
+                                selected ? FontWeight.bold : FontWeight.w600,
                             height: 1.0,
                           ),
                         ),
@@ -547,15 +561,13 @@ class _MainNavigationPageState
 
   @override
   Widget build(BuildContext context) {
-
     final user = FirebaseService.auth.currentUser;
     if (user == null) {
       if (!_redirectedToLogin) {
         _redirectedToLogin = true;
         Future.microtask(() {
           if (!mounted) return;
-          Navigator.pushNamedAndRemoveUntil(
-              context, '/login', (_) => false);
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
         });
       }
       return const SizedBox();

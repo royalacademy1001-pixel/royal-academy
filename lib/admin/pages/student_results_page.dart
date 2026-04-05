@@ -22,6 +22,8 @@ class _StudentResultsPageState
     extends State<StudentResultsPage> {
 
   String search = "";
+  String selectedUserId = "";
+  List<QueryDocumentSnapshot> users = [];
 
   void show(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -29,65 +31,111 @@ class _StudentResultsPageState
     );
   }
 
+  Future loadUsers() async {
+    try {
+      final snap = await FirebaseService.firestore
+          .collection("users")
+          .get();
+      users = snap.docs;
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadUsers();
+  }
+
   Future addResult(String userId) async {
 
     final degreeController = TextEditingController();
     final titleController = TextEditingController();
+    String localSelectedUserId = userId;
 
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.black,
-        title: const Text("إضافة نتيجة",
-            style: TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              style: const TextStyle(color: Colors.white),
-              decoration:
-                  const InputDecoration(hintText: "اسم الاختبار"),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.black,
+            title: const Text("إضافة نتيجة",
+                style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: localSelectedUserId.isEmpty ? null : localSelectedUserId,
+                  dropdownColor: AppColors.black,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(hintText: "اختر الطالب"),
+                  items: users.map((u) {
+                    final data = u.data() as Map<String, dynamic>;
+                    return DropdownMenuItem<String>(
+                      value: u.id,
+                      child: Text(
+                        data['name'] ?? "Student",
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    setDialogState(() {
+                      localSelectedUserId = val ?? "";
+                    });
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: titleController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration:
+                      const InputDecoration(hintText: "اسم الاختبار"),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: degreeController,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: Colors.white),
+                  decoration:
+                      const InputDecoration(hintText: "الدرجة"),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: degreeController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration:
-                  const InputDecoration(hintText: "الدرجة"),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("إلغاء")),
-          ElevatedButton(
-            onPressed: () async {
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("إلغاء")),
+              ElevatedButton(
+                onPressed: () async {
 
-              int degree =
-                  int.tryParse(degreeController.text) ?? 0;
+                  int degree =
+                      int.tryParse(degreeController.text) ?? 0;
 
-              String title = titleController.text.trim();
+                  String title = titleController.text.trim();
 
-              if (degree <= 0 || title.isEmpty) return;
+                  if (degree <= 0 || title.isEmpty) return;
+                  if (localSelectedUserId.isEmpty) return;
 
-              await FirebaseService.firestore
-                  .collection("results")
-                  .add({
-                "userId": userId,
-                "title": title,
-                "degree": degree,
-                "timestamp": FieldValue.serverTimestamp(),
-              });
+                  await FirebaseService.firestore
+                      .collection("results")
+                      .add({
+                    "userId": localSelectedUserId,
+                    "title": title,
+                    "degree": degree,
+                    "timestamp": FieldValue.serverTimestamp(),
+                  });
 
-              Navigator.pop(context);
-              show("تم إضافة النتيجة ✅");
-            },
-            child: const Text("حفظ"),
-          )
-        ],
+                  Navigator.pop(context);
+                  show("تم إضافة النتيجة ✅");
+                },
+                child: const Text("حفظ"),
+              )
+            ],
+          );
+        },
       ),
     );
   }
@@ -120,7 +168,6 @@ class _StudentResultsPageState
       body: Column(
         children: [
 
-          /// 🔍 SEARCH
           Padding(
             padding: const EdgeInsets.all(15),
             child: TextField(
@@ -150,20 +197,29 @@ class _StudentResultsPageState
                   .snapshots(),
               builder: (context, snapshot) {
 
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return const LoadingWidget();
                 }
 
-                var docs = snapshot.data!.docs;
-
-                if (docs.isEmpty) {
+                if (snapshot.hasError) {
                   return const Center(
                     child: Text(
-                      "لا توجد نتائج",
+                      "❌ خطأ في تحميل البيانات",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      "📭 لا توجد نتائج حالياً",
                       style: TextStyle(color: Colors.grey),
                     ),
                   );
                 }
+
+                var docs = snapshot.data!.docs;
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
@@ -182,8 +238,12 @@ class _StudentResultsPageState
                       future: getUserName(userId),
                       builder: (context, snap) {
 
+                        if (snap.connectionState == ConnectionState.waiting) {
+                          return const SizedBox();
+                        }
+
                         String name =
-                            snap.data ?? "Loading...";
+                            snap.data ?? "Student";
 
                         if (search.isNotEmpty &&
                             !name.toLowerCase().contains(search)) {

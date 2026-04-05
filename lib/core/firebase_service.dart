@@ -44,7 +44,7 @@ class FirebaseInit {
 
     try {
       await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform, // 🔥 FIX
+        options: DefaultFirebaseOptions.currentPlatform,
       );
       _initialized = true;
       debugPrint("🔥 Firebase Initialized");
@@ -57,11 +57,13 @@ class FirebaseInit {
 /// 🔥 SAFE FIRESTORE
 Future<T?> safeFirestoreCall<T>(Future<T> Function() call) async {
   try {
+    await FirebaseInit.init();
     return await call();
   } catch (e) {
     debugPrint("🔥 Retry Firestore...");
     await Future.delayed(const Duration(milliseconds: 300));
     try {
+      await FirebaseInit.init();
       return await call();
     } catch (e) {
       debugPrint("🔥 Final Firestore Error: $e");
@@ -73,6 +75,7 @@ Future<T?> safeFirestoreCall<T>(Future<T> Function() call) async {
 /// 🔥 TIMEOUT
 Future<T?> safeTimeout<T>(Future<T?> Function() call) async {
   try {
+    await FirebaseInit.init();
     return await call().timeout(const Duration(seconds: 10));
   } catch (_) {
     debugPrint("⏱ Timeout");
@@ -90,6 +93,8 @@ class FirebaseService {
 
   static Future<User?> refreshCurrentUser() async {
     try {
+      await FirebaseInit.init();
+
       final user = auth.currentUser;
       if (user == null) return null;
 
@@ -106,9 +111,10 @@ class FirebaseService {
     }
   }
 
-  /// ================= 🔥 XP SYSTEM =================
   static Future<void> addXP(int xp) async {
     try {
+      await FirebaseInit.init();
+
       final user = auth.currentUser;
       if (user == null || xp <= 0) return;
 
@@ -123,9 +129,10 @@ class FirebaseService {
     }
   }
 
-  /// ================= 🔥 DAILY STREAK =================
   static Future<void> updateStreak() async {
     try {
+      await FirebaseInit.init();
+
       final user = auth.currentUser;
       if (user == null) return;
 
@@ -168,12 +175,12 @@ class FirebaseService {
     }
   }
 
-  /// ================= 🔥 SAFE UPDATE =================
   static Future<void> safeUpdate(
     DocumentReference ref,
     Map<String, dynamic> data,
   ) async {
     try {
+      await FirebaseInit.init();
       await safeFirestoreCall(() =>
           ref.set(data, SetOptions(merge: true)));
     } catch (e) {
@@ -181,7 +188,6 @@ class FirebaseService {
     }
   }
 
-  /// ================= 🔥 ANTI SPAM =================
   static final Map<String, DateTime> _xpLock = {};
 
   static bool canAddXP(String key) {
@@ -197,7 +203,6 @@ class FirebaseService {
     return true;
   }
 
-  /// ================= CACHE =================
   static Map<String, dynamic>? _userCache;
   static DateTime? _lastFetchTime;
 
@@ -209,7 +214,6 @@ class FirebaseService {
 
   static const int _cacheSeconds = AppConstants.cacheSeconds;
 
-  /// 🔥 FIX IMAGE
   static String fixImage(String url) {
     if (url.isEmpty) return url;
 
@@ -232,9 +236,10 @@ class FirebaseService {
     }
   }
 
-  /// ================== 🔔 INIT ==================
   static Future<void> initNotifications() async {
     try {
+      await FirebaseInit.init();
+
       if (_notificationsInitialized || kIsWeb) return;
 
       _notificationsInitialized = true;
@@ -256,9 +261,10 @@ class FirebaseService {
     }
   }
 
-  /// ================== 🎯 TOPIC ==================
   static Future<void> subscribeToTopic(String topic) async {
     try {
+      await FirebaseInit.init();
+
       if (!kIsWeb) {
         await FirebaseMessaging.instance.subscribeToTopic(topic);
       }
@@ -267,9 +273,10 @@ class FirebaseService {
     }
   }
 
-  /// ================== 💾 SAVE TOKEN ==================
   static Future<void> _saveToken(String token) async {
     try {
+      await FirebaseInit.init();
+
       await refreshCurrentUser();
 
       final user = auth.currentUser;
@@ -290,9 +297,10 @@ class FirebaseService {
     }
   }
 
-  /// ================== 🔄 UPDATE TOKEN ==================
   static Future<void> updateToken() async {
     try {
+      await FirebaseInit.init();
+
       if (kIsWeb) return;
 
       await refreshCurrentUser();
@@ -307,9 +315,10 @@ class FirebaseService {
     }
   }
 
-  /// ================== 🔓 LOGOUT ==================
   static Future<void> logout() async {
     try {
+      await FirebaseInit.init();
+
       final user = auth.currentUser;
 
       if (!kIsWeb) {
@@ -336,13 +345,14 @@ class FirebaseService {
     await auth.signOut();
   }
 
-  /// ================== 👤 USER DATA ==================
   static Future<Map<String, dynamic>> getUserData({
     bool refresh = false,
   }) async {
     final now = DateTime.now();
 
     try {
+      await FirebaseInit.init();
+
       if (!refresh &&
           _userCache != null &&
           _lastFetchTime != null &&
@@ -384,7 +394,6 @@ class FirebaseService {
     }
   }
 
-  /// ================= 🔥 ANALYTICS =================
   static Future<void> logEvent({
     required String type,
     String? userId,
@@ -393,6 +402,8 @@ class FirebaseService {
     Map<String, dynamic>? extra,
   }) async {
     try {
+      await FirebaseInit.init();
+
       await refreshCurrentUser();
 
       final uid = userId ?? auth.currentUser?.uid ?? "";
@@ -412,6 +423,8 @@ class FirebaseService {
 
   static Future<int> getCourseStudents(String courseId) async {
     try {
+      await FirebaseInit.init();
+
       final snap = await firestore
           .collection(AppConstants.users)
           .where("enrolledCourses", arrayContains: courseId)
@@ -425,6 +438,8 @@ class FirebaseService {
 
   static Future<int> getCourseViews(String courseId) async {
     try {
+      await FirebaseInit.init();
+
       final snap = await firestore
           .collection("analytics_events")
           .where("type", isEqualTo: "course_view")
@@ -439,6 +454,8 @@ class FirebaseService {
 
   static Future<int> getInstructorTotalStudents(String instructorId) async {
     try {
+      await FirebaseInit.init();
+
       final courses = await firestore
           .collection(AppConstants.courses)
           .where("instructorId", isEqualTo: instructorId)
@@ -459,6 +476,8 @@ class FirebaseService {
 
   static Future<int> getInstructorTotalViews(String instructorId) async {
     try {
+      await FirebaseInit.init();
+
       final courses = await firestore
           .collection(AppConstants.courses)
           .where("instructorId", isEqualTo: instructorId)

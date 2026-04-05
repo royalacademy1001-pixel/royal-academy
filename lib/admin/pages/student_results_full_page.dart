@@ -15,6 +15,25 @@ class StudentResultsFullPage extends StatefulWidget {
 
 class _StudentResultsFullPageState extends State<StudentResultsFullPage> {
 
+  bool isAdmin = false;
+  bool loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future loadUser() async {
+    try {
+      final data = await FirebaseService.getUserData();
+      isAdmin = data['isAdmin'] == true;
+    } catch (_) {}
+    if (mounted) {
+      setState(() => loadingUser = false);
+    }
+  }
+
   void show(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -74,6 +93,23 @@ class _StudentResultsFullPageState extends State<StudentResultsFullPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    if (loadingUser) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!isAdmin) {
+      return const Scaffold(
+        body: Center(
+          child: Text(
+            "❌ غير مسموح",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,

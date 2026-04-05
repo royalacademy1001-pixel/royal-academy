@@ -103,12 +103,39 @@ Future<void> safeOpenVideo({
       return;
     }
 
+    String cleanUrl = url;
+
+    final lower = url.toLowerCase();
+
+    if (lower.contains("youtube") || lower.contains("youtu.be")) {
+      final uri = Uri.tryParse(url);
+
+      if (uri != null) {
+        String id = "";
+
+        if (uri.host.contains("youtu.be")) {
+          id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : "";
+        } else if (uri.queryParameters.containsKey("v")) {
+          id = uri.queryParameters["v"] ?? "";
+        } else if (uri.pathSegments.contains("shorts")) {
+          final i = uri.pathSegments.indexOf("shorts");
+          if (i + 1 < uri.pathSegments.length) {
+            id = uri.pathSegments[i + 1];
+          }
+        }
+
+        if (id.isNotEmpty) {
+          cleanUrl = "https://www.youtube.com/watch?v=$id";
+        }
+      }
+    }
+
     await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => VideoPage(
           title: title,
-          videoUrl: url,
+          videoUrl: cleanUrl,
           courseId: courseId,
           lessonId: lessonId,
           isFree: isFree,

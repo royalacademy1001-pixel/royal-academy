@@ -175,6 +175,44 @@ class VideoPageState extends State<VideoPage> {
     }
   }
 
+  String _extractYoutubeId(String url) {
+    try {
+      final converted = YoutubePlayerController.convertUrlToId(url);
+      if (converted != null && converted.isNotEmpty) {
+        return converted;
+      }
+    } catch (_) {}
+
+    final uri = Uri.tryParse(url);
+    if (uri == null) return "";
+
+    final host = uri.host.toLowerCase();
+
+    if (host.contains("youtu.be") && uri.pathSegments.isNotEmpty) {
+      return uri.pathSegments.first;
+    }
+
+    if (uri.queryParameters.containsKey("v")) {
+      return uri.queryParameters["v"] ?? "";
+    }
+
+    if (uri.pathSegments.contains("shorts")) {
+      final index = uri.pathSegments.indexOf("shorts");
+      if (index + 1 < uri.pathSegments.length) {
+        return uri.pathSegments[index + 1];
+      }
+    }
+
+    if (uri.pathSegments.contains("embed")) {
+      final index = uri.pathSegments.indexOf("embed");
+      if (index + 1 < uri.pathSegments.length) {
+        return uri.pathSegments[index + 1];
+      }
+    }
+
+    return "";
+  }
+
   Future initVideo() async {
     String url = widget.videoUrl.trim();
 
@@ -214,9 +252,9 @@ class VideoPageState extends State<VideoPage> {
     if (lowerUrl.contains("youtube") || lowerUrl.contains("youtu.be")) {
       isYoutube = true;
 
-      String? id = YoutubePlayerController.convertUrlToId(url);
+      String id = _extractYoutubeId(url);
 
-      if (id == null) {
+      if (id.isEmpty) {
         debugPrint("❌ Invalid YouTube URL");
         videoError = true;
         return;
@@ -558,7 +596,13 @@ class VideoPageState extends State<VideoPage> {
     }
 
     if (isYoutube && youtubeController != null) {
-      return YoutubePlayer(controller: youtubeController!);
+      return YoutubePlayerScaffold(
+        controller: youtubeController!,
+        aspectRatio: 16 / 9,
+        builder: (context, player) {
+          return player;
+        },
+      );
     }
 
     if (videoController != null &&

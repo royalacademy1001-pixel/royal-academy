@@ -321,7 +321,7 @@ class _UsersPageState extends State<UsersPage> {
 
                         String email = (data['email'] ?? "No Email").toString();
                         String phone = (data['phone'] ?? "").toString();
-                        String createdAt = (data['createdAt'] ?? "").toString();
+                        (data['createdAt'] ?? "").toString();
                         int coursesCount = (data['unlockedCourses'] is List)
                             ? (data['unlockedCourses'] as List).length
                             : 0;

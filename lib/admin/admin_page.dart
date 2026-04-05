@@ -21,7 +21,7 @@ import 'categories_admin_page.dart';
 import 'pages/instructor_requests_admin_page.dart';
 import 'add_course_page.dart';
 import 'add_lesson_page.dart';
-import 'pages/analytics_dashboard_page.dart';
+import 'pages/analytics_dashboard_page.dart' as analytics;
 import 'add_news_page.dart';
 import 'pages/news_admin_page.dart';
 import 'pick_lesson_page.dart';
@@ -666,7 +666,7 @@ class _AdminPageState extends State<AdminPage> {
                                 },
                                 {
                                   "title": "📊 Analytics",
-                                  "page": AnalyticsDashboardPage()
+                                  "page": analytics.AnalyticsDashboardPage()
                                 },
                                 {
                                   "title": "📰 إدارة الأخبار",

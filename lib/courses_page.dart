@@ -168,12 +168,14 @@ class _CoursesPageState extends State<CoursesPage> {
   bool hasAccess(String courseId) {
     bool isAdmin = userData?['isAdmin'] ?? false;
     bool subscribed = userData?['subscribed'] ?? false;
+    bool isVIP = userData?['isVIP'] ?? false;
 
     List unlocked = userData?['unlockedCourses'] ?? [];
     List enrolled = userData?['enrolledCourses'] ?? [];
 
     return isAdmin ||
         subscribed ||
+        isVIP ||
         unlocked.contains(courseId) ||
         enrolled.contains(courseId);
   }

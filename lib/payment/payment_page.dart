@@ -68,6 +68,7 @@ class _PaymentPageState extends State<PaymentPage> {
   bool _hardLock = false;
 
   bool isAdmin = false;
+  bool isVIP = false;
   bool checkingAdmin = true;
 
   Future<void> _checkAdmin() async {
@@ -83,6 +84,7 @@ class _PaymentPageState extends State<PaymentPage> {
       final data = doc.data() ?? {};
 
       isAdmin = data['isAdmin'] == true;
+      isVIP = data['isVIP'] == true;
 
     } catch (_) {}
 
@@ -134,7 +136,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future pickImage() async {
-    if (isLoading || lockedUI || _hardLock || _PaymentGuard.locked || isAdmin) return;
+    if (isLoading || lockedUI || _hardLock || _PaymentGuard.locked || isAdmin || isVIP) return;
 
     try {
       final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -159,8 +161,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   bool validate() {
 
-    if (isAdmin) {
-      showSnack(context, "❌ غير مسموح للأدمن بالدفع", color: Colors.red);
+    if (isAdmin || isVIP) {
+      showSnack(context, "❌ غير مسموح للأدمن أو VIP بالدفع", color: Colors.red);
       return false;
     }
 
@@ -226,8 +228,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Future submit() async {
 
-    if (isAdmin) {
-      showSnack(context, "❌ غير مسموح للأدمن بالدفع", color: Colors.red);
+    if (isAdmin || isVIP) {
+      showSnack(context, "❌ غير مسموح للأدمن أو VIP بالدفع", color: Colors.red);
       return;
     }
 
@@ -380,11 +382,11 @@ class _PaymentPageState extends State<PaymentPage> {
       );
     }
 
-    if (isAdmin) {
+    if (isAdmin || isVIP) {
       return const Scaffold(
         body: Center(
           child: Text(
-            "❌ غير مسموح للأدمن بالدفع",
+            "❌ غير مسموح للأدمن أو VIP بالدفع",
             style: TextStyle(color: Colors.white),
           ),
         ),

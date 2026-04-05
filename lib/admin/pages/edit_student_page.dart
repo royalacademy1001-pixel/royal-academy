@@ -31,12 +31,47 @@ class _EditStudentPageState extends State<EditStudentPage> {
   bool loading = false;
   String search = "";
 
+  String? studentId;
+
   @override
   void initState() {
     super.initState();
 
     enrolled = widget.data['enrolledCourses'] ?? [];
     unlocked = widget.data['unlockedCourses'] ?? [];
+
+    studentId = widget.data['studentId'];
+
+    _initStudent();
+  }
+
+  Future<void> _initStudent() async {
+
+    try {
+
+      if (studentId != null) return;
+
+      final doc = await FirebaseService.firestore
+          .collection("students")
+          .add({
+        "name": widget.data['name'] ?? "",
+        "phone": widget.data['phone'] ?? "",
+        "linkedUserId": widget.userId,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      studentId = doc.id;
+
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(widget.userId)
+          .set({
+        "studentId": studentId,
+      }, SetOptions(merge: true));
+
+    } catch (e) {
+      debugPrint("Student Init Error: $e");
+    }
   }
 
   // ================== ACTION ==================
@@ -53,6 +88,17 @@ class _EditStudentPageState extends State<EditStudentPage> {
             ? FieldValue.arrayUnion([courseId])
             : FieldValue.arrayRemove([courseId])
       });
+
+      if (studentId != null) {
+        await FirebaseService.firestore
+            .collection("students")
+            .doc(studentId)
+            .set({
+          type: add
+              ? FieldValue.arrayUnion([courseId])
+              : FieldValue.arrayRemove([courseId])
+        }, SetOptions(merge: true));
+      }
 
       setState(() {
         if (type == "enrolledCourses") {
@@ -106,7 +152,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
           Column(
             children: [
 
-              /// 🔍 SEARCH
               Padding(
                 padding: const EdgeInsets.all(15),
                 child: TextField(
@@ -128,7 +173,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
                 ),
               ),
 
-              /// 📚 COURSES
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseService.firestore
@@ -145,7 +189,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
 
                     var courses = snapshot.data!.docs;
 
-                    /// 🔥 FILTER
                     var filtered = courses.where((c) {
                       var data =
                           c.data() as Map<String, dynamic>;
@@ -246,7 +289,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
 
-                                /// 🔥 ENROLL
                                 _actionIcon(
                                   icon: isEnrolled ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
                                   color: isEnrolled ? Colors.green : Colors.grey,
@@ -255,7 +297,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
 
                                 const SizedBox(width: 8),
 
-                                /// 🔥 UNLOCK
                                 _actionIcon(
                                   icon: isUnlocked ? Icons.lock_open_rounded : Icons.lock_outline_rounded,
                                   color: isUnlocked ? Colors.orange : Colors.grey,
@@ -273,7 +314,6 @@ class _EditStudentPageState extends State<EditStudentPage> {
             ],
           ),
 
-          /// 🔥 LOADING OVERLAY
           if (loading)
             Container(
               color: Colors.black.withValues(alpha: 0.7),

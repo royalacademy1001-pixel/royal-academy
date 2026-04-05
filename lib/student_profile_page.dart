@@ -38,6 +38,7 @@ class _StudentProfilePageState extends State<StudentProfilePage>
 
   bool validSubscription = false;
   bool isAdmin = false;
+  bool isVIP = false;
 
   bool instructorRequest = false;
   bool instructorApproved = false;
@@ -55,6 +56,8 @@ class _StudentProfilePageState extends State<StudentProfilePage>
   static final Map<String, String> _courseCache = {};
 
   Stream<DocumentSnapshot>? _userStream;
+
+  String? studentId;
 
   @override
   void initState() {
@@ -81,7 +84,10 @@ class _StudentProfilePageState extends State<StudentProfilePage>
 
       enrolledCourses = data['enrolledCourses'] ?? [];
       isAdmin = data['isAdmin'] ?? false;
+      isVIP = data['isVIP'] ?? false;
       subscriptionEnd = data['subscriptionEnd'];
+
+      studentId = data['studentId'];
 
       instructorRequest = data['instructorRequest'] ?? false;
       instructorApproved = data['instructorApproved'] ?? false;
@@ -93,12 +99,46 @@ class _StudentProfilePageState extends State<StudentProfilePage>
         }
       }
 
-      if (isAdmin || instructorApproved) validSubscription = true;
+      if (isAdmin || instructorApproved || isVIP) validSubscription = true;
+
+      _initStudent();
 
       loadCoursesNames();
 
       if (mounted) setState(() {});
     });
+  }
+
+  Future<void> _initStudent() async {
+
+    try {
+
+      if (studentId != null) return;
+
+      final user = FirebaseService.auth.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseService.firestore
+          .collection("students")
+          .add({
+        "name": name.text,
+        "phone": phone.text,
+        "linkedUserId": user.uid,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      studentId = doc.id;
+
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(user.uid)
+          .set({
+        "studentId": studentId,
+      }, SetOptions(merge: true));
+
+    } catch (e) {
+      debugPrint("Student Init Error: $e");
+    }
   }
 
   @override
@@ -119,7 +159,10 @@ class _StudentProfilePageState extends State<StudentProfilePage>
 
       enrolledCourses = data['enrolledCourses'] ?? [];
       isAdmin = data['isAdmin'] ?? false;
+      isVIP = data['isVIP'] ?? false;
       subscriptionEnd = data['subscriptionEnd'];
+
+      studentId = data['studentId'];
 
       instructorRequest = data['instructorRequest'] ?? false;
       instructorApproved = data['instructorApproved'] ?? false;
@@ -131,7 +174,9 @@ class _StudentProfilePageState extends State<StudentProfilePage>
         }
       }
 
-      if (isAdmin || instructorApproved) validSubscription = true;
+      if (isAdmin || instructorApproved || isVIP) validSubscription = true;
+
+      await _initStudent();
 
       await loadCoursesNames();
 
@@ -214,6 +259,16 @@ class _StudentProfilePageState extends State<StudentProfilePage>
         "image": url,
       }, SetOptions(merge: true));
 
+      if (studentId != null) {
+        await FirebaseService.firestore
+            .collection("students")
+            .doc(studentId)
+            .set({
+          "name": name.text.trim(),
+          "phone": phone.text.trim(),
+        }, SetOptions(merge: true));
+      }
+
       showSnack("تم الحفظ ✅");
     } catch (e) {
       debugPrint("Save Error: $e");
@@ -259,6 +314,7 @@ class _StudentProfilePageState extends State<StudentProfilePage>
   String getStatusText() {
     if (isAdmin) return "👑 Admin";
     if (instructorApproved) return "🎓 Instructor";
+    if (isVIP) return "⭐ VIP";
     if (validSubscription) return "⭐ VIP";
     return "🔒 غير مشترك";
   }
@@ -266,6 +322,7 @@ class _StudentProfilePageState extends State<StudentProfilePage>
   Color getStatusColor() {
     if (isAdmin) return Colors.amber;
     if (instructorApproved) return Colors.blue;
+    if (isVIP) return AppColors.gold;
     if (validSubscription) return Colors.green;
     return Colors.red;
   }
@@ -428,7 +485,7 @@ class _StudentProfilePageState extends State<StudentProfilePage>
                 style: const TextStyle(color: Colors.white)),
           ),
 
-          if (!validSubscription && !isAdmin && !instructorApproved)
+          if (!validSubscription && !isAdmin && !instructorApproved && !isVIP)
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: ElevatedButton(

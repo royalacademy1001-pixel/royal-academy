@@ -10,7 +10,7 @@ import 'student_profile_page.dart';
 import 'payment/payment_page.dart';
 import 'admin/pages/payments_admin_page.dart';
 import 'admin/pages/verify_certificate_page.dart';
-import 'admin/pages/analytics_dashboard_page.dart';
+import 'admin/pages/analytics_dashboard_page.dart' as analytics;
 import 'admin/pages/instructor_requests_admin_page.dart';
 import 'admin/pages/users_page.dart';
 import 'admin/pages/admin_navigation_control_page.dart';
@@ -19,9 +19,14 @@ import 'admin/categories_admin_page.dart';
 import 'admin/pages/notifications_admin_page.dart';
 import 'admin/pages/students_management_page.dart';
 import 'admin/pages/news_admin_page.dart';
+import 'admin/pages/students_crm_page.dart';
 
 // 🔥 Instructor
 import 'instructor/instructor_dashboard_page.dart';
+
+// 🔥 NEW
+import 'pages/student_dashboard_page.dart';
+import 'pages/qr_attendance_page.dart';
 
 // 🔥 Core
 import 'core/colors.dart';
@@ -91,11 +96,27 @@ class _MainNavigationPageState
       "enabled": true,
     },
     {
+      "id": "student_dashboard",
+      "title": "لوحتي",
+      "icon": "dashboard",
+      "roles": ["all"],
+      "order": 2,
+      "enabled": true,
+    },
+    {
       "id": "courses",
       "title": "الكورسات",
       "icon": "courses",
       "roles": ["all"],
-      "order": 2,
+      "order": 3,
+      "enabled": true,
+    },
+    {
+      "id": "qr_attendance",
+      "title": "الحضور",
+      "icon": "qr",
+      "roles": ["all"],
+      "order": 4,
       "enabled": true,
     },
     {
@@ -103,7 +124,7 @@ class _MainNavigationPageState
       "title": "الدفع",
       "icon": "payment",
       "roles": ["all"],
-      "order": 3,
+      "order": 5,
       "enabled": true,
     },
     {
@@ -111,7 +132,15 @@ class _MainNavigationPageState
       "title": "حسابي",
       "icon": "profile",
       "roles": ["all"],
-      "order": 4,
+      "order": 6,
+      "enabled": true,
+    },
+    {
+      "id": "admin_crm",
+      "title": "CRM",
+      "icon": "analytics",
+      "roles": ["admin"],
+      "order": 7,
       "enabled": true,
     },
   ];
@@ -141,7 +170,7 @@ class _MainNavigationPageState
 
       isAdmin = data['isAdmin'] == true;
       isInstructor = data['instructorApproved'] == true;
-      isVIP = data['subscribed'] == true;
+      isVIP = data['isVIP'] == true;
 
     } catch (e) {
       debugPrint("User Load Error: $e");
@@ -266,12 +295,18 @@ class _MainNavigationPageState
     switch (id) {
       case "home":
         return _notificationWrapper(const HomePage());
+      case "student_dashboard":
+        return StudentDashboardPage();
       case "courses":
         return const CoursesPage();
+      case "qr_attendance":
+        return QRAttendancePage();
       case "payment":
         return const PaymentPage();
       case "profile":
         return const StudentProfilePage();
+      case "admin_crm":
+        return const StudentsCRMPage();
       case "instructor":
         return const InstructorDashboardPage();
       case "admin_payments":
@@ -279,7 +314,7 @@ class _MainNavigationPageState
       case "admin_requests":
         return const InstructorRequestsAdminPage();
       case "admin_analytics":
-        return AnalyticsDashboardPage();
+        return const analytics.AnalyticsDashboardPage();
       case "admin_users":
         return const UsersPage();
       case "admin_nav_control":
@@ -309,6 +344,10 @@ class _MainNavigationPageState
         return Icons.payment;
       case "profile":
         return Icons.person;
+      case "dashboard":
+        return Icons.dashboard;
+      case "qr":
+        return Icons.qr_code_scanner;
       case "admin":
         return Icons.admin_panel_settings;
       case "analytics":
@@ -423,9 +462,15 @@ class _MainNavigationPageState
     return FadeTransition(
       opacity: _fadeAnim,
       child: Container(
-        height: 86,
+        height: 90,
         decoration: BoxDecoration(
           color: AppColors.black,
+          border: Border(
+            top: BorderSide(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
           borderRadius: const BorderRadius.vertical(
             top: Radius.circular(20),
           ),
@@ -465,7 +510,7 @@ class _MainNavigationPageState
                           scale: selected ? 1.2 : 1,
                           child: Icon(
                             _getIcon((item['icon'] ?? '').toString()),
-                            color: selected ? AppColors.gold : Colors.grey,
+                            color: selected ? AppColors.gold : Colors.white70,
                             size: selected ? 26 : 24,
                           ),
                         ),
@@ -476,9 +521,10 @@ class _MainNavigationPageState
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: selected ? AppColors.gold : Colors.grey,
-                            fontSize: 11,
-                            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            color: selected ? AppColors.gold : Colors.white70,
+                            fontSize: 12,
+                            fontWeight: selected ? FontWeight.bold : FontWeight.w600,
+                            height: 1.0,
                           ),
                         ),
                       ],

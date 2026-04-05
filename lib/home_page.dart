@@ -115,6 +115,7 @@ class _HomePageState extends State<HomePage>
     }
 
     final bool isAdmin = userData!['isAdmin'] == true;
+    final bool isVIP = userData!['isVIP'] == true;
     final bool subscribed = userData!['subscribed'] == true;
     final String userName =
         (userData!['name'] ?? userData!['displayName'] ?? "أهلاً بيك").toString();
@@ -195,9 +196,9 @@ class _HomePageState extends State<HomePage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _hero(userName),
-                        _vipCard(isAdmin, subscribed),
-                        _statsCard(isAdmin, subscribed, userXP, streak),
-                        if (!subscribed && !isAdmin) _subscribeBanner(),
+                        _vipCard(isAdmin, subscribed, isVIP),
+                        _statsCard(isAdmin, subscribed, isVIP, userXP, streak),
+                        if (!subscribed && !isAdmin && !isVIP) _subscribeBanner(),
                         _newsSection(),
                         _continueWatching(),
                         _recommended(),
@@ -586,7 +587,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _vipCard(bool isAdmin, bool subscribed) {
+  Widget _vipCard(bool isAdmin, bool subscribed, bool isVIP) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 15),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -599,13 +600,13 @@ class _HomePageState extends State<HomePage>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isAdmin ? Icons.star : (subscribed ? Icons.verified : Icons.lock_outline),
+            isAdmin ? Icons.star : (isVIP ? Icons.workspace_premium : (subscribed ? Icons.verified : Icons.lock_outline)),
             color: AppColors.gold,
             size: 18,
           ),
           const SizedBox(width: 10),
           Text(
-            isAdmin ? "حساب الإدارة" : (subscribed ? "عضوية ذهبية VIP" : "باقة مجانية"),
+            isAdmin ? "حساب الإدارة" : (isVIP ? "عضوية VIP خاصة" : (subscribed ? "عضوية ذهبية VIP" : "باقة مجانية")),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -617,7 +618,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _statsCard(bool isAdmin, bool subscribed, int xp, int streak) {
+  Widget _statsCard(bool isAdmin, bool subscribed, bool isVIP, int xp, int streak) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
       padding: const EdgeInsets.all(18),
@@ -632,7 +633,7 @@ class _HomePageState extends State<HomePage>
           _statItem("XP", xp.toString(), Icons.bolt_rounded),
           _statItem(
             "الحالة",
-            isAdmin ? "إدارة" : (subscribed ? "ذهبي VIP" : "Free"),
+            isAdmin ? "إدارة" : (isVIP ? "VIP" : (subscribed ? "ذهبي VIP" : "Free")),
             Icons.shield_outlined,
           ),
           _statItem("Streak", "$streak يوم", Icons.local_fire_department_rounded),

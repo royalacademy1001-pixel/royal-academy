@@ -230,6 +230,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   void calculateAccess(String userId) {
     bool isAdmin = userData?['isAdmin'] == true;
     bool subscribed = userData?['subscribed'] == true;
+    bool isVIP = userData?['isVIP'] == true;
     bool blocked = userData?['blocked'] == true;
     bool instructorApproved = userData?['instructorApproved'] == true;
 
@@ -254,6 +255,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
     hasAccess = !blocked &&
         (isAdmin ||
+            isVIP ||
             instructorApproved ||
             (subscribed && validSubscription) ||
             unlocked.contains(widget.courseId) ||

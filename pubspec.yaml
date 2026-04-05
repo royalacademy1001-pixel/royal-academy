@@ -61,6 +61,8 @@ dependencies:
 
   fl_chart: ^0.68.0
 
+  mobile_scanner: ^5.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -14,14 +14,21 @@ class MainActivity: FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 🔒 منع تصوير الشاشة
         window.setFlags(
             WindowManager.LayoutParams.FLAG_SECURE,
             WindowManager.LayoutParams.FLAG_SECURE
         )
 
-        // 🔔 إنشاء Notification Channel (مهم جدًا Android 8+)
         createNotificationChannel()
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_SECURE,
+            WindowManager.LayoutParams.FLAG_SECURE
+        )
     }
 
     private fun createNotificationChannel() {

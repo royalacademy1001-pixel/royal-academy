@@ -1,5 +1,3 @@
-// 🔥 FINAL PRO STUDENT ITEM (ULTRA UI)
-
 import 'package:flutter/material.dart';
 import '../../core/colors.dart';
 
@@ -12,6 +10,8 @@ class StudentItem extends StatelessWidget {
   final VoidCallback onVip;
   final Function(bool) onBlock;
   final VoidCallback onEdit;
+  final VoidCallback onLink;
+  final VoidCallback onResult;
 
   final String? extraInfo;
 
@@ -24,6 +24,8 @@ class StudentItem extends StatelessWidget {
     required this.onVip,
     required this.onBlock,
     required this.onEdit,
+    required this.onLink,
+    required this.onResult,
     this.extraInfo,
   });
 
@@ -61,11 +63,9 @@ class StudentItem extends StatelessWidget {
       child: Column(
         children: [
 
-          /// 🔥 HEADER
           Row(
             children: [
 
-              /// 👤 AVATAR
               CircleAvatar(
                 radius: 28,
                 backgroundColor: AppColors.gold,
@@ -78,7 +78,6 @@ class StudentItem extends StatelessWidget {
 
               const SizedBox(width: 12),
 
-              /// 📄 INFO
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +120,6 @@ class StudentItem extends StatelessWidget {
                 ),
               ),
 
-              /// ⚙ SETTINGS
               IconButton(
                 icon: const Icon(Icons.settings,
                     color: Colors.blue),
@@ -132,7 +130,6 @@ class StudentItem extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          /// 🔥 ACTION BUTTONS (PRO STYLE)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -162,14 +159,24 @@ class StudentItem extends StatelessWidget {
                 color: Colors.red,
                 onTap: () => onBlock(blocked),
               ),
+
+              actionBtn(
+                icon: Icons.link,
+                color: Colors.blue,
+                onTap: onLink,
+              ),
+
+              actionBtn(
+                icon: Icons.bar_chart,
+                color: Colors.purple,
+                onTap: onResult,
+              ),
             ],
           )
         ],
       ),
     );
   }
-
-  // ================= UI HELPERS =================
 
   Widget badge(String text, Color color) {
     return Container(

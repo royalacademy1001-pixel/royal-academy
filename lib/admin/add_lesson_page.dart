@@ -74,22 +74,14 @@ class _AddLessonPageState extends State<AddLessonPage> {
           .doc(user.uid)
           .get();
 
-      teachingCourses = doc.data()?['teachingCourses'] ?? [];
+      teachingCourses = List<String>.from(doc.data()?['teachingCourses'] ?? []);
       setState(() {});
     } catch (_) {}
   }
 
   Stream<QuerySnapshot> getCourses() {
-    if (teachingCourses.isEmpty) {
-      return FirebaseService.firestore
-          .collection(AppConstants.courses)
-          .where(FieldPath.documentId, whereIn: ["__none__"])
-          .snapshots();
-    }
-
     return FirebaseService.firestore
         .collection(AppConstants.courses)
-        .where(FieldPath.documentId, whereIn: teachingCourses)
         .snapshots();
   }
 
@@ -393,8 +385,21 @@ if (selectedBytes != null || selectedFile != null) {
                     String title =
                         (data['title'] ?? "").toLowerCase();
 
-                    return title.contains(searchText.toLowerCase());
+                    bool allowed = teachingCourses.isEmpty
+                        ? true
+                        : teachingCourses.contains(c.id);
+
+                    return allowed && title.contains(searchText.toLowerCase());
                   }).toList();
+
+                  if (filtered.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "لا توجد كورسات متاحة",
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    );
+                  }
 
                   return ListView.builder(
                     itemCount: filtered.length,

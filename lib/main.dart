@@ -225,7 +225,24 @@ class _RoyalAppState extends State<RoyalApp> {
         }
 
         if (snapshot.hasData) {
-          return const MainNavigationPage();
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseService.firestore
+                .collection(AppConstants.users)
+                .doc(snapshot.data!.uid)
+                .get(),
+            builder: (context, userSnapshot) {
+
+              if (!userSnapshot.hasData) {
+                return const SplashPage();
+              }
+
+              final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+
+              final isVIP = data?['isVIP'] == true;
+
+              return const MainNavigationPage();
+            },
+          );
         }
 
         return const LoginPage();

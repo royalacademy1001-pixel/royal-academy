@@ -4,7 +4,7 @@ import '../../core/colors.dart';
 import 'students_management_page.dart';
 import 'attendance_report_page.dart';
 import 'students_crm_page.dart';
-import 'payments_admin_page.dart';
+import 'student_financial_page.dart';
 import 'top_students_page.dart';
 import 'package:royal_academy/admin/pages/attendance_take_page.dart';
 
@@ -36,16 +36,23 @@ class CenterManagementPage extends StatelessWidget {
 
             _card(
               context,
-              "📅 الحضور",
-              Icons.fact_check,
+              "📅 تسجيل الحضور",
+              Icons.qr_code_scanner,
               const AttendanceTakePage(),
+            ),
+
+            _card(
+              context,
+              "📋 تقارير الحضور",
+              Icons.assignment,
+              const AttendanceReportPage(),
             ),
 
             _card(
               context,
               "💰 المصاريف",
               Icons.payments,
-              const PaymentsAdminPage(),
+              const StudentFinancialPage(),
             ),
 
             _card(

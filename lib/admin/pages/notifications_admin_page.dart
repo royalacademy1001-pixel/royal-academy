@@ -14,13 +14,10 @@ class NotificationsAdminPage extends StatefulWidget {
   const NotificationsAdminPage({super.key});
 
   @override
-  State<NotificationsAdminPage> createState() =>
-      _NotificationsAdminPageState();
+  State<NotificationsAdminPage> createState() => _NotificationsAdminPageState();
 }
 
-class _NotificationsAdminPageState
-    extends State<NotificationsAdminPage> {
-
+class _NotificationsAdminPageState extends State<NotificationsAdminPage> {
   final title = TextEditingController();
   final body = TextEditingController();
   final search = TextEditingController();
@@ -37,7 +34,6 @@ class _NotificationsAdminPageState
 
   // ================== SEND ==================
   Future sendNotification() async {
-
     if (sendingNow) return;
 
     final t = title.text.trim();
@@ -72,12 +68,10 @@ class _NotificationsAdminPageState
     });
 
     try {
-
-      final callable = FirebaseFunctions.instance
-          .httpsCallable("sendNotification");
+      final callable =
+          FirebaseFunctions.instance.httpsCallable("sendNotification");
 
       if (sendType == "all") {
-
         await FirebaseService.firestore
             .collection(AppConstants.notifications)
             .add({
@@ -97,7 +91,6 @@ class _NotificationsAdminPageState
       }
 
       if (sendType == "course") {
-
         var users = await FirebaseService.firestore
             .collection(AppConstants.users)
             .get();
@@ -132,7 +125,6 @@ class _NotificationsAdminPageState
       }
 
       if (sendType == "user") {
-
         await FirebaseService.firestore
             .collection(AppConstants.notifications)
             .add({
@@ -163,7 +155,6 @@ class _NotificationsAdminPageState
       });
 
       show("تم إرسال الإشعار 🔥");
-
     } catch (e) {
       show("حصل خطأ ❌");
     }
@@ -183,7 +174,6 @@ class _NotificationsAdminPageState
           .delete();
 
       show("تم الحذف ❌");
-
     } catch (_) {
       show("فشل الحذف ❌");
     }
@@ -205,12 +195,10 @@ class _NotificationsAdminPageState
 
   @override
   Widget build(BuildContext context) {
-
     final query = search.text.trim().toLowerCase();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text(
           "🔔 إدارة الإشعارات",
@@ -220,18 +208,16 @@ class _NotificationsAdminPageState
         elevation: 0,
         centerTitle: true,
       ),
-
       body: Stack(
         children: [
           SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
             child: Column(
               children: [
-
                 _buildSendCard(),
-
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
                   child: TextField(
                     controller: search,
                     onChanged: (_) => setState(() {}),
@@ -239,7 +225,6 @@ class _NotificationsAdminPageState
                     decoration: input("🔍 ابحث في السجل..."),
                   ),
                 ),
-
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 15),
                   child: Text(
@@ -251,14 +236,11 @@ class _NotificationsAdminPageState
                     ),
                   ),
                 ),
-
                 _buildHistory(query),
-
                 const SizedBox(height: 30),
               ],
             ),
           ),
-          
           if (loading)
             Container(
               color: Colors.black.withValues(alpha: 0.7),
@@ -286,7 +268,6 @@ class _NotificationsAdminPageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           Row(
             children: [
               const Icon(Icons.send_rounded, color: AppColors.gold, size: 20),
@@ -301,34 +282,30 @@ class _NotificationsAdminPageState
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
           TextField(
             controller: title,
             style: const TextStyle(color: AppColors.white),
             decoration: input("عنوان الإشعار"),
           ),
-
           const SizedBox(height: 12),
-
           TextField(
             controller: body,
             maxLines: 3,
             style: const TextStyle(color: AppColors.white),
             decoration: input("محتوى الإشعار التفصيلي"),
           ),
-
           const SizedBox(height: 12),
-
           DropdownButtonFormField<String>(
-            value: sendType,
+            initialValue: sendType, // ✅ بدل value
             dropdownColor: AppColors.black,
             style: const TextStyle(color: AppColors.white),
             decoration: input("إرسال إلى..."),
             items: const [
-              DropdownMenuItem(value: "all", child: Text("🌍 جميع مستخدمي التطبيق")),
-              DropdownMenuItem(value: "course", child: Text("🎓 طلاب كورس محدد")),
+              DropdownMenuItem(
+                  value: "all", child: Text("🌍 جميع مستخدمي التطبيق")),
+              DropdownMenuItem(
+                  value: "course", child: Text("🎓 طلاب كورس محدد")),
               DropdownMenuItem(value: "user", child: Text("👤 طالب معين فقط")),
             ],
             onChanged: (value) {
@@ -339,26 +316,26 @@ class _NotificationsAdminPageState
               });
             },
           ),
-
           const SizedBox(height: 12),
-
           if (sendType == "course") _buildCourseDropdown(),
           if (sendType == "user") _buildUserDropdown(),
-
           const SizedBox(height: 20),
-
           SizedBox(
             width: double.infinity,
             height: 55,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15)),
               ),
               onPressed: sendNotification,
               child: const Text(
                 "🚀 بث الإشعار الآن",
-                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16),
               ),
             ),
           ),
@@ -373,24 +350,28 @@ class _NotificationsAdminPageState
           .collection(AppConstants.courses)
           .snapshots(),
       builder: (context, snapshot) {
-
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+          return const Center(
+              child: CircularProgressIndicator(color: AppColors.gold));
         }
 
         return DropdownButtonFormField<String>(
-          value: selectedCourseId,
+          initialValue: selectedCourseId, // ✅ بدل value
           dropdownColor: AppColors.black,
           style: const TextStyle(color: AppColors.white),
           decoration: input("اختر الكورس المستهدف"),
           items: snapshot.data!.docs.map((c) {
             final data = c.data() as Map<String, dynamic>;
-            return DropdownMenuItem(
+            return DropdownMenuItem<String>(
               value: c.id,
               child: Text((data['title'] ?? "").toString()),
             );
           }).toList(),
-          onChanged: (v) => setState(() => selectedCourseId = v),
+          onChanged: (v) {
+            setState(() {
+              selectedCourseId = v;
+            });
+          },
         );
       },
     );
@@ -398,28 +379,31 @@ class _NotificationsAdminPageState
 
   Widget _buildUserDropdown() {
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.firestore
-          .collection(AppConstants.users)
-          .snapshots(),
+      stream:
+          FirebaseService.firestore.collection(AppConstants.users).snapshots(),
       builder: (context, snapshot) {
-
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+          return const Center(
+              child: CircularProgressIndicator(color: AppColors.gold));
         }
 
         return DropdownButtonFormField<String>(
-          value: selectedUserId,
+          initialValue: selectedUserId, // ✅ بدل value
           dropdownColor: AppColors.black,
           style: const TextStyle(color: AppColors.white),
           decoration: input("اختر الطالب المستهدف"),
           items: snapshot.data!.docs.map((u) {
             final data = u.data() as Map<String, dynamic>;
-            return DropdownMenuItem(
+            return DropdownMenuItem<String>(
               value: u.id,
               child: Text((data['email'] ?? "User").toString()),
             );
           }).toList(),
-          onChanged: (v) => setState(() => selectedUserId = v),
+          onChanged: (v) {
+            setState(() {
+              selectedUserId = v;
+            });
+          },
         );
       },
     );
@@ -432,9 +416,9 @@ class _NotificationsAdminPageState
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+          return const Center(
+              child: CircularProgressIndicator(color: AppColors.gold));
         }
 
         var list = snapshot.data!.docs;
@@ -452,9 +436,11 @@ class _NotificationsAdminPageState
           return Center(
             child: Column(
               children: [
-                Icon(Icons.history_toggle_off_rounded, size: 50, color: Colors.white.withValues(alpha: 0.1)),
+                Icon(Icons.history_toggle_off_rounded,
+                    size: 50, color: Colors.white.withValues(alpha: 0.1)),
                 const SizedBox(height: 10),
-                const Text("لا يوجد إشعارات في السجل", style: TextStyle(color: Colors.grey)),
+                const Text("لا يوجد إشعارات في السجل",
+                    style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -466,17 +452,14 @@ class _NotificationsAdminPageState
           physics: const NeverScrollableScrollPhysics(),
           itemCount: filtered.length,
           itemBuilder: (context, index) {
-
-            var data =
-                filtered[index].data() as Map<String, dynamic>;
+            var data = filtered[index].data() as Map<String, dynamic>;
 
             String type = (data['type'] ?? "all").toString();
 
             Timestamp? time = data['createdAt'];
 
             String date = time != null
-                ? DateFormat('yyyy/MM/dd | HH:mm')
-                    .format(time.toDate())
+                ? DateFormat('yyyy/MM/dd | HH:mm').format(time.toDate())
                 : "";
 
             return Container(
@@ -495,7 +478,6 @@ class _NotificationsAdminPageState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -504,15 +486,19 @@ class _NotificationsAdminPageState
                       (data['body'] ?? "").toString(),
                       style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
-
                     const SizedBox(height: 12),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: type == "all" ? Colors.blue.withValues(alpha: 0.1) : type == "course" ? Colors.orange.withValues(alpha: 0.1) : Colors.green.withValues(alpha: 0.1),
+                            color: type == "all"
+                                ? Colors.blue.withValues(alpha: 0.1)
+                                : type == "course"
+                                    ? Colors.orange.withValues(alpha: 0.1)
+                                    : Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -522,10 +508,13 @@ class _NotificationsAdminPageState
                                     ? "🎓 لطلاب كورس"
                                     : "👤 لطالب محدد",
                             style: TextStyle(
-                              color: type == "all" ? Colors.blue : type == "course" ? Colors.orange : Colors.green,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold
-                            ),
+                                color: type == "all"
+                                    ? Colors.blue
+                                    : type == "course"
+                                        ? Colors.orange
+                                        : Colors.green,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold),
                           ),
                         ),
                         Text(date,
@@ -535,9 +524,9 @@ class _NotificationsAdminPageState
                     ),
                   ],
                 ),
-
                 trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.redAccent, size: 22),
                   onPressed: () => deleteNotification(filtered[index].id),
                 ),
               ),

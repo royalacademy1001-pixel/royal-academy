@@ -1,5 +1,5 @@
-// 🔥 ADMIN NAVIGATION CONTROL (ULTRA PRO MAX)
-
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/firebase_service.dart';
@@ -15,9 +15,10 @@ class AdminNavigationControlPage extends StatefulWidget {
 
 class _AdminNavigationControlPageState
     extends State<AdminNavigationControlPage> {
-  List<Map<String, dynamic>> items = [];
+  final List<Map<String, dynamic>> items = [];
 
   bool loading = true;
+  bool saving = false;
 
   final titleController = TextEditingController();
   final idController = TextEditingController();
@@ -27,9 +28,9 @@ class _AdminNavigationControlPageState
 
   Set<String> roles = {"all"};
 
-  bool saving = false;
-
   String selectedPageId = "home";
+
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _navSub;
 
   final List<Map<String, dynamic>> availablePages = [
     {
@@ -39,28 +40,136 @@ class _AdminNavigationControlPageState
       "roles": ["all"],
     },
     {
+      "id": "dashboard",
+      "title": "لوحة التحكم",
+      "icon": "dashboard",
+      "roles": ["admin"],
+    },
+    {
+      "id": "center_management",
+      "title": "إدارة السنتر",
+      "icon": "building",
+      "roles": ["admin"],
+    },
+    {
+      "id": "attendance_take",
+      "title": "تسجيل الحضور",
+      "icon": "attendance",
+      "roles": ["admin", "instructor"],
+    },
+    {
+      "id": "attendance_report",
+      "title": "تقارير الحضور",
+      "icon": "report",
+      "roles": ["admin", "instructor"],
+    },
+    {
+      "id": "attendance_sessions",
+      "title": "جلسات الحضور",
+      "icon": "calendar",
+      "roles": ["admin", "instructor"],
+    },
+    {
       "id": "courses",
       "title": "الكورسات",
       "icon": "courses",
       "roles": ["all"],
     },
     {
-      "id": "payment",
-      "title": "الدفع",
-      "icon": "payment",
-      "roles": ["all"],
+      "id": "courses_admin",
+      "title": "إدارة الكورسات",
+      "icon": "courses",
+      "roles": ["admin"],
     },
     {
-      "id": "profile",
-      "title": "حسابي",
-      "icon": "profile",
-      "roles": ["all"],
+      "id": "subjects",
+      "title": "إدارة المواد",
+      "icon": "book",
+      "roles": ["admin"],
     },
     {
-      "id": "instructor",
-      "title": "لوحة المدرس",
-      "icon": "instructor",
-      "roles": ["instructor"],
+      "id": "subject_sessions",
+      "title": "حصص المادة",
+      "icon": "calendar",
+      "roles": ["admin", "instructor"],
+    },
+    {
+      "id": "students_management",
+      "title": "إدارة الطلاب",
+      "icon": "users",
+      "roles": ["admin"],
+    },
+    {
+      "id": "edit_student",
+      "title": "تعديل طالب",
+      "icon": "edit",
+      "roles": ["admin"],
+    },
+    {
+      "id": "students_crm",
+      "title": "CRM الطلاب",
+      "icon": "analytics",
+      "roles": ["admin"],
+    },
+    {
+      "id": "student_financial",
+      "title": "مصاريف الطالب",
+      "icon": "wallet",
+      "roles": ["admin"],
+    },
+    {
+      "id": "finance_reports",
+      "title": "تقارير مالية",
+      "icon": "money",
+      "roles": ["admin"],
+    },
+    {
+      "id": "top_students",
+      "title": "أفضل الطلاب",
+      "icon": "trophy",
+      "roles": ["admin"],
+    },
+    {
+      "id": "comments",
+      "title": "التعليقات",
+      "icon": "chat",
+      "roles": ["admin"],
+    },
+    {
+      "id": "analytics_dashboard",
+      "title": "تحليلات",
+      "icon": "analytics",
+      "roles": ["admin"],
+    },
+    {
+      "id": "instructor_requests_admin",
+      "title": "طلبات المدرسين",
+      "icon": "users",
+      "roles": ["admin"],
+    },
+    {
+      "id": "notifications",
+      "title": "الإشعارات",
+      "icon": "notifications",
+      "roles": ["admin"],
+    },
+    {
+      "id": "news",
+      "title": "الأخبار",
+      "icon": "news",
+      "roles": ["admin"],
+    },
+    {
+      "id": "users",
+      "title": "المستخدمين",
+      "icon": "users",
+      "roles": ["admin"],
+    },
+    {
+      "id": "verify_certificate",
+      "title": "التحقق من الشهادة",
+      "icon": "verify",
+      "roles": ["admin", "all"],
     },
     {
       "id": "admin_payments",
@@ -93,12 +202,6 @@ class _AdminNavigationControlPageState
       "roles": ["admin"],
     },
     {
-      "id": "admin_courses",
-      "title": "إدارة الكورسات",
-      "icon": "courses",
-      "roles": ["admin"],
-    },
-    {
       "id": "admin_categories",
       "title": "إدارة التصنيفات",
       "icon": "categories",
@@ -106,27 +209,27 @@ class _AdminNavigationControlPageState
     },
     {
       "id": "admin_notifications",
-      "title": "الإشعارات",
+      "title": "إدارة الإشعارات",
       "icon": "notifications",
       "roles": ["admin"],
     },
     {
-      "id": "admin_students",
-      "title": "إدارة الطلاب",
-      "icon": "users",
-      "roles": ["admin"],
+      "id": "profile",
+      "title": "حسابي",
+      "icon": "profile",
+      "roles": ["all"],
     },
     {
-      "id": "admin_news",
-      "title": "إدارة الأخبار",
-      "icon": "news",
-      "roles": ["admin"],
+      "id": "payment",
+      "title": "الدفع",
+      "icon": "payment",
+      "roles": ["all"],
     },
     {
-      "id": "admin_crm",
-      "title": "CRM",
-      "icon": "analytics",
-      "roles": ["admin"],
+      "id": "instructor",
+      "title": "لوحة المدرس",
+      "icon": "instructor",
+      "roles": ["instructor"],
     },
   ];
 
@@ -164,10 +267,18 @@ class _AdminNavigationControlPageState
       "enabled": true,
     },
     {
-      "id": "admin_crm",
-      "title": "CRM",
-      "icon": "analytics",
+      "id": "dashboard",
+      "title": "لوحة التحكم",
+      "icon": "dashboard",
       "order": 5,
+      "roles": ["admin"],
+      "enabled": true,
+    },
+    {
+      "id": "center_management",
+      "title": "إدارة السنتر",
+      "icon": "building",
+      "order": 6,
       "roles": ["admin"],
       "enabled": true,
     },
@@ -176,24 +287,77 @@ class _AdminNavigationControlPageState
   @override
   void initState() {
     super.initState();
-    listenData();
-    _applyTemplate(selectedPageId);
+    _bootstrap();
   }
 
   @override
   void dispose() {
+    _navSub?.cancel();
     titleController.dispose();
     idController.dispose();
     iconController.dispose();
     super.dispose();
   }
 
-  void _applyTemplate(String pageId) {
-    selectedPageId = pageId;
+  List<Map<String, dynamic>> _cloneItems(List<Map<String, dynamic>> source) {
+    return source.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
 
-    final existing = items.where((e) => e['id'] == pageId).toList();
-    final template = availablePages.firstWhere(
-      (e) => e['id'] == pageId,
+  List<Map<String, dynamic>> _normalizeItems(dynamic raw) {
+    if (raw is! List) return [];
+
+    final normalized = <Map<String, dynamic>>[];
+
+    for (final entry in raw) {
+      if (entry is! Map) continue;
+
+      final item = Map<String, dynamic>.from(entry);
+      item["id"] = (item["id"] ?? "").toString().trim();
+      item["title"] = (item["title"] ?? "").toString().trim();
+      item["icon"] = (item["icon"] ?? "settings").toString().trim();
+      item["order"] = item["order"] is int
+          ? item["order"]
+          : int.tryParse(item["order"]?.toString() ?? "") ?? 0;
+      item["enabled"] = item["enabled"] != false;
+
+      final rawRoles = item["roles"];
+      if (rawRoles is List) {
+        item["roles"] = rawRoles.map((e) => e.toString()).toList();
+      } else {
+        item["roles"] = ["all"];
+      }
+
+      normalized.add(item);
+    }
+
+    normalized.sort((a, b) {
+      final aOrder = a["order"] is int
+          ? a["order"] as int
+          : int.tryParse(a["order"]?.toString() ?? "") ?? 0;
+      final bOrder = b["order"] is int
+          ? b["order"] as int
+          : int.tryParse(b["order"]?.toString() ?? "") ?? 0;
+      return aOrder.compareTo(bOrder);
+    });
+
+    return normalized;
+  }
+
+  List<String> _normalizeRoles(dynamic raw) {
+    if (raw is List) {
+      final rolesList = raw
+          .map((e) => e.toString().trim())
+          .where((e) => e.isNotEmpty)
+          .toSet();
+      if (rolesList.isEmpty) return ["all"];
+      return rolesList.toList();
+    }
+    return ["all"];
+  }
+
+  Map<String, dynamic> _templateFor(String pageId) {
+    return availablePages.firstWhere(
+      (e) => e["id"] == pageId,
       orElse: () => {
         "id": pageId,
         "title": pageId,
@@ -201,166 +365,185 @@ class _AdminNavigationControlPageState
         "roles": ["all"],
       },
     );
+  }
 
-    if (existing.isNotEmpty) {
-      final item = existing.first;
-      idController.text = (item['id'] ?? template['id']).toString();
-      titleController.text = (item['title'] ?? template['title']).toString();
-      iconController.text = (item['icon'] ?? template['icon']).toString();
+  int _indexOfItem(String pageId) {
+    return items.indexWhere((e) => (e["id"] ?? "").toString() == pageId);
+  }
 
-      final rawRoles = item['roles'] ?? template['roles'] ?? ["all"];
-      roles = rawRoles is List
-          ? rawRoles.map((e) => e.toString()).toSet()
-          : {"all"};
+  void _applyTemplate(String pageId) {
+    selectedPageId = pageId;
 
-      order = item['order'] is int
-          ? item['order']
-          : int.tryParse(item['order']?.toString() ?? "") ?? items.length + 1;
+    final template = _templateFor(pageId);
+    final index = _indexOfItem(pageId);
+
+    if (index != -1) {
+      final item = items[index];
+      idController.text = (item["id"] ?? template["id"]).toString();
+      titleController.text = (item["title"] ?? template["title"]).toString();
+      iconController.text = (item["icon"] ?? template["icon"]).toString();
+      order = item["order"] is int
+          ? item["order"] as int
+          : int.tryParse(item["order"]?.toString() ?? "") ?? items.length + 1;
+      roles = _normalizeRoles(item["roles"] ?? template["roles"]).toSet();
     } else {
-      idController.text = template['id'].toString();
-      titleController.text = template['title'].toString();
-      iconController.text = template['icon'].toString();
-
-      final rawRoles = template['roles'] ?? ["all"];
-      roles = rawRoles is List
-          ? rawRoles.map((e) => e.toString()).toSet()
-          : {"all"};
-
+      idController.text = template["id"].toString();
+      titleController.text = template["title"].toString();
+      iconController.text = template["icon"].toString();
       order = items.length + 1;
+      roles = _normalizeRoles(template["roles"]).toSet();
     }
 
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
-  void listenData() {
-    FirebaseService.firestore
-        .collection("app_settings")
-        .doc("navigation")
-        .snapshots()
-        .listen((doc) async {
+  Future<void> _bootstrap() async {
+    final navRef =
+        FirebaseService.firestore.collection("app_settings").doc("navigation");
+
+    try {
+      final doc = await navRef.get();
+      if (!mounted) return;
+
       final data = doc.data();
+      final rawItems = data?["items"];
 
-      if (data == null || data['items'] == null) {
-        items = List.from(fallbackNav);
+      if (rawItems == null || rawItems is! List || rawItems.isEmpty) {
+        items
+          ..clear()
+          ..addAll(_cloneItems(fallbackNav));
 
-        await FirebaseService.firestore
-            .collection("app_settings")
-            .doc("navigation")
-            .set({
-          "items": items,
-        });
-
-        if (mounted) {
-          _applyTemplate(selectedPageId);
-          setState(() => loading = false);
-        }
-        return;
+        await navRef.set({
+          "items": _cloneItems(fallbackNav),
+        }, SetOptions(merge: true));
+      } else {
+        items
+          ..clear()
+          ..addAll(_normalizeItems(rawItems));
       }
 
-      List raw = data['items'];
+      _applyTemplate(selectedPageId);
 
-      if (raw.isEmpty) {
-        items = List.from(fallbackNav);
+      _navSub = navRef.snapshots().listen(
+        (snapshot) {
+          if (!mounted) return;
 
-        await FirebaseService.firestore
-            .collection("app_settings")
-            .doc("navigation")
-            .set({
-          "items": items,
-        });
+          final liveData = snapshot.data();
+          final liveItems = liveData?["items"];
 
-        if (mounted) {
+          final nextItems =
+              (liveItems == null || liveItems is! List || liveItems.isEmpty)
+                  ? _cloneItems(fallbackNav)
+                  : _normalizeItems(liveItems);
+
+          setState(() {
+            items
+              ..clear()
+              ..addAll(nextItems);
+          });
+
           _applyTemplate(selectedPageId);
-          setState(() => loading = false);
-        }
-        return;
-      }
-
-      raw = raw.where((e) => (e['enabled'] ?? true) == true).toList();
-
-      if (raw.isEmpty) {
-        items = List.from(fallbackNav);
-
-        await FirebaseService.firestore
-            .collection("app_settings")
-            .doc("navigation")
-            .set({
-          "items": items,
-        });
-
-        if (mounted) {
+        },
+        onError: (_) {
+          if (!mounted) return;
+          setState(() {
+            items
+              ..clear()
+              ..addAll(_cloneItems(fallbackNav));
+          });
           _applyTemplate(selectedPageId);
-          setState(() => loading = false);
-        }
-        return;
-      }
-
-      raw.sort((a, b) => (a['order'] ?? 0).compareTo(b['order'] ?? 0));
-
-      items = raw.cast<Map<String, dynamic>>();
+        },
+      );
 
       if (mounted) {
-        _applyTemplate(selectedPageId);
         setState(() => loading = false);
       }
-    }, onError: (e) {
-      items = List.from(fallbackNav);
-      if (mounted) {
-        _applyTemplate(selectedPageId);
-        setState(() => loading = false);
-      }
-    });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        items
+          ..clear()
+          ..addAll(_cloneItems(fallbackNav));
+        loading = false;
+      });
+      _applyTemplate(selectedPageId);
+    }
   }
 
-  Future saveAll() async {
-    saving = true;
-    setState(() {});
+  Future<void> saveAll() async {
+    if (saving) return;
 
-    final sortedItems = List<Map<String, dynamic>>.from(items);
-    sortedItems.sort((a, b) {
-      final aOrder = a['order'] is int
-          ? a['order']
-          : int.tryParse(a['order'].toString()) ?? 0;
-      final bOrder = b['order'] is int
-          ? b['order']
-          : int.tryParse(b['order'].toString()) ?? 0;
-      return aOrder.compareTo(bOrder);
-    });
+    if (!mounted) return;
+    setState(() => saving = true);
 
-    await FirebaseService.firestore
-        .collection("app_settings")
-        .doc("navigation")
-        .set({
-      "items": sortedItems,
-    });
+    try {
+      final sortedItems = _cloneItems(items);
+      sortedItems.sort((a, b) {
+        final aOrder = a["order"] is int
+            ? a["order"] as int
+            : int.tryParse(a["order"].toString()) ?? 0;
+        final bOrder = b["order"] is int
+            ? b["order"] as int
+            : int.tryParse(b["order"].toString()) ?? 0;
+        return aOrder.compareTo(bOrder);
+      });
 
-    saving = false;
-    setState(() {});
+      await FirebaseService.firestore
+          .collection("app_settings")
+          .doc("navigation")
+          .set({
+        "items": sortedItems,
+      }, SetOptions(merge: true));
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => saving = false);
+      }
+    }
   }
 
   void addItem() {
-    if (idController.text.trim().isEmpty) return;
+    final pageId = idController.text.trim();
+    final title = titleController.text.trim();
+    final icon = iconController.text.trim();
 
-    final index = items.indexWhere((e) => e['id'] == idController.text.trim());
+    if (pageId.isEmpty || title.isEmpty) return;
 
-    final data = {
-      "id": idController.text.trim(),
-      "title": titleController.text.trim(),
-      "icon": iconController.text.trim(),
+    final newItem = {
+      "id": pageId,
+      "title": title,
+      "icon": icon.isEmpty ? "settings" : icon,
       "order": order,
       "roles": roles.toList(),
       "enabled": true,
     };
 
+    final index = _indexOfItem(pageId);
+
     if (index != -1) {
-      items[index] = data;
+      items[index] = newItem;
     } else {
-      items.add(data);
+      items.add(newItem);
     }
+
+    items.sort((a, b) {
+      final aOrder = a["order"] is int
+          ? a["order"] as int
+          : int.tryParse(a["order"].toString()) ?? 0;
+      final bOrder = b["order"] is int
+          ? b["order"] as int
+          : int.tryParse(b["order"].toString()) ?? 0;
+      return aOrder.compareTo(bOrder);
+    });
 
     clearForm();
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void clearForm() {
@@ -373,9 +556,17 @@ class _AdminNavigationControlPageState
   }
 
   void deleteItem(int index) {
+    if (index < 0 || index >= items.length) return;
+    final item = items[index];
+    final isHome = (item["id"] ?? "").toString() == "home";
+    if (isHome) return;
+
     items.removeAt(index);
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void toggleRole(String role) {
@@ -384,44 +575,145 @@ class _AdminNavigationControlPageState
     } else {
       roles.add(role);
     }
-    setState(() {});
+
+    if (roles.isEmpty) {
+      roles = {"all"};
+    }
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void updateOrder(int index, int newOrder) {
-    items[index]['order'] = newOrder;
+    if (index < 0 || index >= items.length) return;
+    items[index]["order"] = newOrder <= 0 ? 1 : newOrder;
+    items.sort((a, b) {
+      final aOrder = a["order"] is int
+          ? a["order"] as int
+          : int.tryParse(a["order"].toString()) ?? 0;
+      final bOrder = b["order"] is int
+          ? b["order"] as int
+          : int.tryParse(b["order"].toString()) ?? 0;
+      return aOrder.compareTo(bOrder);
+    });
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void updateField(int index, String key, dynamic value) {
+    if (index < 0 || index >= items.length) return;
     items[index][key] = value;
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void toggleEnabled(int index) {
-    items[index]['enabled'] = !(items[index]['enabled'] ?? true);
+    if (index < 0 || index >= items.length) return;
+    items[index]["enabled"] = !(items[index]["enabled"] ?? true);
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void reorder(int oldIndex, int newIndex) {
     if (newIndex > oldIndex) newIndex--;
 
+    if (oldIndex < 0 ||
+        oldIndex >= items.length ||
+        newIndex < 0 ||
+        newIndex >= items.length) {
+      return;
+    }
+
     final item = items.removeAt(oldIndex);
     items.insert(newIndex, item);
 
     for (int i = 0; i < items.length; i++) {
-      items[i]['order'] = i + 1;
+      items[i]["order"] = i + 1;
     }
 
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget _iconPreview(String icon) {
+    return Icon(
+      _iconFromName(icon),
+      color: AppColors.gold,
+      size: 18,
+    );
+  }
+
+  IconData _iconFromName(String name) {
+    switch (name.toLowerCase()) {
+      case "home":
+        return Icons.home;
+      case "dashboard":
+        return Icons.dashboard;
+      case "building":
+      case "center":
+      case "management":
+        return Icons.apartment;
+      case "attendance":
+        return Icons.fact_check;
+      case "report":
+        return Icons.assignment;
+      case "calendar":
+        return Icons.calendar_month;
+      case "courses":
+        return Icons.school;
+      case "book":
+        return Icons.book;
+      case "users":
+        return Icons.group;
+      case "edit":
+        return Icons.edit;
+      case "wallet":
+        return Icons.account_balance_wallet;
+      case "money":
+      case "payment":
+        return Icons.payments;
+      case "trophy":
+        return Icons.emoji_events;
+      case "chat":
+        return Icons.chat_bubble_outline;
+      case "analytics":
+        return Icons.analytics;
+      case "notifications":
+        return Icons.notifications;
+      case "news":
+        return Icons.newspaper;
+      case "verify":
+        return Icons.verified;
+      case "settings":
+        return Icons.settings;
+      case "profile":
+        return Icons.person;
+      case "categories":
+        return Icons.category;
+      default:
+        return Icons.widgets;
+    }
   }
 
   Widget _pageSelector() {
+    final hasSelected =
+        availablePages.any((page) => page["id"].toString() == selectedPageId);
+
     return DropdownButtonFormField<String>(
-      value: selectedPageId,
+      initialValue: hasSelected ? selectedPageId : null, // ✅ بدل value
       dropdownColor: AppColors.black,
       decoration: InputDecoration(
         labelText: "اختار الصفحة",
@@ -433,11 +725,21 @@ class _AdminNavigationControlPageState
         ),
       ),
       items: availablePages.map((page) {
+        final id = page["id"].toString();
+        final title = page["title"].toString();
+        final icon = page["icon"].toString();
+
         return DropdownMenuItem<String>(
-          value: page['id'].toString(),
-          child: Text(
-            page['title'].toString(),
-            style: const TextStyle(color: Colors.white),
+          value: id,
+          child: Row(
+            children: [
+              _iconPreview(icon),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
           ),
         );
       }).toList(),
@@ -449,27 +751,217 @@ class _AdminNavigationControlPageState
   }
 
   void _moveUp(int index) {
-    if (index <= 0) return;
+    if (index <= 0 || index >= items.length) return;
+
     final temp = items[index - 1];
     items[index - 1] = items[index];
     items[index] = temp;
+
     for (int i = 0; i < items.length; i++) {
-      items[i]['order'] = i + 1;
+      items[i]["order"] = i + 1;
     }
+
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _moveDown(int index) {
-    if (index >= items.length - 1) return;
+    if (index < 0 || index >= items.length - 1) return;
+
     final temp = items[index + 1];
     items[index + 1] = items[index];
     items[index] = temp;
+
     for (int i = 0; i < items.length; i++) {
-      items[i]['order'] = i + 1;
+      items[i]["order"] = i + 1;
     }
+
     saveAll();
-    setState(() {});
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Widget roleChip(String role) {
+    final selected = roles.contains(role);
+
+    return GestureDetector(
+      onTap: () => toggleRole(role),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.gold : AppColors.black,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: selected ? AppColors.gold : Colors.white10),
+        ),
+        child: Text(
+          role,
+          style: TextStyle(color: selected ? Colors.black : Colors.white),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemCard(int index, Map<String, dynamic> item) {
+    final isHome = (item["id"] ?? "").toString() == "home";
+    final enabled = item["enabled"] ?? true;
+    final iconName = (item["icon"] ?? "settings").toString();
+    final title = (item["title"] ?? "").toString();
+    final itemId = (item["id"] ?? "").toString();
+    final itemOrder = item["order"]?.toString() ?? "0";
+    final itemRoles = item["roles"] is List
+        ? (item["roles"] as List).map((e) => e.toString()).toList()
+        : <String>[];
+
+    return Container(
+      key: ValueKey("${itemId}_$index"),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: AppColors.black.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    _iconPreview(iconName),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        title.isEmpty ? itemId : title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isHome)
+                Switch(
+                  value: enabled == true,
+                  onChanged: (_) => toggleEnabled(index),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Icon(Icons.lock, color: Colors.green),
+                ),
+              ReorderableDragStartListener(
+                index: index,
+                child: const Icon(
+                  Icons.drag_handle,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          TextFormField(
+            initialValue: title,
+            onChanged: (v) => updateField(index, "title", v),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "title",
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: iconName,
+            onChanged: (v) => updateField(index, "icon", v),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "icon name",
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: itemOrder,
+            keyboardType: TextInputType.number,
+            onChanged: (v) => updateOrder(index, int.tryParse(v) ?? 0),
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: "order",
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: ["all", "admin", "instructor", "vip", "user"]
+                .map(
+                  (r) => FilterChip(
+                    label: Text(r),
+                    selected: itemRoles.contains(r),
+                    onSelected: (_) {
+                      final updatedRoles = List<String>.from(itemRoles);
+
+                      if (updatedRoles.contains(r)) {
+                        updatedRoles.remove(r);
+                      } else {
+                        updatedRoles.add(r);
+                      }
+
+                      if (updatedRoles.isEmpty) {
+                        updatedRoles.add("all");
+                      }
+
+                      updateField(index, "roles", updatedRoles);
+                    },
+                  ),
+                )
+                .toList(),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.keyboard_arrow_up, color: Colors.white),
+                onPressed: () => _moveUp(index),
+              ),
+              IconButton(
+                icon:
+                    const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                onPressed: () => _moveDown(index),
+              ),
+              if (!isHome)
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => deleteItem(index),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -477,8 +969,10 @@ class _AdminNavigationControlPageState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("⚙️ التحكم في الناف بار",
-            style: TextStyle(color: AppColors.gold)),
+        title: const Text(
+          "⚙️ التحكم في الناف بار",
+          style: TextStyle(color: AppColors.gold),
+        ),
         backgroundColor: AppColors.black,
         actions: [
           if (saving)
@@ -488,7 +982,9 @@ class _AdminNavigationControlPageState
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    color: AppColors.gold, strokeWidth: 2),
+                  color: AppColors.gold,
+                  strokeWidth: 2,
+                ),
               ),
             )
         ],
@@ -503,7 +999,11 @@ class _AdminNavigationControlPageState
                     children: [
                       Container(
                         padding: const EdgeInsets.all(15),
-                        decoration: AppColors.premiumCard,
+                        decoration: BoxDecoration(
+                          color: AppColors.black.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.white10),
+                        ),
                         child: Column(
                           children: [
                             _pageSelector(),
@@ -511,32 +1011,53 @@ class _AdminNavigationControlPageState
                             TextField(
                               controller: idController,
                               style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                  hintText: "id (home, courses...)"),
+                              decoration: InputDecoration(
+                                hintText: "id (home, courses...)",
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                               onChanged: (v) {
+                                final trimmed = v.trim();
                                 final found = availablePages
-                                    .where((e) => e['id'] == v.trim())
+                                    .where((e) => e["id"] == trimmed)
                                     .toList();
                                 if (found.isNotEmpty &&
                                     titleController.text.isEmpty) {
                                   titleController.text =
-                                      found.first['title'].toString();
+                                      found.first["title"].toString();
                                   iconController.text =
-                                      found.first['icon'].toString();
+                                      found.first["icon"].toString();
                                 }
                               },
                             ),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: titleController,
                               style: const TextStyle(color: Colors.white),
-                              decoration:
-                                  const InputDecoration(hintText: "title"),
+                              decoration: InputDecoration(
+                                hintText: "title",
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
+                            const SizedBox(height: 8),
                             TextField(
                               controller: iconController,
                               style: const TextStyle(color: Colors.white),
-                              decoration:
-                                  const InputDecoration(hintText: "icon name"),
+                              decoration: InputDecoration(
+                                hintText: "icon name",
+                                filled: true,
+                                fillColor: Colors.white.withValues(alpha: 0.05),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
                             const SizedBox(height: 10),
                             Row(
@@ -551,7 +1072,10 @@ class _AdminNavigationControlPageState
                             ),
                             const SizedBox(height: 10),
                             ElevatedButton(
-                              style: AppColors.goldButton,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.gold,
+                                foregroundColor: Colors.black,
+                              ),
                               onPressed: addItem,
                               child: const Text("➕ إضافة"),
                             ),
@@ -565,152 +1089,12 @@ class _AdminNavigationControlPageState
                         buildDefaultDragHandles: false,
                         onReorder: reorder,
                         children: items.asMap().entries.map((entry) {
-                          int index = entry.key;
-                          var item = entry.value;
-
-                          final isHome =
-                              (item['id'] ?? "").toString() == "home";
-
-                          return Container(
-                            key: ValueKey("${item['id']}_$index"),
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(15),
-                            decoration: AppColors.premiumCard,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(item['title'] ?? "",
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold)),
-                                    ),
-                                    if (!isHome)
-                                      Switch(
-                                        value: item['enabled'] ?? true,
-                                        onChanged: (_) => toggleEnabled(index),
-                                      )
-                                    else
-                                      const Padding(
-                                        padding:
-                                            EdgeInsets.symmetric(horizontal: 8),
-                                        child: Icon(Icons.lock,
-                                            color: Colors.green),
-                                      ),
-                                    ReorderableDragStartListener(
-                                      index: index,
-                                      child: const Icon(
-                                        Icons.drag_handle,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 10),
-                                TextField(
-                                  controller: TextEditingController(
-                                      text: item['title']),
-                                  onChanged: (v) =>
-                                      updateField(index, "title", v),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                TextField(
-                                  controller:
-                                      TextEditingController(text: item['icon']),
-                                  onChanged: (v) =>
-                                      updateField(index, "icon", v),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                TextField(
-                                  controller: TextEditingController(
-                                      text: item['order'].toString()),
-                                  keyboardType: TextInputType.number,
-                                  onChanged: (v) =>
-                                      updateOrder(index, int.tryParse(v) ?? 0),
-                                  style: const TextStyle(color: Colors.white),
-                                ),
-                                const SizedBox(height: 10),
-                                Wrap(
-                                  spacing: 5,
-                                  children: [
-                                    "all",
-                                    "admin",
-                                    "instructor",
-                                    "vip",
-                                    "user"
-                                  ]
-                                      .map((r) => FilterChip(
-                                            label: Text(r),
-                                            selected: (item['roles'] ?? [])
-                                                .contains(r),
-                                            onSelected: (_) {
-                                              List list = item['roles'] ?? [];
-
-                                              if (list.contains(r)) {
-                                                list.remove(r);
-                                              } else {
-                                                list.add(r);
-                                              }
-
-                                              updateField(index, "roles", list);
-                                            },
-                                          ))
-                                      .toList(),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.keyboard_arrow_up,
-                                          color: Colors.white),
-                                      onPressed: () => _moveUp(index),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                          Icons.keyboard_arrow_down,
-                                          color: Colors.white),
-                                      onPressed: () => _moveDown(index),
-                                    ),
-                                    if (!isHome)
-                                      IconButton(
-                                        icon: const Icon(Icons.delete,
-                                            color: Colors.red),
-                                        onPressed: () => deleteItem(index),
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
+                          return _buildItemCard(entry.key, entry.value);
                         }).toList(),
                       )
                     ],
                   ),
                 ),
-    );
-  }
-
-  Widget roleChip(String role) {
-    bool selected = roles.contains(role);
-
-    return GestureDetector(
-      onTap: () => toggleRole(role),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.gold : AppColors.black,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          role,
-          style: TextStyle(color: selected ? Colors.black : Colors.white),
-        ),
-      ),
     );
   }
 }

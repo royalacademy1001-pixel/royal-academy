@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 import 'firebase_service.dart';
 import 'constants.dart';
 
@@ -169,7 +171,7 @@ class AdminStatsService {
       return result;
 
     } catch (e) {
-      print("🔥 ADMIN ERROR: $e");
+      debugPrint("🔥 ADMIN ERROR: $e");
 
       return _cache ??
           {

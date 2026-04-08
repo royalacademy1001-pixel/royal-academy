@@ -9,6 +9,7 @@ import 'notifications/notifications_page.dart';
 import 'leaderboard_page.dart';
 import 'admin/admin_page.dart';
 import 'admin/pages/center_management_page.dart';
+import 'instructor/instructor_dashboard_page.dart';
 
 import '../widgets/course_card.dart';
 
@@ -52,10 +53,23 @@ class _HomePageState extends State<HomePage>
   final ScrollController _scrollController = ScrollController();
   bool loading = true;
 
+  String role = "user";
+
   @override
   void initState() {
     super.initState();
     _init();
+  }
+
+  String _resolveRole(Map<String, dynamic> data) {
+    final resolvedRole = (data['role'] ?? "").toString().toLowerCase().trim();
+
+    if (resolvedRole.isNotEmpty) return resolvedRole;
+    if (data['isAdmin'] == true) return "admin";
+    if (data['instructorApproved'] == true) return "instructor";
+    if (data['isVIP'] == true) return "vip";
+    if (data['subscribed'] == true) return "subscribed";
+    return "user";
   }
 
   Future<void> _init() async {
@@ -63,6 +77,7 @@ class _HomePageState extends State<HomePage>
     if (user == null) return;
 
     userData = await FirebaseService.getUserData();
+    role = _resolveRole(userData ?? {});
 
     notificationStream = FirebaseService.firestore
         .collection(AppConstants.notifications)
@@ -75,6 +90,7 @@ class _HomePageState extends State<HomePage>
 
   Future<void> _refresh() async {
     userData = await FirebaseService.getUserData(refresh: true);
+    role = _resolveRole(userData ?? {});
     if (mounted) setState(() {});
   }
 
@@ -90,6 +106,11 @@ class _HomePageState extends State<HomePage>
     final status = (data['status'] ?? "").toString().toLowerCase();
     return approved || status == "approved";
   }
+
+  bool get isAdmin => role == "admin";
+  bool get isVIP => role == "vip";
+  bool get subscribed => role == "subscribed";
+  bool get isInstructor => role == "instructor";
 
   @override
   void dispose() {
@@ -113,11 +134,9 @@ class _HomePageState extends State<HomePage>
       return _skeleton();
     }
 
-    final bool isAdmin = userData!['isAdmin'] == true;
-    final bool isVIP = userData!['isVIP'] == true;
-    final bool subscribed = userData!['subscribed'] == true;
     final String userName =
-        (userData!['name'] ?? userData!['displayName'] ?? "أهلاً بيك").toString();
+        (userData!['name'] ?? userData!['displayName'] ?? "أهلاً بيك")
+            .toString();
     final int userXP = userData!['xp'] ?? 0;
     final int streak = userData!['streak'] ?? 0;
 
@@ -172,8 +191,8 @@ class _HomePageState extends State<HomePage>
                   elevation: 0,
                   flexibleSpace: FlexibleSpaceBar(
                     centerTitle: false,
-                    titlePadding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    titlePadding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 15),
                     title: Text(
                       greeting(),
                       style: const TextStyle(
@@ -197,7 +216,9 @@ class _HomePageState extends State<HomePage>
                         _hero(userName),
                         _vipCard(isAdmin, subscribed, isVIP),
                         _statsCard(isAdmin, subscribed, isVIP, userXP, streak),
-                        if (!subscribed && !isAdmin && !isVIP) _subscribeBanner(),
+                        if (isAdmin) _adminDashboards(),
+                        if (!subscribed && !isAdmin && !isVIP)
+                          _subscribeBanner(),
                         _newsSection(),
                         _continueWatching(),
                         _recommended(),
@@ -219,6 +240,99 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  Widget _adminDashboards() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _title("🛠 لوحات الإدارة"),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          child: Column(
+            children: [
+              _adminCard(
+                "🏫 إدارة السنتر",
+                "كل الصفحات الخاصة بالسنتر والـ VIP",
+                () {
+                  _NavGuard.go(() => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const CenterManagementPage()),
+                      ));
+                },
+              ),
+              const SizedBox(height: 12),
+              _adminCard(
+                "💻 إدارة التطبيق",
+                "كل صفحات إدارة البرنامج الأونلاين",
+                () {
+                  _NavGuard.go(() => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AdminPage()),
+                      ));
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _adminCard(String title, String subtitle, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF151515),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child:
+                  const Icon(Icons.dashboard, color: AppColors.gold, size: 30),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white70),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _newsSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseService.firestore
@@ -227,7 +341,8 @@ class _HomePageState extends State<HomePage>
           .limit(5)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const SizedBox();
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+          return const SizedBox();
 
         final docs = snapshot.data!.docs;
 
@@ -243,7 +358,8 @@ class _HomePageState extends State<HomePage>
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
                   final data = docs[index].data() as Map<String, dynamic>;
-                  final image = FirebaseService.fixImage((data['image'] ?? "").toString());
+                  final image = FirebaseService.fixImage(
+                      (data['image'] ?? "").toString());
                   final title = (data['title'] ?? "").toString();
 
                   return GestureDetector(
@@ -253,7 +369,8 @@ class _HomePageState extends State<HomePage>
                       margin: const EdgeInsets.only(right: 15),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(25),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.1)),
                         color: const Color(0xFF151515),
                       ),
                       child: ClipRRect(
@@ -327,13 +444,15 @@ class _HomePageState extends State<HomePage>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Dialog(
           backgroundColor: AppColors.black.withValues(alpha: 0.8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (image.isNotEmpty)
                 ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
                   child: CachedNetworkImage(
                     imageUrl: image,
                     fit: BoxFit.cover,
@@ -371,7 +490,8 @@ class _HomePageState extends State<HomePage>
         if (snapshot.hasData && user != null) {
           count = snapshot.data!.docs.where((doc) {
             final data = doc.data() as Map<String, dynamic>;
-            return (data['userId'] == user.uid || data['type'] == "all") && !(data['seen'] ?? false);
+            return (data['userId'] == user.uid || data['type'] == "all") &&
+                !(data['seen'] ?? false);
           }).length;
         }
 
@@ -396,7 +516,8 @@ class _HomePageState extends State<HomePage>
                     color: Colors.red,
                     shape: BoxShape.circle,
                   ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                  constraints:
+                      const BoxConstraints(minWidth: 16, minHeight: 16),
                   child: Text(
                     count > 9 ? "9+" : count.toString(),
                     style: const TextStyle(
@@ -457,6 +578,14 @@ class _HomePageState extends State<HomePage>
                   MaterialPageRoute(builder: (_) => const LeaderboardPage()),
                 ));
           }),
+          if (isInstructor || isAdmin)
+            _btn("لوحة المدرس", "assets/images/instructor.png", () {
+              _NavGuard.go(() => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const InstructorDashboardPage()),
+                  ));
+            }),
           if (isAdmin)
             _btn("Admin", "assets/images/admin.png", () {
               _NavGuard.go(() => Navigator.push(
@@ -468,7 +597,8 @@ class _HomePageState extends State<HomePage>
             _btn("إدارة السنتر", "assets/images/admin.png", () {
               _NavGuard.go(() => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const CenterManagementPage()),
+                    MaterialPageRoute(
+                        builder: (_) => const CenterManagementPage()),
                   ));
             }),
         ],
@@ -492,8 +622,8 @@ class _HomePageState extends State<HomePage>
               asset,
               width: 40,
               height: 40,
-              errorBuilder: (_, __, ___) =>
-                  Icon(Icons.image_not_supported, color: AppColors.gold.withValues(alpha: 0.7), size: 35),
+              errorBuilder: (_, __, ___) => Icon(Icons.image_not_supported,
+                  color: AppColors.gold.withValues(alpha: 0.7), size: 35),
             ),
             const SizedBox(height: 12),
             Text(
@@ -606,13 +736,21 @@ class _HomePageState extends State<HomePage>
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isAdmin ? Icons.star : (isVIP ? Icons.workspace_premium : (subscribed ? Icons.verified : Icons.lock_outline)),
+            isAdmin
+                ? Icons.star
+                : (isVIP
+                    ? Icons.workspace_premium
+                    : (subscribed ? Icons.verified : Icons.lock_outline)),
             color: AppColors.gold,
             size: 18,
           ),
           const SizedBox(width: 10),
           Text(
-            isAdmin ? "حساب الإدارة" : (isVIP ? "عضوية VIP خاصة" : (subscribed ? "عضوية ذهبية VIP" : "باقة مجانية")),
+            isAdmin
+                ? "حساب الإدارة"
+                : (isVIP
+                    ? "عضوية VIP سنتر"
+                    : (subscribed ? "عضوية اشتراك أونلاين" : "باقة مجانية")),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
@@ -624,7 +762,8 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _statsCard(bool isAdmin, bool subscribed, bool isVIP, int xp, int streak) {
+  Widget _statsCard(
+      bool isAdmin, bool subscribed, bool isVIP, int xp, int streak) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
       padding: const EdgeInsets.all(18),
@@ -639,10 +778,13 @@ class _HomePageState extends State<HomePage>
           _statItem("XP", xp.toString(), Icons.bolt_rounded),
           _statItem(
             "الحالة",
-            isAdmin ? "إدارة" : (isVIP ? "VIP" : (subscribed ? "ذهبي VIP" : "Free")),
+            isAdmin
+                ? "إدارة"
+                : (isVIP ? "VIP" : (subscribed ? "مشترك" : "Free")),
             Icons.shield_outlined,
           ),
-          _statItem("Streak", "$streak يوم", Icons.local_fire_department_rounded),
+          _statItem(
+              "Streak", "$streak يوم", Icons.local_fire_department_rounded),
         ],
       ),
     );
@@ -678,7 +820,8 @@ class _HomePageState extends State<HomePage>
           backgroundColor: AppColors.gold,
           foregroundColor: Colors.black,
           padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           elevation: 5,
         ),
         onPressed: () => _NavGuard.go(() => Navigator.push(
@@ -704,7 +847,8 @@ class _HomePageState extends State<HomePage>
           .limit(1)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) return const SizedBox();
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty)
+          return const SizedBox();
 
         final courseId = snapshot.data!.docs.first['courseId'];
 
@@ -785,51 +929,51 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _courses() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseService.firestore
-          .collection(AppConstants.courses)
-          .orderBy("createdAt", descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppColors.gold),
+    return SizedBox(
+      height: 300,
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseService.firestore
+            .collection(AppConstants.courses)
+            .orderBy("createdAt", descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox();
+
+          final courses = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return _isVisibleCourse(data);
+          }).toList();
+
+          if (courses.isEmpty) {
+            return const Center(
+              child: Text(
+                "🚫 لا يوجد كورسات حالياً",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          return ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            itemCount: courses.length,
+            itemBuilder: (context, index) {
+              final course = courses[index];
+
+              return Container(
+                width: 240,
+                margin: const EdgeInsets.only(right: 8),
+                child: CourseCard(
+                  id: course.id,
+                  data: course.data() as Map<String, dynamic>,
+                  doneLessons: 0,
+                  hasAccess: true,
+                ),
+              );
+            },
           );
-        }
-
-        final courses = snapshot.data!.docs.where((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return _isVisibleCourse(data);
-        }).toList();
-
-        if (courses.isEmpty) {
-          return const Center(
-            child: Text(
-              "🚫 لا يوجد كورسات حالياً",
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        }
-
-        return GridView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: courses.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            mainAxisExtent: 290,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemBuilder: (context, index) => CourseCard(
-            id: courses[index].id,
-            data: courses[index].data() as Map<String, dynamic>,
-            doneLessons: 0,
-            hasAccess: true,
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 

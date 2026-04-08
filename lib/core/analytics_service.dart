@@ -1,8 +1,26 @@
+// 🔥 IMPORTS FIRST
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
 
 class AnalyticsService {
+
+  static bool _locked = false;
+  static DateTime? _lastEventTime;
+
+  static bool _canLog() {
+    final now = DateTime.now();
+
+    if (_locked) return false;
+
+    if (_lastEventTime != null &&
+        now.difference(_lastEventTime!).inMilliseconds < 300) {
+      return false;
+    }
+
+    _lastEventTime = now;
+    return true;
+  }
 
   static Future<void> init() async {
     try {
@@ -12,139 +30,148 @@ class AnalyticsService {
     }
   }
 
-  static Future<void> logEvent(String name,
-      {Map<String, Object?>? params}) async {
+  static Future<void> _log(Map<String, dynamic> data) async {
     try {
 
-      final user = FirebaseService.auth.currentUser;
+      if (!_canLog()) return;
 
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": name,
-        "userId": user?.uid,
-        "params": params ?? {},
+      final user = FirebaseService.auth.currentUser;
+      final firestore = FirebaseService.firestore;
+
+      final payload = {
+        ...data,
+        "userId": user?.uid ?? "",
         "timestamp": FieldValue.serverTimestamp(),
-      });
+      };
+
+      await firestore.collection("analytics_events").add(payload);
+
     } catch (e) {
-      debugPrint("🔥 Analytics Event Error: $e");
+      debugPrint("🔥 Analytics Error: $e");
     }
+  }
+
+  static Future<void> logEvent(String name,
+      {Map<String, Object?>? params}) async {
+
+    await _log({
+      "type": name,
+      "params": params ?? {},
+    });
   }
 
   static Future<void> logScreen(String name) async {
-    try {
-
-      final user = FirebaseService.auth.currentUser;
-
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "screen_view",
-        "screen": name,
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      debugPrint("🔥 Screen Error: $e");
-    }
+    await _log({
+      "type": "screen_view",
+      "screen": name,
+    });
   }
 
   static Future<void> logLogin() async {
-    try {
+    await _log({
+      "type": "login",
+    });
+  }
 
-      final user = FirebaseService.auth.currentUser;
-
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "login",
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      debugPrint("🔥 Login Error: $e");
-    }
+  static Future<void> logRegister() async {
+    await _log({
+      "type": "register",
+    });
   }
 
   static Future<void> logCourseView(String courseId, {String? title}) async {
+
+    final firestore = FirebaseService.firestore;
+
     try {
+
+      if (!_canLog()) return;
 
       final user = FirebaseService.auth.currentUser;
 
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "course_view",
+      final baseData = {
         "courseId": courseId,
-        "courseTitle": title,
-        "userId": user?.uid,
+        "courseTitle": title ?? "",
+        "userId": user?.uid ?? "",
         "timestamp": FieldValue.serverTimestamp(),
+      };
+
+      final batch = firestore.batch();
+
+      final ref1 = firestore.collection("analytics_events").doc();
+      final ref2 = firestore.collection("analytics_events").doc();
+
+      batch.set(ref1, {
+        ...baseData,
+        "type": "course_view",
       });
 
-      await FirebaseService.firestore.collection("analytics_events").add({
+      batch.set(ref2, {
+        ...baseData,
         "type": "course_view_extra",
-        "courseId": courseId,
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
       });
+
+      await batch.commit();
+
     } catch (e) {
       debugPrint("🔥 Course View Error: $e");
     }
   }
 
   static Future<void> logLessonOpen(String lessonId, {String? courseId}) async {
-    try {
-
-      final user = FirebaseService.auth.currentUser;
-
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "lesson_open",
-        "lessonId": lessonId,
-        "courseId": courseId,
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      debugPrint("🔥 Lesson Open Error: $e");
-    }
+    await _log({
+      "type": "lesson_open",
+      "lessonId": lessonId,
+      "courseId": courseId ?? "",
+    });
   }
 
   static Future<void> logPurchase(int amount, {String? courseId}) async {
+
+    final firestore = FirebaseService.firestore;
+
     try {
+
+      if (!_canLog()) return;
 
       final user = FirebaseService.auth.currentUser;
 
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "purchase",
+      final baseData = {
         "amount": amount,
-        "courseId": courseId,
-        "userId": user?.uid,
+        "courseId": courseId ?? "",
+        "userId": user?.uid ?? "",
         "timestamp": FieldValue.serverTimestamp(),
+      };
+
+      final batch = firestore.batch();
+
+      final ref1 = firestore.collection("analytics_events").doc();
+      final ref2 = firestore.collection("analytics_events").doc();
+
+      batch.set(ref1, {
+        ...baseData,
+        "type": "purchase",
       });
 
-      await FirebaseService.firestore.collection("analytics_events").add({
+      batch.set(ref2, {
+        ...baseData,
         "type": "purchase_log",
-        "amount": amount,
-        "courseId": courseId,
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
       });
+
+      await batch.commit();
+
     } catch (e) {
       debugPrint("🔥 Purchase Error: $e");
     }
   }
 
-  static Future<void> logRegister() async {
-    try {
-
-      final user = FirebaseService.auth.currentUser;
-
-      await FirebaseService.firestore.collection("analytics_events").add({
-        "type": "register",
-        "userId": user?.uid,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      debugPrint("🔥 Register Error: $e");
-    }
-  }
-
   static Future<void> trackUserActive() async {
-    try {
-      final user = FirebaseService.auth.currentUser;
 
+    try {
+
+      if (!_canLog()) return;
+
+      final user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
       await FirebaseService.firestore.collection("analytics_events").add({
@@ -152,6 +179,7 @@ class AnalyticsService {
         "userId": user.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
+
     } catch (e) {
       debugPrint("🔥 Active User Error: $e");
     }

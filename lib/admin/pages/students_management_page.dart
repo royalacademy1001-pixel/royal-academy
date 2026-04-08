@@ -1,6 +1,6 @@
+// 🔥 IMPORTS FIRST
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:ui';
 
 // 🔥 Core
 import '../../core/firebase_service.dart';
@@ -25,14 +25,16 @@ class StudentsManagementPage extends StatefulWidget {
 class _StudentsManagementPageState extends State<StudentsManagementPage> {
   bool loading = false;
   bool actionLock = false;
+
   String search = "";
-  String filter = "all";
+
+  final ScrollController _scroll = ScrollController();
 
   void show(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
+        content: Text(msg),
         backgroundColor: AppColors.gold,
         behavior: SnackBarBehavior.floating,
       ),
@@ -41,18 +43,34 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
 
   Future runSafe(Future Function() action) async {
     if (loading || actionLock) return;
+
     actionLock = true;
     setState(() => loading = true);
+
     try {
       await action();
     } catch (e) {
       debugPrint("Students Error: $e");
-      show("حدث خطأ غير متوقع ❌");
+      show("حدث خطأ ❌");
     }
+
     if (mounted) setState(() => loading = false);
     actionLock = false;
   }
 
+  // 🔥 حضور
+  Future<void> _markAttendance(String userId) async {
+    await runSafe(() async {
+      await FirebaseService.firestore.collection("attendance").add({
+        "userId": userId,
+        "date": FieldValue.serverTimestamp(),
+        "status": "present",
+      });
+      show("تم تسجيل الحضور ✅");
+    });
+  }
+
+  // 🔥 إضافة نتيجة (متوافق مع multi select)
   Future<void> _addResult(String userId) async {
     final scoreController = TextEditingController();
     String? selectedCourseId;
@@ -61,8 +79,10 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
       context,
       userId: userId,
       unlock: false,
-      onSelect: (courseId) async {
-        selectedCourseId = courseId;
+      onSelect: (courseIds) async {
+        if (courseIds.isEmpty) return;
+
+        selectedCourseId = courseIds.first;
 
         showDialog(
           context: context,
@@ -74,9 +94,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
               controller: scoreController,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: "ادخل الدرجة",
-              ),
+              decoration: const InputDecoration(hintText: "ادخل الدرجة"),
             ),
             actions: [
               TextButton(
@@ -86,7 +104,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
               ElevatedButton(
                 onPressed: () async {
                   int score = int.tryParse(scoreController.text) ?? 0;
-
                   if (score <= 0) return;
 
                   await runSafe(() async {
@@ -112,151 +129,65 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
   }
 
   Future<void> _linkStudent(String userId) async {
-    if (!mounted) return;
-
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-
-    String? selectedStudentId;
-    String selectedName = "";
-    String selectedPhone = "";
-
     final studentsSnap = await FirebaseService.firestore
         .collection("students")
         .orderBy("createdAt", descending: true)
         .get();
 
-    if (!mounted) return;
-
     final students = studentsSnap.docs;
 
-    showDialog(
+    if (!mounted) return;
+
+    Map<String, dynamic>? selected;
+
+    await showDialog(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            backgroundColor: AppColors.black,
-            title: const Text("🔗 ربط الطالب",
-                style: TextStyle(color: Colors.white)),
-            content: SingleChildScrollView(
-              child: Column(
-                children: [
-                  TextField(
-                    controller: nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(hintText: "الاسم (يدوي)"),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: phoneController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration:
-                        const InputDecoration(hintText: "الموبايل (يدوي)"),
-                  ),
-                  const SizedBox(height: 20),
-                  const Text("أو اختر من القائمة",
-                      style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      itemCount: students.length,
-                      itemBuilder: (context, index) {
-                        final s = students[index];
-                        final data = s.data();
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.black,
+        title:
+            const Text("🔗 ربط الطالب", style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          height: 300,
+          child: ListView.builder(
+            itemCount: students.length,
+            itemBuilder: (context, index) {
+              final s = students[index];
+              final data = s.data();
 
-                        return ListTile(
-                          title: Text(data['name'] ?? "",
-                              style: const TextStyle(color: Colors.white)),
-                          subtitle: Text(data['phone'] ?? "",
-                              style: const TextStyle(color: Colors.grey)),
-                          onTap: () {
-                            selectedStudentId = s.id;
-                            selectedName = data['name'] ?? "";
-                            selectedPhone = data['phone'] ?? "";
-
-                            nameController.text = selectedName;
-                            phoneController.text = selectedPhone;
-
-                            setState(() {});
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("إلغاء"),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  String name = nameController.text.trim();
-                  String phone = phoneController.text.trim();
-
-                  if (selectedStudentId != null) {
-                    name = selectedName;
-                    phone = selectedPhone;
-                  }
-
-                  if (name.isEmpty) return;
-
-                  QuerySnapshot existing = await FirebaseService.firestore
-                      .collection("students")
-                      .where("phone", isEqualTo: phone)
-                      .limit(1)
-                      .get();
-
-                  String finalStudentId;
-
-                  if (selectedStudentId != null) {
-                    finalStudentId = selectedStudentId!;
-                  } else if (existing.docs.isNotEmpty) {
-                    finalStudentId = existing.docs.first.id;
-                  } else {
-                    final newStudent = await FirebaseService.firestore
-                        .collection("students")
-                        .add({
-                      "name": name,
-                      "phone": phone,
-                      "createdAt": FieldValue.serverTimestamp(),
-                      "linkedUserId": userId,
-                    });
-                    finalStudentId = newStudent.id;
-                  }
-
-                  await FirebaseService.firestore
-                      .collection(AppConstants.users)
-                      .doc(userId)
-                      .set({
-                    "name": name,
-                    "phone": phone,
-                    "linked": true,
-                    "linkedByAdmin": true,
-                    "studentId": finalStudentId,
-                  }, SetOptions(merge: true));
-
-                  await FirebaseService.firestore
-                      .collection("students")
-                      .doc(finalStudentId)
-                      .set({
-                    "linkedUserId": userId,
-                  }, SetOptions(merge: true));
-
-                  if (!mounted) return;
+              return ListTile(
+                title: Text(data['name'] ?? "",
+                    style: const TextStyle(color: Colors.white)),
+                subtitle: Text(data['phone'] ?? "",
+                    style: const TextStyle(color: Colors.grey)),
+                onTap: () {
+                  selected = {
+                    "id": s.id,
+                    "name": data['name'],
+                    "phone": data['phone'],
+                  };
                   Navigator.pop(context);
-                  show("تم الربط بنجاح ✅");
                 },
-                child: const Text("حفظ"),
-              ),
-            ],
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
+
+    if (selected == null) return;
+
+    await FirebaseService.firestore
+        .collection(AppConstants.users)
+        .doc(userId)
+        .set({
+      "name": selected!["name"],
+      "phone": selected!["phone"],
+      "studentId": selected!["id"],
+    }, SetOptions(merge: true));
+
+    if (!mounted) return;
+
+    show("تم الربط ✅");
   }
 
   @override
@@ -264,88 +195,60 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text("🎓 إدارة شؤون الطلاب",
-            style: TextStyle(
-                color: AppColors.gold,
-                fontWeight: FontWeight.bold,
-                fontSize: 18)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
+        title: const Text("🎓 إدارة الطلاب",
+            style: TextStyle(color: AppColors.gold)),
+        backgroundColor: Colors.black,
       ),
       body: Stack(
         children: [
           Column(
             children: [
-              _buildHeaderSection(),
+              _header(),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseService.firestore
                       .collection(AppConstants.users)
                       .snapshots(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
+                    if (!snapshot.hasData) {
                       return const LoadingWidget();
                     }
 
-                    if (snapshot.hasError) {
-                      return _buildEmptyState("❌ حدث خطأ في تحميل المستخدمين");
-                    }
+                    var users = snapshot.data!.docs;
 
-                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return _buildEmptyState("لا يوجد مستخدمين حالياً");
-                    }
-
-                    var filteredUsers = snapshot.data!.docs.where((u) {
+                    var filtered = users.where((u) {
                       var data = u.data() as Map<String, dynamic>;
+
                       String email = (data['email'] ?? "").toLowerCase();
+
                       String name = (data['name'] ?? "").toLowerCase();
-                      bool vip = data['isVIP'] ?? false;
-                      bool blocked = data['blocked'] ?? false;
 
-                      bool matchSearch = email.contains(search.toLowerCase()) ||
+                      return email.contains(search.toLowerCase()) ||
                           name.contains(search.toLowerCase());
-                      bool matchFilter = (filter == "all") ||
-                          (filter == "vip" && vip) ||
-                          (filter == "blocked" && blocked);
-
-                      return matchSearch && matchFilter;
                     }).toList();
 
-                    if (filteredUsers.isEmpty) {
-                      return _buildEmptyState("لم نجد نتائج لهذا البحث");
-                    }
-
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      itemCount: filteredUsers.length,
-                      physics: const BouncingScrollPhysics(),
+                      controller: _scroll,
+                      itemCount: filtered.length,
                       itemBuilder: (context, index) {
-                        var u = filteredUsers[index];
+                        var u = filtered[index];
                         var data = u.data() as Map<String, dynamic>;
 
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: StudentItem(
-                            userId: u.id,
-                            data: data,
-                            extraInfo:
-                                "📚 ${data['enrolledCourses']?.length ?? 0} | 🔓 ${data['unlockedCourses']?.length ?? 0}",
-                            onEnroll: () => _handleEnroll(u.id, false),
-                            onUnlock: () => _handleEnroll(u.id, true),
-                            onVip: () =>
-                                _toggleVip(u.id, data['isVIP'] ?? false),
-                            onBlock: (isBlocked) =>
-                                _toggleBlock(u.id, isBlocked),
-                            onEdit: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => EditStudentPage(
-                                        userId: u.id, data: data))),
-                            onLink: () => _linkStudent(u.id),
-                            onResult: () => _addResult(u.id),
-                          ),
+                        return StudentItem(
+                          userId: u.id,
+                          data: data,
+                          onEnroll: () => _handleEnroll(u.id, false),
+                          onUnlock: () => _handleEnroll(u.id, true),
+                          onVip: () => _toggleVip(u.id, data['isVIP'] ?? false),
+                          onBlock: (b) => _toggleBlock(u.id, b),
+                          onEdit: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => EditStudentPage(
+                                      userId: u.id, data: data))),
+                          onLink: () => _linkStudent(u.id),
+                          onResult: () => _addResult(u.id),
+                          onAttendance: () => _markAttendance(u.id),
                         );
                       },
                     );
@@ -354,125 +257,59 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
               ),
             ],
           ),
-          if (loading) _buildLoadingOverlay(),
+          if (loading) _loading(),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderSection() {
-    return Container(
+  Widget _header() {
+    return Padding(
       padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: AppColors.black.withValues(alpha: 0.5),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(30)),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: "ابحث بالاسم أو البريد الإلكتروني...",
-              hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-              prefixIcon:
-                  const Icon(Icons.search, color: AppColors.gold, size: 20),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              contentPadding: const EdgeInsets.symmetric(vertical: 0),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide.none),
-            ),
-            onChanged: (val) => setState(() => search = val),
-          ),
-          const SizedBox(height: 15),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _filterChip("الكل", "all", Icons.group),
-                const SizedBox(width: 10),
-                _filterChip("VIP ⭐", "vip", Icons.star),
-                const SizedBox(width: 10),
-                _filterChip("المحظورين", "blocked", Icons.block),
-              ],
-            ),
-          ),
-        ],
+      child: TextField(
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: "بحث...",
+          prefixIcon: Icon(Icons.search),
+        ),
+        onChanged: (v) => setState(() => search = v),
       ),
     );
   }
 
-  Widget _filterChip(String text, String value, IconData icon) {
-    bool isSelected = filter == value;
-    return ChoiceChip(
-      label: Text(text),
-      selected: isSelected,
-      onSelected: (val) => setState(() => filter = value),
-      avatar: Icon(icon,
-          size: 16, color: isSelected ? Colors.black : AppColors.gold),
-      selectedColor: AppColors.gold,
-      backgroundColor: AppColors.black,
-      labelStyle: TextStyle(
-          color: isSelected ? Colors.black : Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 12),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side:
-              BorderSide(color: isSelected ? AppColors.gold : Colors.white10)),
-    );
-  }
-
-  Widget _buildEmptyState(String msg) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.person_search_rounded,
-              size: 80, color: Colors.white.withValues(alpha: 0.1)),
-          const SizedBox(height: 10),
-          Text(msg, style: const TextStyle(color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
+  Widget _loading() {
     return Container(
-      color: Colors.black.withValues(alpha: 0.7),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-        child: const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: AppColors.gold),
-              SizedBox(height: 15),
-              Text("جاري معالجة الطلب...",
-                  style: TextStyle(
-                      color: AppColors.gold, fontWeight: FontWeight.bold)),
-            ],
-          ),
+      color: Colors.black54,
+      child: const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.gold,
         ),
       ),
     );
   }
 
+  // 🔥🔥🔥 أهم تعديل (Multi Courses)
   void _handleEnroll(String uid, bool unlock) {
-    showCoursesDialog(context, userId: uid, unlock: unlock,
-        onSelect: (courseId) async {
-      await runSafe(() async {
-        await FirebaseService.firestore
-            .collection(AppConstants.users)
-            .doc(uid)
-            .set({
-          unlock ? "unlockedCourses" : "enrolledCourses":
-              FieldValue.arrayUnion([courseId])
-        }, SetOptions(merge: true));
-        show(unlock ? "تم فتح الكورس 🔓" : "تم تسجيل الطالب ✅");
-      });
-    });
+    showCoursesDialog(
+      context,
+      userId: uid,
+      unlock: unlock,
+      onSelect: (courseIds) async {
+        if (courseIds.isEmpty) return;
+
+        await runSafe(() async {
+          await FirebaseService.firestore
+              .collection(AppConstants.users)
+              .doc(uid)
+              .set({
+            unlock ? "unlockedCourses" : "enrolledCourses":
+                FieldValue.arrayUnion(courseIds)
+          }, SetOptions(merge: true));
+
+          show(unlock ? "تم فتح الكورسات 🔓" : "تم تسجيل الكورسات ✅");
+        });
+      },
+    );
   }
 
   Future<void> _toggleVip(String id, bool current) async {
@@ -481,7 +318,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
           .collection(AppConstants.users)
           .doc(id)
           .update({"isVIP": !current});
-      show(!current ? "تم تفعيل VIP ⭐" : "تم إلغاء VIP ❌");
     });
   }
 
@@ -491,7 +327,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
           .collection(AppConstants.users)
           .doc(id)
           .update({"blocked": !current});
-      show(!current ? "تم الحظر 🚫" : "تم فك الحظر ✅");
     });
   }
 }

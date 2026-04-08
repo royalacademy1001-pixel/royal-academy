@@ -50,6 +50,13 @@ class _UsersPageState extends State<UsersPage> {
     });
   }
 
+  @override
+  void dispose() {
+    searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   Future runAction(Future Function() action, String msg) async {
     if (loadingAction) return;
 
@@ -93,7 +100,6 @@ class _UsersPageState extends State<UsersPage> {
   Future unlockCourse(String userId, String courseId) async {
     await FirebaseFirestore.instance.collection('users').doc(userId).set({
       "unlockedCourses": FieldValue.arrayUnion([courseId]),
-      "subscribed": true,
     }, SetOptions(merge: true));
   }
 
@@ -106,6 +112,18 @@ class _UsersPageState extends State<UsersPage> {
   Future toggleSubscription(String userId, bool current) async {
     await FirebaseFirestore.instance.collection('users').doc(userId).set({
       "subscribed": !current,
+    }, SetOptions(merge: true));
+  }
+
+  Future makeVIP(String userId) async {
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      "isVIP": true,
+    }, SetOptions(merge: true));
+  }
+
+  Future removeVIP(String userId) async {
+    await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      "isVIP": false,
     }, SetOptions(merge: true));
   }
 
@@ -170,6 +188,13 @@ class _UsersPageState extends State<UsersPage> {
 
     final query = search.trim().toLowerCase();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (currentUserId == null) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(child: Text("غير مسجل دخول", style: TextStyle(color: Colors.white))),
+      );
+    }
 
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance.collection('users').doc(currentUserId).get(),
@@ -244,6 +269,11 @@ class _UsersPageState extends State<UsersPage> {
 
                         if (!snapshot.hasData) {
                           return const SizedBox();
+                        }
+
+                        final ids = snapshot.data!.docs.map((e) => e.id).toList();
+                        if (selectedCourseId != null && !ids.contains(selectedCourseId)) {
+                          selectedCourseId = null;
                         }
 
                         return Container(
@@ -321,7 +351,6 @@ class _UsersPageState extends State<UsersPage> {
 
                         String email = (data['email'] ?? "No Email").toString();
                         String phone = (data['phone'] ?? "").toString();
-                        (data['createdAt'] ?? "").toString();
                         int coursesCount = (data['unlockedCourses'] is List)
                             ? (data['unlockedCourses'] as List).length
                             : 0;
@@ -329,6 +358,7 @@ class _UsersPageState extends State<UsersPage> {
                         bool isBlocked = data['blocked'] ?? false;
                         bool isAdmin = data['isAdmin'] ?? false;
                         bool subscribed = data['subscribed'] ?? false;
+                        bool isVIP = data['isVIP'] ?? false;
                         bool instructorRequest = data['instructorRequest'] ?? false;
                         bool instructorApproved = data['instructorApproved'] ?? false;
                         bool isMe = u.id == currentUserId;
@@ -365,6 +395,12 @@ class _UsersPageState extends State<UsersPage> {
                                     if (subscribed)
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.green.withValues(alpha: 0.5), width: 0.5)),
+                                        child: const Text("مشترك", style: TextStyle(color: Colors.green, fontSize: 10, fontWeight: FontWeight.bold)),
+                                      ),
+                                    if (isVIP)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.gold.withValues(alpha: 0.5), width: 0.5)),
                                         child: const Text("VIP", style: TextStyle(color: AppColors.gold, fontSize: 10, fontWeight: FontWeight.bold)),
                                       ),
@@ -393,106 +429,70 @@ class _UsersPageState extends State<UsersPage> {
                               onSelected: (value) async {
                                 switch (value) {
                                   case "toggleSub":
-                                    runAction(
-                                      () => toggleSubscription(u.id, subscribed),
-                                      "تم التغيير 💳",
-                                    );
+                                    runAction(() => toggleSubscription(u.id, subscribed), "تم التغيير 💳");
                                     break;
-
+                                  case "makeVIP":
+                                    runAction(() => makeVIP(u.id), "تم تحويله VIP 👑");
+                                    break;
+                                  case "removeVIP":
+                                    runAction(() => removeVIP(u.id), "تم إزالة VIP ❌");
+                                    break;
                                   case "block":
                                     if (await confirm("تأكيد الحظر؟")) {
                                       runAction(() => blockUser(u.id), "تم الحظر");
                                     }
                                     break;
-
                                   case "activate":
                                     if (await confirm("تأكيد التفعيل؟")) {
                                       runAction(() => activateUser(u.id), "تم التفعيل");
                                     }
                                     break;
-
                                   case "makeAdmin":
                                     if (!isMe && await confirm("تأكيد إضافة ادمن؟")) {
                                       runAction(() => makeAdmin(u.id), "تم إضافة ادمن 👑");
                                     }
                                     break;
-
                                   case "removeAdmin":
                                     if (!isMe && await confirm("تأكيد إزالة الادمن؟")) {
                                       runAction(() => removeAdmin(u.id), "تم إزالة الادمن ❌");
                                     }
                                     break;
-
                                   case "unlockCourse":
                                     if (selectedCourseId != null && await confirm("تأكيد فتح الكورس؟")) {
-                                      runAction(
-                                        () => unlockCourse(u.id, selectedCourseId!),
-                                        "تم فتح الكورس 🎉",
-                                      );
+                                      runAction(() => unlockCourse(u.id, selectedCourseId!), "تم فتح الكورس 🎉");
                                     }
                                     break;
-
                                   case "lockCourse":
                                     if (selectedCourseId != null && await confirm("تأكيد قفل الكورس؟")) {
-                                      runAction(
-                                        () => lockCourse(u.id, selectedCourseId!),
-                                        "تم قفل الكورس 🔒",
-                                      );
+                                      runAction(() => lockCourse(u.id, selectedCourseId!), "تم قفل الكورس 🔒");
                                     }
                                     break;
-
                                   case "approveInstructor":
                                     runAction(() => approveInstructor(u.id), "تم قبول المدرس 🎓");
                                     break;
-
                                   case "rejectInstructor":
                                     runAction(() => rejectInstructor(u.id), "تم رفض الطلب ❌");
                                     break;
                                 }
                               },
                               itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: "toggleSub",
-                                  child: Text("💳 اشتراك"),
-                                ),
-                                const PopupMenuItem(
-                                  value: "block",
-                                  child: Text("🚫 حظر"),
-                                ),
-                                const PopupMenuItem(
-                                  value: "activate",
-                                  child: Text("✅ تفعيل"),
-                                ),
+                                const PopupMenuItem(value: "toggleSub", child: Text("💳 اشتراك")),
+                                const PopupMenuItem(value: "makeVIP", child: Text("👑 تحويل VIP")),
+                                const PopupMenuItem(value: "removeVIP", child: Text("❌ إزالة VIP")),
+                                const PopupMenuItem(value: "block", child: Text("🚫 حظر")),
+                                const PopupMenuItem(value: "activate", child: Text("✅ تفعيل")),
                                 if (selectedCourseId != null)
-                                  const PopupMenuItem(
-                                    value: "unlockCourse",
-                                    child: Text("📚 فتح الكورس"),
-                                  ),
+                                  const PopupMenuItem(value: "unlockCourse", child: Text("📚 فتح الكورس")),
                                 if (selectedCourseId != null)
-                                  const PopupMenuItem(
-                                    value: "lockCourse",
-                                    child: Text("🔒 قفل الكورس"),
-                                  ),
+                                  const PopupMenuItem(value: "lockCourse", child: Text("🔒 قفل الكورس")),
                                 if (!isAdmin && !isMe)
-                                  const PopupMenuItem(
-                                    value: "makeAdmin",
-                                    child: Text("👑 Make Admin"),
-                                  ),
+                                  const PopupMenuItem(value: "makeAdmin", child: Text("👑 Make Admin")),
                                 if (isAdmin && !isMe)
-                                  const PopupMenuItem(
-                                    value: "removeAdmin",
-                                    child: Text("❌ Remove Admin"),
-                                  ),
+                                  const PopupMenuItem(value: "removeAdmin", child: Text("❌ Remove Admin")),
                                 if (instructorRequest && !instructorApproved)
-                                  const PopupMenuItem(
-                                    value: "approveInstructor",
-                                    child: Text("🎓 قبول كمدرس"),
-                                  ),
+                                  const PopupMenuItem(value: "approveInstructor", child: Text("🎓 قبول كمدرس")),
                                 if (instructorRequest && !instructorApproved)
-                                  const PopupMenuItem(
-                                    value: "rejectInstructor",
-                                    child: Text("❌ رفض الطلب"),
-                                  ),
+                                  const PopupMenuItem(value: "rejectInstructor", child: Text("❌ رفض الطلب")),
                               ],
                             ),
                           ),

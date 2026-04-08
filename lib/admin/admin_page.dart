@@ -1,4 +1,3 @@
-// 🔥 IMPORTS FIRST
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,6 +25,7 @@ import 'add_news_page.dart';
 import 'pages/news_admin_page.dart';
 import 'pick_lesson_page.dart';
 import 'pages/students_crm_page.dart';
+import 'pages/admin_navigation_control_page.dart';
 
 // 🔥 QUIZ
 import '../features/quiz/admin_add_quiz_page.dart';
@@ -36,8 +36,6 @@ import 'services/admin_dashboard_service.dart' as admin_service;
 // 🔥 Firebase
 import '../core/firebase_service.dart';
 import '../core/constants.dart';
-
-import 'pages/admin_navigation_control_page.dart';
 
 class AdminCache {
   static Map<String, dynamic>? stats;
@@ -154,7 +152,26 @@ class _AdminPageState extends State<AdminPage> {
           .get();
 
       final data = doc.data() ?? {};
+
       isAdmin = data['isAdmin'] == true;
+
+      final r = (data['role'] ?? "").toString().toLowerCase();
+
+      if (r.isNotEmpty) {
+        isAdmin = r == "admin";
+      } else {
+        if (data['isAdmin'] == true) {
+          isAdmin = true;
+        } else if (data['instructorApproved'] == true) {
+          isAdmin = false;
+        } else if (data['isVIP'] == true) {
+          isAdmin = false;
+        } else if (data['subscribed'] == true) {
+          isAdmin = false;
+        } else {
+          isAdmin = false;
+        }
+      }
     } catch (e) {
       debugPrint("Admin Check Error: $e");
     }
@@ -302,7 +319,7 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
+      builder: (sheetContext) {
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
           child: Container(
@@ -320,10 +337,13 @@ class _AdminPageState extends State<AdminPage> {
                   width: 50,
                   height: 5,
                   decoration: BoxDecoration(
-                      color: Colors.grey[800],
-                      borderRadius: BorderRadius.circular(10)),
+                    color: Colors.grey[800],
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
+
                 const SizedBox(height: 20),
+
                 const Text(
                   "🚀 إضافة جديدة",
                   style: TextStyle(
@@ -333,50 +353,84 @@ class _AdminPageState extends State<AdminPage> {
                     letterSpacing: 1.2,
                   ),
                 ),
+
                 const SizedBox(height: 25),
+
+                // 🔥 ADD COURSE
                 _menuItem(
                   icon: Icons.menu_book,
                   color: AppColors.gold,
                   title: "إضافة كورس",
                   subtitle: "إنشاء كورس تدريبي جديد",
                   onTap: () async {
-                    Navigator.pop(context);
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    if (!mounted) return;
+
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const AddCoursePage()),
+                        builder: (_) => const AddCoursePage(),
+                      ),
                     );
+
+                    if (!mounted) return;
+
                     refresh();
                   },
                 ),
+
+                // 🔥 ADD LESSON
                 _menuItem(
                   icon: Icons.play_circle,
                   color: Colors.green,
                   title: "إضافة محتوى",
                   subtitle: "رفع فيديو أو درس جديد",
                   onTap: () async {
-                    Navigator.pop(context);
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    if (!mounted) return;
+
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const AddLessonPage()),
+                        builder: (_) => const AddLessonPage(),
+                      ),
                     );
+
+                    if (!mounted) return;
+
                     refresh();
                   },
                 ),
+
+                // 🔥 ADD QUIZ (FIXED 100%)
                 _menuItem(
                   icon: Icons.quiz,
                   color: Colors.orange,
                   title: "إضافة Quiz",
                   subtitle: "إضافة اختبار لتقييم الطلاب",
                   onTap: () async {
-                    Navigator.pop(context);
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
 
                     String? lessonId = await pickLesson();
 
                     if (!mounted) return;
 
                     if (lessonId == null || lessonId.isEmpty) {
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("❌ لم يتم اختيار درس")),
                       );
@@ -385,9 +439,10 @@ class _AdminPageState extends State<AdminPage> {
 
                     if (!mounted) return;
 
+                    // ignore: use_build_context_synchronously
                     await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => AddQuizPage(
+                        builder: (_) => AddQuizPage(
                           lessonId: lessonId,
                         ),
                       ),
@@ -398,23 +453,35 @@ class _AdminPageState extends State<AdminPage> {
                     refresh();
                   },
                 ),
+
+                // 🔥 ADD NEWS
                 _menuItem(
                   icon: Icons.campaign,
                   color: Colors.blue,
                   title: "إضافة خبر",
                   subtitle: "نشر إعلان هام للأكاديمية",
                   onTap: () async {
-                    Navigator.pop(context);
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    if (!mounted) return;
 
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const AddNewsPage()),
+                        builder: (_) => const AddNewsPage(),
+                      ),
                     );
+
+                    if (!mounted) return;
 
                     refresh();
                   },
                 ),
+
                 const SizedBox(height: 20),
               ],
             ),
@@ -509,11 +576,13 @@ class _AdminPageState extends State<AdminPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.gold,
-        elevation: 10,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child: const Icon(Icons.add, color: Colors.black, size: 30),
         onPressed: openAddMenu,
+        backgroundColor: AppColors.gold,
+        elevation: 12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(Icons.add, size: 32, color: Colors.black),
       ),
       body: Stack(
         children: [

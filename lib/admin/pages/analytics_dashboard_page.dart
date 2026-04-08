@@ -332,8 +332,9 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
 
                   List<FlSpot> spots = [];
 
-                  hourly.forEach((hour, count) {
-                    spots.add(FlSpot(hour.toDouble(), count.toDouble()));
+                  hourly.forEach((hour, activityCount) {
+                    spots
+                        .add(FlSpot(hour.toDouble(), activityCount.toDouble()));
                   });
 
                   spots.sort((a, b) => a.x.compareTo(b.x));

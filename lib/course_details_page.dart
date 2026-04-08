@@ -99,7 +99,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
         "type": "course_view",
         "courseId": widget.courseId,
         "courseTitle": widget.title,
-        "userId": FirebaseService.auth.currentUser?.uid ?? "",
+        "userId": FirebaseService.auth.currentUser?.uid ?? "guest",
         "timestamp": Timestamp.now(),
       });
     });
@@ -117,69 +117,63 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   Future<void> loadStats() async {
     views = await AnalyticsService.getCourseViews(widget.courseId);
     purchases = await AnalyticsService.getCoursePurchases(widget.courseId);
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
   }
 
   Future<void> loadData() async {
     final user = FirebaseService.auth.currentUser;
-
-    if (user == null) {
-      if (mounted) setState(() => loading = false);
-      return;
-    }
 
     try {
       if (_courseCache.containsKey(widget.courseId)) {
         courseData = _courseCache[widget.courseId];
       }
 
-      final results = await Future.wait([
-        FirebaseService.firestore
-            .collection(AppConstants.users)
-            .doc(user.uid)
-            .get(),
+      final List<Future> tasks = [
         courseData == null
             ? FirebaseService.firestore
                 .collection(AppConstants.courses)
                 .doc(widget.courseId)
                 .get()
             : Future.value(null),
-      ]);
+      ];
 
-      userData =
-          (results[0] as DocumentSnapshot).data() as Map<String, dynamic>? ??
-              {};
+      if (user != null) {
+        tasks.add(FirebaseService.firestore
+            .collection(AppConstants.users)
+            .doc(user.uid)
+            .get());
+      }
 
-      if (courseData == null && results[1] != null) {
-        courseData =
-            (results[1] as DocumentSnapshot).data() as Map<String, dynamic>? ??
-                {};
+      final results = await Future.wait(tasks);
 
+      if (courseData == null && results[0] != null) {
+        courseData = (results[0] as DocumentSnapshot).data() as Map<String, dynamic>? ?? {};
         _courseCache[widget.courseId] = courseData!;
+      }
+
+      if (user != null && results.length > 1) {
+        userData = (results[1] as DocumentSnapshot).data() as Map<String, dynamic>? ?? {};
       }
 
       if (!mounted) return;
       setState(() => loading = false);
 
-      await loadExtra(user.uid);
+      await loadExtra(user?.uid);
     } catch (e) {
       debugPrint("🔥 Load Data Error: $e");
-      if (mounted) setState(() => loading = false);
+      if (!mounted) return;
+      setState(() => loading = false);
     }
   }
 
-  Future<void> loadExtra(String userId) async {
+  Future<void> loadExtra(String? userId) async {
     try {
       if (_lessonCache.containsKey(widget.courseId)) {
         lessons = _lessonCache[widget.courseId]!;
       }
 
-      final results = await Future.wait([
-        FirebaseService.firestore
-            .collection(AppConstants.progress)
-            .where('userId', isEqualTo: userId)
-            .where('courseId', isEqualTo: widget.courseId)
-            .get(),
+      final List<Future> tasks = [
         lessons.isEmpty
             ? FirebaseService.firestore
                 .collection(AppConstants.courses)
@@ -188,31 +182,40 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                 .orderBy('order')
                 .get()
             : Future.value(null),
-        FirebaseService.firestore
+      ];
+
+      if (userId != null) {
+        tasks.add(FirebaseService.firestore
+            .collection(AppConstants.progress)
+            .where('userId', isEqualTo: userId)
+            .where('courseId', isEqualTo: widget.courseId)
+            .get());
+        tasks.add(FirebaseService.firestore
             .collection(AppConstants.lastWatch)
             .where('userId', isEqualTo: userId)
             .where('courseId', isEqualTo: widget.courseId)
             .limit(1)
-            .get(),
-      ]);
+            .get());
+      }
 
-      watched = (results[0] as QuerySnapshot)
-          .docs
-          .map((e) => (e['lessonId'] ?? "").toString())
-          .toSet();
+      final results = await Future.wait(tasks);
 
-      if (results[1] != null) {
-        lessons = List.from((results[1] as QuerySnapshot).docs);
-
+      if (results[0] != null) {
+        lessons = List.from((results[0] as QuerySnapshot).docs);
         lessons.sort((a, b) => (a['order'] ?? 0).compareTo(b['order'] ?? 0));
-
         _lessonCache[widget.courseId] = lessons;
       }
 
-      final lastSnap = results[2] as QuerySnapshot;
+      if (userId != null && results.length > 2) {
+        watched = (results[1] as QuerySnapshot)
+            .docs
+            .map((e) => (e['lessonId'] ?? "").toString())
+            .toSet();
 
-      if (lastSnap.docs.isNotEmpty) {
-        lastLessonId = (lastSnap.docs.first['lessonId'] ?? "").toString();
+        final lastSnap = results[2] as QuerySnapshot;
+        if (lastSnap.docs.isNotEmpty) {
+          lastLessonId = (lastSnap.docs.first['lessonId'] ?? "").toString();
+        }
       }
 
       if (lastLessonId != null && !watched.contains(lastLessonId)) {
@@ -221,13 +224,19 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
       calculateAccess(userId);
 
-      if (mounted) setState(() {});
+      if (!mounted) return;
+      setState(() {});
     } catch (e) {
       debugPrint("🔥 Load Extra Error: $e");
     }
   }
 
-  void calculateAccess(String userId) {
+  void calculateAccess(String? userId) {
+    if (userId == null) {
+      hasAccess = false;
+      return;
+    }
+
     bool isAdmin = userData?['isAdmin'] == true;
     bool subscribed = userData?['subscribed'] == true;
     bool isVIP = userData?['isVIP'] == true;
@@ -235,13 +244,11 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
     bool instructorApproved = userData?['instructorApproved'] == true;
 
     bool validSubscription = false;
-
     final endDate = userData?['subscriptionEnd'];
 
     if (endDate != null) {
       try {
-        validSubscription =
-            DateTime.parse(endDate.toString()).isAfter(DateTime.now());
+        validSubscription = DateTime.parse(endDate.toString()).isAfter(DateTime.now());
       } catch (_) {}
     }
 
@@ -297,11 +304,14 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   }
 
   bool _canOpenLesson(QueryDocumentSnapshot lesson) {
+    final data = lesson.data() as Map<String, dynamic>? ?? {};
     if (courseData?['isFree'] == true) return true;
     if (hasAccess) return true;
-    final data = lesson.data() as Map<String, dynamic>? ?? {};
     if (data['isFree'] == true) return true;
     if (lessons.isEmpty) return false;
+    if (FirebaseService.auth.currentUser == null) {
+      return lessons.first.id == lesson.id && data['isFree'] == true;
+    }
     return lessons.first.id == lesson.id;
   }
 

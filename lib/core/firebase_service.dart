@@ -1,7 +1,6 @@
 // 🔥 IMPORTS FIRST
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart'; // 🔥 IMPORTANT
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -188,6 +187,28 @@ class FirebaseService {
     }
   }
 
+  static Future<void> safeDelete(DocumentReference ref) async {
+    try {
+      await FirebaseInit.init();
+      await safeFirestoreCall(() => ref.delete());
+    } catch (e) {
+      debugPrint("🔥 Safe Delete Error: $e");
+    }
+  }
+
+  static Future<DocumentReference?> safeAdd(
+    CollectionReference ref,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      await FirebaseInit.init();
+      return await safeFirestoreCall(() => ref.add(data));
+    } catch (e) {
+      debugPrint("🔥 Safe Add Error: $e");
+      return null;
+    }
+  }
+
   static final Map<String, DateTime> _xpLock = {};
 
   static bool canAddXP(String key) {
@@ -222,10 +243,11 @@ class FirebaseService {
         return url;
       }
 
-      if (!url.contains("http")) return "";
-
-      if (!url.contains("v=")) {
-        url = "$url?v=${DateTime.now().millisecondsSinceEpoch}";
+      if (url.startsWith("http")) {
+        if (!url.contains("v=")) {
+          return "$url?v=${DateTime.now().millisecondsSinceEpoch}";
+        }
+        return url;
       }
 
       return url;
@@ -513,9 +535,16 @@ class FirebaseService {
   static bool hasRole(String role) {
     if (_userCache == null) return false;
 
+    final r = (_userCache?['role'] ?? "").toString().toLowerCase();
+
+    if (r.isNotEmpty) {
+      return r == role;
+    }
+
     if (role == "admin") return _userCache?['isAdmin'] == true;
     if (role == "instructor") return _userCache?['instructorApproved'] == true;
-    if (role == "vip") return _userCache?['subscribed'] == true;
+    if (role == "vip") return _userCache?['isVIP'] == true;
+    if (role == "subscribed") return _userCache?['subscribed'] == true;
     if (role == "user") return _userCache?['isAdmin'] != true;
 
     return false;

@@ -10,7 +10,6 @@ import '../core/firebase_service.dart';
 import '../core/constants.dart';
 import '../features/quiz/student_quiz_page.dart';
 
-
 // 🔥🔥🔥 ULTRA LESSON CARD FINAL UPGRADE 🔥🔥🔥
 
 Widget buildProgressBar(double value) {
@@ -50,7 +49,6 @@ Widget quizBadge(bool hasQuiz, bool solved) {
   );
 }
 
-
 // 🔥 TAP GUARD
 class LessonTapGuard {
   static final Map<String, DateTime> _locks = {};
@@ -69,7 +67,6 @@ class LessonTapGuard {
   }
 }
 
-
 // 🔥 XP
 class LessonXP {
   static Future<void> reward(String lessonId) async {
@@ -85,7 +82,6 @@ class LessonXP {
   }
 }
 
-
 // 🔥 OPEN VIDEO (UPGRADED)
 Future<void> safeOpenVideo({
   required BuildContext context,
@@ -98,37 +94,64 @@ Future<void> safeOpenVideo({
   try {
     if (!context.mounted) return;
 
-    if (url.isEmpty) {
-      debugPrint("❌ Empty video URL for lesson: $lessonId");
+    if (url.trim().isEmpty) {
+      debugPrint("❌ Empty URL");
       return;
+    }
+
+    final user = FirebaseService.auth.currentUser;
+
+    // 🔒 حماية الكورسات
+    if (!isFree) {
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("❌ لازم تسجل دخول")),
+        );
+        return;
+      }
+
+      final doc = await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(user.uid)
+          .get();
+
+      final data = doc.data() ?? {};
+
+      final isAdmin = data['isAdmin'] == true;
+      final isVIP = data['isVIP'] == true;
+      final unlockedCourses = (data['unlockedCourses'] ?? []) as List;
+
+      final hasAccess = isAdmin || isVIP || unlockedCourses.contains(courseId);
+
+      if (!hasAccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("🔒 اشترك لفتح الدرس"),
+          ),
+        );
+        return;
+      }
     }
 
     String cleanUrl = url;
 
-    final lower = url.toLowerCase();
+    final uri = Uri.tryParse(url);
 
-    if (lower.contains("youtube") || lower.contains("youtu.be")) {
-      final uri = Uri.tryParse(url);
-
-      if (uri != null) {
-        String id = "";
-
-        if (uri.host.contains("youtu.be")) {
-          id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : "";
-        } else if (uri.queryParameters.containsKey("v")) {
-          id = uri.queryParameters["v"] ?? "";
-        } else if (uri.pathSegments.contains("shorts")) {
-          final i = uri.pathSegments.indexOf("shorts");
-          if (i + 1 < uri.pathSegments.length) {
-            id = uri.pathSegments[i + 1];
-          }
-        }
-
+    if (uri != null) {
+      if (uri.host.contains("youtu.be")) {
+        final id = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : "";
         if (id.isNotEmpty) {
           cleanUrl = "https://www.youtube.com/watch?v=$id";
         }
       }
+
+      if (uri.queryParameters.containsKey("v")) {
+        cleanUrl =
+            "https://www.youtube.com/watch?v=${uri.queryParameters["v"]}";
+      }
     }
+
+    if (!context.mounted) return;
 
     await Navigator.push(
       context,
@@ -146,7 +169,6 @@ Future<void> safeOpenVideo({
     debugPrint("🔥 Navigation Error: $e");
   }
 }
-
 
 // 🔥 OPEN LINK
 Future<void> safeLaunch(String url) async {
@@ -166,7 +188,6 @@ Future<void> safeLaunch(String url) async {
     debugPrint("Launch Error: $e");
   }
 }
-
 
 // 🔥 LAST WATCH
 Future<void> safeLastWatch({
@@ -190,7 +211,6 @@ Future<void> safeLastWatch({
     debugPrint("LastWatch Error: $e");
   }
 }
-
 
 // 🔥 FINAL LESSON CARD
 
@@ -217,7 +237,6 @@ class LessonCard extends StatefulWidget {
 }
 
 class _LessonCardState extends State<LessonCard> {
-
   bool loading = false;
   bool navigating = false;
   bool tapLocked = false;
@@ -264,7 +283,6 @@ class _LessonCardState extends State<LessonCard> {
       if (mounted) {
         setState(() => hasQuiz = exists);
       }
-
     } catch (e) {
       debugPrint("Quiz check error: $e");
     }
@@ -293,7 +311,6 @@ class _LessonCardState extends State<LessonCard> {
       quizSolvedCache[lessonId] = solved;
 
       if (mounted) setState(() => quizSolved = solved);
-
     } catch (_) {}
   }
 
@@ -328,7 +345,6 @@ class _LessonCardState extends State<LessonCard> {
           progressLoaded = true;
         });
       }
-
     } catch (e) {
       debugPrint("Progress error: $e");
     }
@@ -347,15 +363,11 @@ class _LessonCardState extends State<LessonCard> {
 
   @override
   Widget build(BuildContext context) {
-
     final title = (widget.data['title'] ?? "Lesson").toString();
 
-    String url =
-        (widget.data['contentUrl'] ??
-                widget.data['video'] ??
-                "")
-            .toString()
-            .trim();
+    String url = (widget.data['contentUrl'] ?? widget.data['video'] ?? "")
+        .toString()
+        .trim();
 
     if (url == "null") url = "";
 
@@ -366,92 +378,105 @@ class _LessonCardState extends State<LessonCard> {
             : Icons.play_circle_fill;
 
     return PressEffect(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: AppColors.premiumCard,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: widget.isLocked ? Colors.red.withValues(alpha: 0.2) : AppColors.gold.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.all(12),
+          decoration: AppColors.premiumCard,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: widget.isLocked
+                          ? Colors.red.withValues(alpha: 0.2)
+                          : AppColors.gold.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(mainIcon,
+                        color: widget.isLocked ? Colors.red : AppColors.gold),
                   ),
-                  child: Icon(mainIcon, color: widget.isLocked ? Colors.red : AppColors.gold),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: widget.isLocked ? Colors.grey : Colors.white,
-                      fontWeight: FontWeight.w600,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: widget.isLocked ? Colors.grey : Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                quizBadge(hasQuiz, quizSolved),
-                if (widget.isLocked)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 6),
-                    child: Icon(Icons.lock, color: Colors.red, size: 16),
-                  ),
-              ],
-            ),
-
-            if (progressLoaded)
-              buildProgressBar(progressValue),
-          ],
-        ),
-      ),
-      onTap: () async {
-
-        if (!widget.canOpen || widget.isLocked) {
-          _showLockedMessage();
-          debugPrint("🔒 Access Denied");
-          return;
-        }
-
-        if (loading || navigating || tapLocked) return;
-        if (!LessonTapGuard.canTap(widget.lesson.id)) return;
-
-        tapLocked = true;
-
-        if (hasQuiz && !quizSolved) {
-          await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => QuizPage(
-                lessonId: widget.lesson.id,
+                  const SizedBox(width: 6),
+                  quizBadge(hasQuiz, quizSolved),
+                  if (widget.isLocked)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 6),
+                      child: Icon(Icons.lock, color: Colors.red, size: 16),
+                    ),
+                ],
               ),
-            ),
-          );
-        } else {
-          await _handleTap(title, url);
-        }
+              if (progressLoaded) buildProgressBar(progressValue),
+            ],
+          ),
+        ),
+        onTap: () async {
+          if (!widget.canOpen || widget.isLocked) {
+            _showLockedMessage();
+            return;
+          }
 
-        tapLocked = false;
+          if (FirebaseService.auth.currentUser == null && !widget.isFree) {
+            _showLockedMessage();
+            return;
+          }
 
-        loadProgress();
-        checkQuizSolved();
-      },
-    );
+          if (loading || navigating || tapLocked) return;
+          if (!LessonTapGuard.canTap(widget.lesson.id)) return;
+
+          tapLocked = true;
+
+          try {
+            if (hasQuiz && !quizSolved) {
+              if (!mounted) return;
+
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => QuizPage(
+                    lessonId: widget.lesson.id,
+                  ),
+                ),
+              );
+            } else {
+              await _handleTap(title, url);
+            }
+
+            if (!mounted) return;
+
+            // 🔥 تحديث سريع بدون lag
+            Future.wait([
+              loadProgress(),
+              checkQuizSolved(),
+            ]);
+          } catch (e) {
+            debugPrint("Tap Error: $e");
+          }
+
+          tapLocked = false;
+        });
   }
 
   Future<void> _handleTap(String title, String url) async {
-
     if (loading || navigating) return;
+
+    if (!mounted) return;
 
     setState(() => loading = true);
 
     try {
-
       navigating = true;
 
       String courseId = "";
@@ -459,12 +484,17 @@ class _LessonCardState extends State<LessonCard> {
         courseId = widget.lesson.reference.parent.parent?.id ?? "";
       } catch (_) {}
 
-      await safeLastWatch(
-        courseId: courseId,
-        lessonId: widget.lesson.id,
-      );
+      // 🔥 تشغيل العمليات مع بعض (أسرع)
+      await Future.wait([
+        safeLastWatch(
+          courseId: courseId,
+          lessonId: widget.lesson.id,
+        ),
+        LessonXP.reward(widget.lesson.id),
+      ]);
 
-      await LessonXP.reward(widget.lesson.id);
+      // 🔥 أهم سطر (حل crash context)
+      if (!mounted) return;
 
       await safeOpenVideo(
         context: context,
@@ -474,15 +504,14 @@ class _LessonCardState extends State<LessonCard> {
         lessonId: widget.lesson.id,
         isFree: widget.isFree,
       );
-
     } catch (e) {
       debugPrint("🔥 Open error: $e");
-    }
+    } finally {
+      navigating = false;
 
-    navigating = false;
-
-    if (mounted) {
-      setState(() => loading = false);
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 }

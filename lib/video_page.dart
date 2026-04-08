@@ -1,4 +1,3 @@
-// 🔥 IMPORTS FIRST
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -67,6 +66,10 @@ class VideoPageState extends State<VideoPage> {
 
   int currentSecond = 0;
   int maxWatchedSecond = 0;
+  int totalSeconds = 1;
+  double progress = 0;
+
+  bool completedSent = false;
 
   bool progressSaved = false;
   bool savingNow = false;
@@ -100,9 +103,20 @@ class VideoPageState extends State<VideoPage> {
 
     try {
       videoController?.dispose();
+      videoController = null;
+
       chewieController?.dispose();
-      youtubeController?.close();
-      audioPlayer?.dispose();
+      chewieController = null;
+
+      try {
+        youtubeController?.close();
+      } catch (_) {}
+      youtubeController = null;
+
+      try {
+        audioPlayer?.dispose();
+      } catch (_) {}
+      audioPlayer = null;
     } catch (e) {
       debugPrint("Dispose Error: $e");
     }
@@ -124,7 +138,8 @@ class VideoPageState extends State<VideoPage> {
 
     await initVideo();
 
-    if (mounted) setState(() => loading = false);
+    if (!mounted) return;
+    setState(() => loading = false);
   }
 
   Future checkAccess() async {
@@ -132,14 +147,7 @@ class VideoPageState extends State<VideoPage> {
       var user = FirebaseService.auth.currentUser;
 
       if (user == null) {
-        var courseDoc = await FirebaseService.firestore
-            .collection(AppConstants.courses)
-            .doc(widget.courseId)
-            .get();
-
-        bool courseFree = courseDoc.data()?['isFree'] == true;
-
-        hasAccess = widget.isFree || courseFree;
+        hasAccess = widget.isFree;
         return;
       }
 
@@ -255,7 +263,6 @@ class VideoPageState extends State<VideoPage> {
       String id = _extractYoutubeId(url);
 
       if (id.isEmpty) {
-        debugPrint("❌ Invalid YouTube URL");
         videoError = true;
         return;
       }
@@ -283,7 +290,6 @@ class VideoPageState extends State<VideoPage> {
 
       videoController!.addListener(listener);
     } catch (e) {
-      debugPrint("🔥 Video init error: $e");
       videoError = true;
     }
   }
@@ -297,13 +303,13 @@ class VideoPageState extends State<VideoPage> {
       if (user == null || videoController == null) return;
 
       var doc = await FirebaseService.firestore
-          .collection(AppConstants.lastWatch)
-          .doc("${user.uid}${widget.lessonId}")
+          .collection(AppConstants.progress)
+          .doc("${user.uid}_${widget.lessonId}")
           .get();
 
       if (!doc.exists) return;
 
-      int sec = doc.data()?['position'] ?? 0;
+      int sec = doc.data()?['watchedSeconds'] ?? 0;
       if (sec < 5) return;
 
       await Future.delayed(const Duration(milliseconds: 300));
@@ -338,11 +344,21 @@ class VideoPageState extends State<VideoPage> {
   }
 
   void listener() {
-    if (videoController == null || !videoController!.value.isInitialized)
-      return;
+    if (videoController == null) return;
 
-    currentSecond = videoController!.value.position.inSeconds;
+    final value = videoController!.value;
 
+    if (!value.isInitialized) return;
+
+    currentSecond = value.position.inSeconds;
+
+    final duration = value.duration;
+
+    if (duration.inSeconds <= 0) return;
+
+    totalSeconds = duration.inSeconds;
+
+    // 🚫 منع الغش
     if (currentSecond > maxWatchedSecond + 10) {
       videoController!.seekTo(Duration(seconds: maxWatchedSecond));
       return;
@@ -352,20 +368,21 @@ class VideoPageState extends State<VideoPage> {
       maxWatchedSecond = currentSecond;
     }
 
-    final dur = videoController!.value.duration.inSeconds;
-    if (dur <= 0) return;
+    progress = maxWatchedSecond / totalSeconds;
 
-    if (VideoGuard.canSave(currentSecond) && !savingNow) {
+    // 💾 حفظ كل 5 ثواني
+    if (currentSecond % 5 == 0 && !savingNow) {
       savingNow = true;
-
       saveLastPosition(currentSecond).then((_) {
         savingNow = false;
       });
     }
 
-    if ((currentSecond / dur) >= 0.7 && !progressSaved) {
-      progressSaved = true;
+    // 🎯 completion
+    if (progress >= 0.9 && !completedSent) {
+      completedSent = true;
       saveProgress();
+      _markCompleted();
     }
   }
 
@@ -394,23 +411,40 @@ class VideoPageState extends State<VideoPage> {
       var user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
-      var existing = await FirebaseService.firestore
+      await FirebaseService.firestore
           .collection(AppConstants.progress)
-          .where('userId', isEqualTo: user.uid)
-          .where('lessonId', isEqualTo: widget.lessonId)
-          .limit(1)
-          .get();
-
-      if (existing.docs.isNotEmpty) return;
-
-      await FirebaseService.firestore.collection(AppConstants.progress).add({
+          .doc("${user.uid}_${widget.lessonId}")
+          .set({
         "userId": user.uid,
         "courseId": widget.courseId,
         "lessonId": widget.lessonId,
-        "createdAt": FieldValue.serverTimestamp(),
-      });
+        "watchedSeconds": maxWatchedSecond,
+        "totalSeconds": totalSeconds,
+        "progress": progress,
+        "completed": progress >= 0.9,
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("Save Progress Error: $e");
+    }
+  }
+
+  Future<void> _markCompleted() async {
+    try {
+      var user = FirebaseService.auth.currentUser;
+      if (user == null) return;
+
+      await FirebaseService.addXP(AppConstants.xpPerLesson);
+
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(user.uid)
+          .set({
+        "lastCompletedLesson": widget.lessonId,
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Complete Error: $e");
     }
   }
 
@@ -450,43 +484,56 @@ class VideoPageState extends State<VideoPage> {
     return videoSafe(
       Scaffold(
         backgroundColor: AppColors.background,
-        appBar: AppBar(title: Text(widget.title)),
         body: hasAccess
             ? SingleChildScrollView(
                 child: Column(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: _buildContent(),
-                    ),
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(widget.title,
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
-                          LinearProgressIndicator(
-                            value: maxWatchedSecond > 0
-                                ? maxWatchedSecond /
-                                    (videoController
-                                                ?.value.duration.inSeconds ==
-                                            0
-                                        ? 1
-                                        : videoController
-                                                ?.value.duration.inSeconds ??
-                                            1)
-                                : 0,
-                            color: AppColors.gold,
-                            backgroundColor: Colors.white12,
+                    Stack(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: _buildContent(),
+                        ),
+                        Positioned(
+                          top: 40,
+                          left: 10,
+                          child: IconButton(
+                            icon: const Icon(Icons.arrow_back,
+                                color: Colors.white),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                        ],
-                      ),
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          left: 15,
+                          right: 15,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(widget.title,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 6),
+                              LinearProgressIndicator(
+                                value: maxWatchedSecond > 0
+                                    ? maxWatchedSecond /
+                                        (videoController?.value.duration
+                                                    .inSeconds ==
+                                                0
+                                            ? 1
+                                            : videoController?.value.duration
+                                                    .inSeconds ??
+                                                1)
+                                    : 0,
+                                color: Colors.red,
+                                backgroundColor: Colors.white24,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     Padding(
@@ -541,7 +588,8 @@ class VideoPageState extends State<VideoPage> {
                                         const EdgeInsets.symmetric(vertical: 6),
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.05),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.05),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(d['text'] ?? "",
@@ -595,7 +643,7 @@ class VideoPageState extends State<VideoPage> {
       );
     }
 
-    if (isYoutube && youtubeController != null) {
+    if (isYoutube && youtubeController != null && mounted) {
       return YoutubePlayerScaffold(
         controller: youtubeController!,
         aspectRatio: 16 / 9,
@@ -611,6 +659,13 @@ class VideoPageState extends State<VideoPage> {
       return AspectRatio(
         aspectRatio: videoController!.value.aspectRatio,
         child: Chewie(controller: chewieController!),
+      );
+    }
+
+    if (videoError) {
+      return const Center(
+        child:
+            Text("❌ فشل تحميل المحتوى", style: TextStyle(color: Colors.white)),
       );
     }
 

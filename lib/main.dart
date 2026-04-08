@@ -1,47 +1,52 @@
-// 🔥 ULTRA MAIN (FIXED FINAL - NO CRASH)
-
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 
-// 🔥 Core
-import 'core/firebase_service.dart';
+import 'core/analytics_service.dart';
 import 'core/colors.dart';
 import 'core/constants.dart';
+import 'core/firebase_service.dart';
 import 'core/notifications_service.dart';
 
-// 🔥🔥🔥 NEW ANALYTICS
-import 'core/analytics_service.dart';
-
-// 🔥 Pages
 import 'main_navigation_page.dart';
 import 'login_page.dart';
+import 'onboarding_page.dart';
 import 'splash_page.dart';
 import 'payment/payment_page.dart';
-import 'onboarding_page.dart';
-
-// 🔥 VERIFY
-import 'admin/pages/verify_certificate_page.dart';
-
-// 🔥 QUIZ RESULTS
+import 'payment/checkout_page.dart';
+import 'web/verify_web_page.dart';
+import 'features/quiz/student_quiz_page.dart';
+import 'features/quiz/admin_add_quiz_page.dart';
 import 'features/quiz/quiz_results_page.dart';
 
-// 🔥 WEB
-import 'web/verify_web_page.dart';
-
-// 🔥 NEW CENTER MANAGEMENT
+import 'admin/pages/admin_navigation_control_page.dart';
+import 'admin/pages/analytics_dashboard_page.dart';
+import 'admin/pages/attendance_report_page.dart';
+import 'admin/pages/attendance_take_page.dart';
+import 'admin/pages/comments_page.dart';
 import 'admin/pages/center_management_page.dart';
+import 'admin/pages/courses_admin_page.dart';
+import 'admin/pages/dashboard_page.dart';
+import 'admin/pages/finance_reports_page.dart';
+import 'admin/pages/instructor_requests_admin_page.dart';
+import 'admin/pages/student_financial_details_page.dart';
+import 'admin/pages/student_financial_page.dart';
+import 'admin/pages/students_crm_page.dart';
+import 'admin/pages/students_management_page.dart';
+import 'admin/pages/subject_sessions_page.dart';
+import 'admin/pages/subjects_page.dart';
+import 'admin/pages/top_students_page.dart';
+import 'admin/pages/verify_certificate_page.dart';
 
-
-/// 🔥 GUARD
 class AppGuard {
   static bool navigating = false;
 
@@ -52,7 +57,7 @@ class AppGuard {
     try {
       action();
     } catch (e) {
-      debugPrint("🔥 Navigation Error: $e");
+      debugPrint("Navigation Error: $e");
     }
 
     Future.delayed(const Duration(milliseconds: 250), () {
@@ -64,12 +69,10 @@ class AppGuard {
 final GlobalKey<ScaffoldMessengerState> messengerKey =
     GlobalKey<ScaffoldMessengerState>();
 
-final GlobalKey<NavigatorState> navigatorKey =
-    GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 bool _firebaseInitialized = false;
 
-/// ================= BACKGROUND =================
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   try {
     if (!_firebaseInitialized) {
@@ -79,12 +82,25 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       _firebaseInitialized = true;
     }
   } catch (e) {
-    debugPrint("🔥 Background Error: $e");
+    debugPrint("Background Error: $e");
   }
 }
 
-/// ================= MAIN =================
-void main() async {
+String _asString(dynamic value, [String fallback = ""]) {
+  if (value == null) return fallback;
+  final text = value.toString().trim();
+  return text.isEmpty ? fallback : text;
+}
+
+Map<String, dynamic> _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) {
+    return value.map((key, val) => MapEntry(key.toString(), val));
+  }
+  return {};
+}
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -100,30 +116,21 @@ void main() async {
   try {
     await AnalyticsService.init();
     await AnalyticsService.logEvent("app_open");
-
-    FirebaseService.firestore.collection("analytics_events").add({
-      "type": "app_open",
-      "userId": FirebaseService.auth.currentUser?.uid ?? "",
-      "timestamp": Timestamp.now(),
-    });
-
   } catch (e) {
-    debugPrint("🔥 Analytics Init Error: $e");
+    debugPrint("Analytics Init Error: $e");
   }
 
   if (!kIsWeb) {
-    FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler);
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   }
 
   runZonedGuarded(() {
     runApp(const RoyalApp());
   }, (error, stack) {
-    debugPrint("🔥 GLOBAL ERROR: $error");
+    debugPrint("GLOBAL ERROR: $error");
   });
 }
 
-/// ================= APP =================
 class RoyalApp extends StatefulWidget {
   const RoyalApp({super.key});
 
@@ -132,7 +139,6 @@ class RoyalApp extends StatefulWidget {
 }
 
 class _RoyalAppState extends State<RoyalApp> {
-
   bool initialized = false;
   bool showOnboarding = false;
   bool splashDone = false;
@@ -147,22 +153,24 @@ class _RoyalAppState extends State<RoyalApp> {
       }
     });
 
-    Future.microtask(() async {
-      try {
+    Future.microtask(_initializeApp);
+  }
 
-        await FirebaseService.initNotifications();
+  Future<void> _initializeApp() async {
+    try {
+      await FirebaseService.initNotifications();
 
-        if (!kIsWeb) {
-          try {
-            await NotificationsService.init();
-            await FirebaseMessaging.instance.requestPermission();
-          } catch (e) {
-            debugPrint("🔥 Notification Error: $e");
-          }
+      if (!kIsWeb) {
+        try {
+          await NotificationsService.init();
+          await FirebaseMessaging.instance.requestPermission();
+        } catch (e) {
+          debugPrint("Notification Error: $e");
+        }
 
-          String? token = await FirebaseMessaging.instance.getToken();
-
-          if (token != null) {
+        try {
+          final token = await FirebaseMessaging.instance.getToken();
+          if (token != null && token.isNotEmpty) {
             final user = FirebaseService.auth.currentUser;
             if (user != null) {
               await FirebaseService.firestore
@@ -170,6 +178,7 @@ class _RoyalAppState extends State<RoyalApp> {
                   .doc(user.uid)
                   .set({
                 "fcmToken": token,
+                "updatedAt": FieldValue.serverTimestamp(),
               }, SetOptions(merge: true));
             }
           }
@@ -185,34 +194,28 @@ class _RoyalAppState extends State<RoyalApp> {
               );
             }
           });
-        }
-
-        try {
-          await AnalyticsService.logEvent("app_started");
-          await AnalyticsService.trackUserActive();
         } catch (e) {
-          debugPrint("🔥 Analytics Error: $e");
+          debugPrint("FCM Error: $e");
         }
-
-        FirebaseService.firestore.collection("analytics_events").add({
-          "type": "app_started",
-          "userId": FirebaseService.auth.currentUser?.uid ?? "",
-          "timestamp": Timestamp.now(),
-        });
-
-        final prefs = await SharedPreferences.getInstance();
-        bool seen = prefs.getBool("seen_onboarding") ?? false;
-
-        showOnboarding = !seen;
-
-      } catch (e) {
-        debugPrint("🔥 Init Error: $e");
       }
 
+      try {
+        await AnalyticsService.logEvent("app_started");
+        await AnalyticsService.trackUserActive();
+      } catch (e) {
+        debugPrint("Analytics Error: $e");
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      final seen = prefs.getBool("seen_onboarding") ?? false;
+      showOnboarding = !seen;
+    } catch (e) {
+      debugPrint("Init Error: $e");
+    } finally {
       if (mounted) {
         setState(() => initialized = true);
       }
-    });
+    }
   }
 
   Widget _authWrapper() {
@@ -221,6 +224,7 @@ class _RoyalAppState extends State<RoyalApp> {
         onFinish: () async {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool("seen_onboarding", true);
+          if (!mounted) return;
           setState(() {
             showOnboarding = false;
           });
@@ -231,82 +235,234 @@ class _RoyalAppState extends State<RoyalApp> {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashPage();
+          return SplashPage();
+        }
+
+        if (snapshot.hasError) {
+          return LoginPage();
         }
 
         if (snapshot.hasData) {
-          return FutureBuilder<DocumentSnapshot>(
+          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
             future: FirebaseService.firestore
                 .collection(AppConstants.users)
                 .doc(snapshot.data!.uid)
                 .get(),
             builder: (context, userSnapshot) {
-
-              if (!userSnapshot.hasData) {
-                return const SplashPage();
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return SplashPage();
               }
 
-              final data = userSnapshot.data!.data() as Map<String, dynamic>?;
+              if (userSnapshot.hasError) {
+                return MainNavigationPage();
+              }
 
+              final data = userSnapshot.data?.data();
               final isVIP = data?['isVIP'] == true;
 
               if (isVIP) {
-                return const MainNavigationPage();
+                return MainNavigationPage();
               }
 
-              return const MainNavigationPage();
+              return MainNavigationPage();
             },
           );
         }
 
-        return const LoginPage();
+        return LoginPage();
       },
     );
   }
 
   Route<dynamic>? onGenerateRoute(RouteSettings settings) {
+    final args = settings.arguments;
 
     switch (settings.name) {
-
+      case '/':
       case '/home':
-        return MaterialPageRoute(
-            builder: (_) => const MainNavigationPage());
+        return MaterialPageRoute(builder: (_) => MainNavigationPage());
 
       case '/login':
-        return MaterialPageRoute(
-            builder: (_) => const LoginPage());
+        return MaterialPageRoute(builder: (_) => LoginPage());
 
       case '/payment':
         return MaterialPageRoute(
-            builder: (_) => const PaymentPage());
+          builder: (_) => PaymentPage(
+            courseId: args is Map ? _asString(args['courseId']) : null,
+          ),
+        );
+
+      case '/checkout':
+        if (args is Map) {
+          final map = _asMap(args);
+          return MaterialPageRoute(
+            builder: (_) => CheckoutPage(
+              phone: _asString(map['phone']),
+              price: int.tryParse(_asString(map['price'])) ?? 0,
+              paid: int.tryParse(_asString(map['paid'])) ?? 0,
+              remaining: int.tryParse(_asString(map['remaining'])) ?? 0,
+              plan: _asString(map['plan']),
+              courseId: _asString(map['courseId']).isEmpty
+                  ? null
+                  : _asString(map['courseId']),
+              imageUrl: _asString(map['imageUrl']),
+            ),
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => const CheckoutPage(
+            phone: '',
+            price: 0,
+            paid: 0,
+            remaining: 0,
+            plan: '',
+            courseId: null,
+            imageUrl: '',
+          ),
+        );
 
       case '/verify':
-        final certId = settings.arguments as String?;
+        final certId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['certId'])
+                : "";
         return MaterialPageRoute(
-            builder: (_) =>
-                VerifyCertificatePage(certId: certId ?? ""));
-
-      case '/quizResults':
-        final lessonId = settings.arguments as String?;
-        return MaterialPageRoute(
-            builder: (_) =>
-                QuizResultsPage(lessonId: lessonId ?? ""));
+          builder: (_) => VerifyCertificatePage(certId: certId),
+        );
 
       case '/verifyWeb':
-        final certId = settings.arguments as String?;
+        final certId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['certId'])
+                : "";
         return MaterialPageRoute(
-            builder: (_) =>
-                VerifyWebPage(certId: certId ?? ""));
+          builder: (_) => VerifyWebPage(certId: certId),
+        );
+
+      case '/quiz':
+        final lessonId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['lessonId'])
+                : "";
+        return MaterialPageRoute(
+          builder: (_) => QuizPage(lessonId: lessonId),
+        );
+
+      case '/addQuiz':
+        final lessonId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['lessonId'])
+                : "";
+        return MaterialPageRoute(
+          builder: (_) => AddQuizPage(lessonId: lessonId),
+        );
+
+      case '/quizResults':
+        final lessonId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['lessonId'])
+                : "";
+        return MaterialPageRoute(
+          builder: (_) => QuizResultsPage(lessonId: lessonId),
+        );
 
       case '/center':
+        return MaterialPageRoute(builder: (_) => CenterManagementPage());
+
+      case '/dashboard':
+        return MaterialPageRoute(builder: (_) => DashboardPage());
+
+      case '/analytics':
+        return MaterialPageRoute(builder: (_) => AnalyticsDashboardPage());
+
+      case '/attendanceTake':
+        return MaterialPageRoute(builder: (_) => AttendanceTakePage());
+
+      case '/attendanceReport':
+        return MaterialPageRoute(builder: (_) => AttendanceReportPage());
+
+      case '/subjects':
+        return MaterialPageRoute(builder: (_) => SubjectsPage());
+
+      case '/subjectSessions':
+        if (args is Map<String, dynamic>) {
+          return MaterialPageRoute(
+            builder: (_) => SubjectSessionsPage(
+              subjectId: _asString(args['subjectId']),
+              subjectName: _asString(args['subjectName']),
+            ),
+          );
+        }
+        if (args is Map) {
+          final map = _asMap(args);
+          return MaterialPageRoute(
+            builder: (_) => SubjectSessionsPage(
+              subjectId: _asString(map['subjectId']),
+              subjectName: _asString(map['subjectName']),
+            ),
+          );
+        }
         return MaterialPageRoute(
-            builder: (_) => const CenterManagementPage());
+          builder: (_) => CenterManagementPage(),
+        );
+
+      case '/adminNavControl':
+        return MaterialPageRoute(builder: (_) => AdminNavigationControlPage());
+
+      case '/coursesAdmin':
+        return MaterialPageRoute(builder: (_) => CoursesAdminPage());
+
+      case '/studentsManagement':
+        return MaterialPageRoute(builder: (_) => StudentsManagementPage());
+
+      case '/studentsCrm':
+        return MaterialPageRoute(builder: (_) => const StudentsCRMPage());
+
+      case '/studentFinancial':
+        return MaterialPageRoute(builder: (_) => StudentFinancialPage());
+
+      case '/studentFinancialDetails':
+        final userId = args is String
+            ? args
+            : args is Map
+                ? _asString(_asMap(args)['userId'])
+                : "";
+        return MaterialPageRoute(
+          builder: (_) => StudentFinancialDetailsPage(userId: userId),
+        );
+
+      case '/topStudents':
+        return MaterialPageRoute(builder: (_) => TopStudentsPage());
+
+      case '/comments':
+        String lessonId = "";
+        if (args is String) {
+          lessonId = args;
+        } else if (args is Map<String, dynamic>) {
+          lessonId = _asString(args['lessonId']);
+        } else if (args is Map) {
+          lessonId = _asString(_asMap(args)['lessonId']);
+        }
+        return MaterialPageRoute(
+          builder: (_) => CommentsPage(lessonId: lessonId),
+        );
+
+      case '/financeReports':
+        return MaterialPageRoute(builder: (_) => FinanceReportsPage());
+
+      case '/instructorRequests':
+        return MaterialPageRoute(
+          builder: (_) => InstructorRequestsAdminPage(),
+        );
 
       default:
-        return MaterialPageRoute(
-            builder: (_) => const SplashPage());
+        return MaterialPageRoute(builder: (_) => SplashPage());
     }
   }
 
@@ -319,6 +475,10 @@ class _RoyalAppState extends State<RoyalApp> {
         backgroundColor: AppColors.black,
         elevation: 0,
       ),
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.gold,
+        brightness: Brightness.dark,
+      ),
     );
   }
 
@@ -330,7 +490,7 @@ class _RoyalAppState extends State<RoyalApp> {
       debugShowCheckedModeBanner: false,
       title: "Royal Academy",
       theme: _darkTheme(),
-      home: (!initialized || !splashDone) ? const SplashPage() : _authWrapper(),
+      home: (!initialized || !splashDone) ? SplashPage() : _authWrapper(),
       onGenerateRoute: onGenerateRoute,
     );
   }

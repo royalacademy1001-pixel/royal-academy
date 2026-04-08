@@ -17,7 +17,6 @@ class AddQuizPage extends StatefulWidget {
 class _AddQuizPageState extends State<AddQuizPage> {
 
   final List<Map<String, dynamic>> questions = [];
-
   final List<TextEditingController> questionControllers = [];
   final List<List<TextEditingController>> optionControllers = [];
 
@@ -26,7 +25,6 @@ class _AddQuizPageState extends State<AddQuizPage> {
   String? quizId;
 
   final ScrollController scrollController = ScrollController();
-
   String courseId = "";
 
   @override
@@ -60,7 +58,8 @@ class _AddQuizPageState extends State<AddQuizPage> {
           .get();
 
       if (lessonDoc.docs.isNotEmpty) {
-        courseId = lessonDoc.docs.first.reference.parent.parent?.id ?? "";
+        courseId =
+            lessonDoc.docs.first.reference.parent.parent?.id ?? "";
       }
 
       final snap = await FirebaseService.firestore
@@ -71,7 +70,6 @@ class _AddQuizPageState extends State<AddQuizPage> {
 
       if (snap.docs.isNotEmpty) {
         final doc = snap.docs.first;
-
         quizId = doc.id;
 
         final raw = doc.data()['questions'];
@@ -94,13 +92,13 @@ class _AddQuizPageState extends State<AddQuizPage> {
   }
 
   void _addLoadedQuestion(Map<String, dynamic> q) {
+
     final opts = (q['options'] is List)
         ? List.from(q['options'])
         : ["", "", "", ""];
 
     questions.add({
       "question": q['question'] ?? "",
-      "options": opts,
       "correctIndex": q['correctIndex'] ?? 0,
     });
 
@@ -121,7 +119,6 @@ class _AddQuizPageState extends State<AddQuizPage> {
     setState(() {
       questions.add({
         "question": "",
-        "options": ["", "", "", ""],
         "correctIndex": 0,
       });
 
@@ -129,6 +126,14 @@ class _AddQuizPageState extends State<AddQuizPage> {
 
       optionControllers.add(
         List.generate(4, (_) => TextEditingController()),
+      );
+    });
+
+    Future.delayed(const Duration(milliseconds: 200), () {
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOut,
       );
     });
   }
@@ -168,7 +173,6 @@ class _AddQuizPageState extends State<AddQuizPage> {
         }
       }
     }
-
     return true;
   }
 
@@ -180,10 +184,11 @@ class _AddQuizPageState extends State<AddQuizPage> {
     }
 
     if (!validate()) return;
-
     if (saving) return;
 
     setState(() => saving = true);
+
+    final parentCtx = context;
 
     try {
 
@@ -215,32 +220,44 @@ class _AddQuizPageState extends State<AddQuizPage> {
         "updatedAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      if (mounted) {
-        Navigator.pop(context);
-        _show("✅ تم حفظ الكويز بنجاح");
-      }
+      if (!mounted) return;
+
+      Navigator.pop(parentCtx);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(parentCtx).showSnackBar(
+        const SnackBar(content: Text("✅ تم حفظ الكويز بنجاح")),
+      );
 
     } catch (e) {
-      debugPrint("Save Error: $e");
-      _show("❌ حصل خطأ");
+
+      if (mounted) {
+        ScaffoldMessenger.of(parentCtx).showSnackBar(
+          const SnackBar(content: Text("❌ حصل خطأ")),
+        );
+      }
     }
 
     if (mounted) setState(() => saving = false);
   }
 
   Future<void> deleteQuestion(int index) async {
-    bool? ok = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
+
+    final parentCtx = context;
+
+    final ok = await showDialog<bool>(
+      context: parentCtx,
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.black,
         title: const Text("حذف السؤال؟",
             style: TextStyle(color: Colors.white)),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(dialogCtx, false),
               child: const Text("إلغاء")),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => Navigator.pop(dialogCtx, true),
               child: const Text("حذف")),
         ],
       ),
@@ -312,57 +329,52 @@ class _AddQuizPageState extends State<AddQuizPage> {
                 var q = questions[index];
 
                 return Container(
-                  key: ValueKey("question_$index"),
+                  key: ValueKey(index),
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(12),
-                  decoration: AppColors.premiumCard.copyWith(
-                    border: Border.all(color: AppColors.gold),
-                  ),
+                  decoration: AppColors.premiumCard,
                   child: Column(
                     children: [
 
                       TextField(
                         controller: questionControllers[index],
-                        decoration:
-                            const InputDecoration(hintText: "السؤال"),
+                        decoration: const InputDecoration(hintText: "السؤال"),
                       ),
 
                       const SizedBox(height: 10),
 
-                      ...List.generate(4, (i) {
-                        return Row(
-                          children: [
-
-                            Radio<int>(
-                              value: i,
-                              groupValue: q['correctIndex'] ?? 0,
-                              onChanged: (val) {
-                                setState(() {
-                                  q['correctIndex'] = val ?? 0;
-                                });
-                              },
-                            ),
-
-                            Expanded(
-                              child: TextField(
-                                controller: optionControllers[index][i],
-                                decoration: InputDecoration(
-                                    hintText: "اختيار ${i + 1}"),
-                              ),
-                            ),
-                          ],
-                        );
-                      }),
+                      RadioGroup<int>(
+                        groupValue: q['correctIndex'] ?? 0,
+                        onChanged: (val) {
+                          setState(() {
+                            q['correctIndex'] = val ?? 0;
+                          });
+                        },
+                        child: Column(
+                          children: List.generate(4, (i) {
+                            return Row(
+                              children: [
+                                Radio<int>(value: i),
+                                Expanded(
+                                  child: TextField(
+                                    controller: optionControllers[index][i],
+                                    decoration: InputDecoration(
+                                      hintText: "اختيار ${i + 1}",
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }),
+                        ),
+                      ),
 
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
                           IconButton(
                             icon: const Icon(Icons.copy, color: Colors.blue),
                             onPressed: () => duplicateQuestion(index),
                           ),
-
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () => deleteQuestion(index),
@@ -378,26 +390,13 @@ class _AddQuizPageState extends State<AddQuizPage> {
 
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-
-                ElevatedButton(
-                  style: AppColors.goldButton,
-                  onPressed: addQuestion,
-                  child: const Text("➕ إضافة سؤال"),
-                ),
-
-                const SizedBox(height: 10),
-
-                saving
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                        style: AppColors.goldButton,
-                        onPressed: saveQuiz,
-                        child: const Text("💾 حفظ الكويز"),
-                      ),
-              ],
-            ),
+            child: saving
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    style: AppColors.goldButton,
+                    onPressed: saveQuiz,
+                    child: const Text("💾 حفظ الكويز"),
+                  ),
           )
         ],
       ),

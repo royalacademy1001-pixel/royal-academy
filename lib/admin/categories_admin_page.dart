@@ -11,13 +11,10 @@ class CategoriesAdminPage extends StatefulWidget {
   const CategoriesAdminPage({super.key});
 
   @override
-  State<CategoriesAdminPage> createState() =>
-      _CategoriesAdminPageState();
+  State<CategoriesAdminPage> createState() => _CategoriesAdminPageState();
 }
 
-class _CategoriesAdminPageState
-    extends State<CategoriesAdminPage> {
-
+class _CategoriesAdminPageState extends State<CategoriesAdminPage> {
   final controller = TextEditingController();
   String searchText = "";
   bool loading = false;
@@ -45,9 +42,7 @@ class _CategoriesAdminPageState
         return;
       }
 
-      await FirebaseService.firestore
-          .collection("categories")
-          .add({
+      await FirebaseService.firestore.collection("categories").add({
         "title": text,
         "order": DateTime.now().millisecondsSinceEpoch,
         "createdAt": FieldValue.serverTimestamp(),
@@ -55,7 +50,6 @@ class _CategoriesAdminPageState
 
       controller.clear();
       show("تم إضافة التصنيف ✅", Colors.green);
-
     } catch (e) {
       show("خطأ: $e", Colors.red);
     }
@@ -65,45 +59,84 @@ class _CategoriesAdminPageState
 
   // ================= UPDATE =================
   Future editCategory(String id, String oldTitle) async {
-
     final editController = TextEditingController(text: oldTitle);
 
+    final ctx = context; // ✅ حفظ context
+
     showDialog(
-      context: context,
+      context: ctx,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text("تعديل التصنيف",
-            style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Text(
+          "تعديل التصنيف",
+          style: TextStyle(
+            color: AppColors.gold,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Cairo',
+          ),
+        ),
         content: TextField(
           controller: editController,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("إلغاء", style: TextStyle(color: Colors.grey)),
+            onPressed: () {
+              if (Navigator.canPop(ctx)) {
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text(
+              "إلغاء",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
+
+          // 🔥 SAVE BUTTON (FIXED)
           TextButton(
             onPressed: () async {
+              final navigator = Navigator.of(context); // ✅ ناخد navigator بدري
+
               String newTitle = editController.text.trim();
               if (newTitle.isEmpty) return;
 
-              await FirebaseService.firestore
-                  .collection("categories")
-                  .doc(id)
-                  .update({"title": newTitle});
+              try {
+                await FirebaseService.firestore
+                    .collection("categories")
+                    .doc(id)
+                    .update({"title": newTitle});
 
-              Navigator.pop(context);
-              show("تم التعديل ✅", Colors.green);
+                if (!mounted) return;
+
+                navigator.pop(); // ✅ آمن بدون warning
+
+                show("تم التعديل ✅", Colors.green);
+              } catch (e) {
+                debugPrint("Edit Error: $e");
+
+                if (!mounted) return;
+
+                show("❌ خطأ في التعديل", Colors.red);
+              }
             },
-            child: const Text("حفظ",
-                style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "حفظ",
+              style: TextStyle(
+                color: AppColors.gold,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -112,14 +145,16 @@ class _CategoriesAdminPageState
 
   // ================= DELETE =================
   Future deleteCategory(String id) async {
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text("حذف التصنيف؟",
-            style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+            style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo')),
         content: const Text(
           "⚠️ حذف التصنيف لن يحذف الكورسات المرتبطة به ولكن سيؤثر على ترتيب العرض.",
           style: TextStyle(color: Colors.grey, fontSize: 13),
@@ -141,7 +176,8 @@ class _CategoriesAdminPageState
               show("تم الحذف ❌", Colors.red);
             },
             child: const Text("حذف",
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                style:
+                    TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -163,7 +199,11 @@ class _CategoriesAdminPageState
         backgroundColor: AppColors.black,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        content: Text(text, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontFamily: 'Cairo')),
+        content: Text(text,
+            style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo')),
       ),
     );
   }
@@ -177,23 +217,20 @@ class _CategoriesAdminPageState
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("📂 إدارة التصنيفات",
-            style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
       ),
-
       body: Stack(
         children: [
           Column(
             children: [
-
               /// ➕ ADD SECTION
               Container(
                 margin: const EdgeInsets.all(12),
@@ -201,12 +238,14 @@ class _CategoriesAdminPageState
                 decoration: BoxDecoration(
                   color: AppColors.black.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
+                  border:
+                      Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text("إضافة تصنيف جديد", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                    const Text("إضافة تصنيف جديد",
+                        style: TextStyle(color: Colors.grey, fontSize: 12)),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -216,29 +255,36 @@ class _CategoriesAdminPageState
                             style: const TextStyle(color: Colors.white),
                             decoration: InputDecoration(
                               hintText: "مثال: قسم التمريض",
-                              hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                              hintStyle: TextStyle(
+                                  color: Colors.grey.shade600, fontSize: 13),
                               filled: true,
                               fillColor: Colors.white.withValues(alpha: 0.05),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 15, vertical: 0),
+                              border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                  borderSide: BorderSide.none),
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
-
                         loading
                             ? const SizedBox(
                                 width: 45,
                                 height: 45,
                                 child: Padding(
                                   padding: EdgeInsets.all(10.0),
-                                  child: CircularProgressIndicator(color: AppColors.gold, strokeWidth: 2),
+                                  child: CircularProgressIndicator(
+                                      color: AppColors.gold, strokeWidth: 2),
                                 ),
                               )
                             : Container(
-                                decoration: BoxDecoration(color: AppColors.gold, borderRadius: BorderRadius.circular(15)),
+                                decoration: BoxDecoration(
+                                    color: AppColors.gold,
+                                    borderRadius: BorderRadius.circular(15)),
                                 child: IconButton(
-                                  icon: const Icon(Icons.add_rounded, color: Colors.black, size: 28),
+                                  icon: const Icon(Icons.add_rounded,
+                                      color: Colors.black, size: 28),
                                   onPressed: addCategory,
                                 ),
                               )
@@ -252,17 +298,20 @@ class _CategoriesAdminPageState
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 child: TextField(
-                  onChanged: (val) =>
-                      setState(() => searchText = val),
+                  onChanged: (val) => setState(() => searchText = val),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     hintText: "ابحث في التصنيفات المضافة...",
-                    hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.gold, size: 20),
+                    hintStyle:
+                        TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.gold, size: 20),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.05),
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(15),
+                        borderSide: BorderSide.none),
                   ),
                 ),
               ),
@@ -276,12 +325,9 @@ class _CategoriesAdminPageState
                       .collection("categories")
                       .snapshots(),
                   builder: (context, snapshot) {
-
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(
-                        child: CircularProgressIndicator(
-                            color: AppColors.gold),
+                        child: CircularProgressIndicator(color: AppColors.gold),
                       );
                     }
 
@@ -296,10 +342,8 @@ class _CategoriesAdminPageState
 
                     /// 🔥 SORT SAFE
                     docs.sort((a, b) {
-                      var aData =
-                          a.data() as Map<String, dynamic>;
-                      var bData =
-                          b.data() as Map<String, dynamic>;
+                      var aData = a.data() as Map<String, dynamic>;
+                      var bData = b.data() as Map<String, dynamic>;
 
                       int aOrder = aData['order'] ?? 0;
                       int bOrder = bData['order'] ?? 0;
@@ -308,8 +352,7 @@ class _CategoriesAdminPageState
                     });
 
                     var filtered = docs.where((doc) {
-                      var data =
-                          doc.data() as Map<String, dynamic>;
+                      var data = doc.data() as Map<String, dynamic>;
 
                       return (data['title'] ?? "")
                           .toLowerCase()
@@ -321,7 +364,9 @@ class _CategoriesAdminPageState
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.folder_off_outlined, size: 60, color: Colors.white.withValues(alpha: 0.1)),
+                            Icon(Icons.folder_off_outlined,
+                                size: 60,
+                                color: Colors.white.withValues(alpha: 0.1)),
                             const SizedBox(height: 10),
                             const Text("لا يوجد تصنيفات حالياً",
                                 style: TextStyle(color: Colors.grey)),
@@ -335,7 +380,6 @@ class _CategoriesAdminPageState
                       physics: const BouncingScrollPhysics(),
                       itemCount: filtered.length,
                       onReorder: (oldIndex, newIndex) {
-
                         if (newIndex > oldIndex) newIndex--;
 
                         final item = filtered.removeAt(oldIndex);
@@ -344,10 +388,8 @@ class _CategoriesAdminPageState
                         updateOrder(filtered);
                       },
                       itemBuilder: (context, index) {
-
                         var doc = filtered[index];
-                        var data =
-                            doc.data() as Map<String, dynamic>;
+                        var data = doc.data() as Map<String, dynamic>;
 
                         return Container(
                           key: ValueKey(doc.id),
@@ -360,13 +402,18 @@ class _CategoriesAdminPageState
                           child: ListTile(
                             title: Text(
                               data['title'] ?? "",
-                              style:
-                                  const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14),
                             ),
                             leading: Container(
                               padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.1), shape: BoxShape.circle),
-                              child: const Icon(Icons.reorder_rounded, color: AppColors.gold, size: 20),
+                              decoration: BoxDecoration(
+                                  color: AppColors.gold.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle),
+                              child: const Icon(Icons.reorder_rounded,
+                                  color: AppColors.gold, size: 20),
                             ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -374,14 +421,13 @@ class _CategoriesAdminPageState
                                 IconButton(
                                   icon: const Icon(Icons.edit_rounded,
                                       color: Colors.blue, size: 20),
-                                  onPressed: () => editCategory(
-                                      doc.id, data['title']),
+                                  onPressed: () =>
+                                      editCategory(doc.id, data['title']),
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline_rounded,
                                       color: Colors.red, size: 20),
-                                  onPressed: () =>
-                                      deleteCategory(doc.id),
+                                  onPressed: () => deleteCategory(doc.id),
                                 ),
                               ],
                             ),
@@ -394,13 +440,13 @@ class _CategoriesAdminPageState
               ),
             ],
           ),
-          
           if (loading)
-             Container(
+            Container(
               color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                child: const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                child: const Center(
+                    child: CircularProgressIndicator(color: AppColors.gold)),
               ),
             ),
         ],

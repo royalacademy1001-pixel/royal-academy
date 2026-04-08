@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
 class PaymentActions {
 
@@ -74,10 +75,10 @@ class PaymentActions {
         });
       });
 
-      print("✅ Payment Approved + User Updated");
+      debugPrint("✅ Payment Approved + User Updated");
 
     } catch (e) {
-      print("🔥 APPROVE ERROR: $e");
+      debugPrint("🔥 APPROVE ERROR: $e");
       rethrow;
     }
   }
@@ -108,10 +109,10 @@ class PaymentActions {
         });
       }
 
-      print("❌ Payment Rejected");
+      debugPrint("❌ Payment Rejected");
 
     } catch (e) {
-      print("🔥 REJECT ERROR: $e");
+      debugPrint("🔥 REJECT ERROR: $e");
       rethrow;
     }
   }

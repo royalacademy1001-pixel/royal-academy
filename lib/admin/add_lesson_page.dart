@@ -185,6 +185,7 @@ class _AddLessonPageState extends State<AddLessonPage> {
       }
 
     } catch (_) {
+      if (!mounted) return;
       showSnack(context, "فشل اختيار الملف ❌");
     }
   }
@@ -262,6 +263,7 @@ if (selectedBytes != null || selectedFile != null) {
   }
 
   String? uploaded = await uploadFile();
+  if (!mounted) return;
 
   if (uploaded == null) {
     showSnack(context, "فشل رفع الملف ❌");

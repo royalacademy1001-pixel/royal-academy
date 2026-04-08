@@ -22,7 +22,6 @@ class _StudentResultsPageState
     extends State<StudentResultsPage> {
 
   String search = "";
-  String selectedUserId = "";
   List<QueryDocumentSnapshot> users = [];
 
   void show(String msg) {
@@ -37,9 +36,7 @@ class _StudentResultsPageState
           .collection("users")
           .get();
       users = snap.docs;
-      if (mounted) {
-        setState(() {});
-      }
+      if (mounted) setState(() {});
     } catch (_) {}
   }
 
@@ -55,7 +52,7 @@ class _StudentResultsPageState
     final titleController = TextEditingController();
     String localSelectedUserId = userId;
 
-    showDialog(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (context, setDialogState) {
@@ -67,7 +64,7 @@ class _StudentResultsPageState
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: localSelectedUserId.isEmpty ? null : localSelectedUserId,
+                  initialValue: localSelectedUserId.isEmpty ? null : localSelectedUserId,
                   dropdownColor: AppColors.black,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(hintText: "اختر الطالب"),
@@ -109,7 +106,7 @@ class _StudentResultsPageState
                   onPressed: () => Navigator.pop(context),
                   child: const Text("إلغاء")),
               ElevatedButton(
-                onPressed: () async {
+                onPressed: () {
 
                   int degree =
                       int.tryParse(degreeController.text) ?? 0;
@@ -119,17 +116,11 @@ class _StudentResultsPageState
                   if (degree <= 0 || title.isEmpty) return;
                   if (localSelectedUserId.isEmpty) return;
 
-                  await FirebaseService.firestore
-                      .collection("results")
-                      .add({
+                  Navigator.pop(context, {
                     "userId": localSelectedUserId,
                     "title": title,
                     "degree": degree,
-                    "timestamp": FieldValue.serverTimestamp(),
                   });
-
-                  Navigator.pop(context);
-                  show("تم إضافة النتيجة ✅");
                 },
                 child: const Text("حفظ"),
               )
@@ -138,6 +129,24 @@ class _StudentResultsPageState
         },
       ),
     );
+
+    degreeController.dispose();
+    titleController.dispose();
+
+    if (result == null) return;
+
+    await FirebaseService.firestore
+        .collection("results")
+        .add({
+      "userId": result["userId"],
+      "title": result["title"],
+      "degree": result["degree"],
+      "timestamp": FieldValue.serverTimestamp(),
+    });
+
+    if (!mounted) return;
+
+    show("تم إضافة النتيجة ✅");
   }
 
   Future<String> getUserName(String userId) async {
@@ -153,6 +162,12 @@ class _StudentResultsPageState
     }
   }
 
+  Color getDegreeColor(int degree) {
+    if (degree >= 85) return Colors.green;
+    if (degree >= 60) return Colors.orange;
+    return Colors.red;
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -163,6 +178,12 @@ class _StudentResultsPageState
         title: const Text("📊 نتائج الطلاب",
             style: TextStyle(color: AppColors.gold)),
         backgroundColor: AppColors.black,
+      ),
+
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.gold,
+        child: const Icon(Icons.add, color: Colors.black),
+        onPressed: () => addResult(""),
       ),
 
       body: Column(
@@ -253,19 +274,22 @@ class _StudentResultsPageState
                         return Container(
                           margin:
                               const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
+                            color: Colors.white.withValues(alpha: 0.05),
                             borderRadius:
                                 BorderRadius.circular(15),
                           ),
                           child: Row(
                             children: [
 
-                              const Icon(Icons.school,
-                                  color: AppColors.gold),
+                              CircleAvatar(
+                                backgroundColor: AppColors.gold,
+                                child: const Icon(Icons.school,
+                                    color: Colors.black),
+                              ),
 
-                              const SizedBox(width: 10),
+                              const SizedBox(width: 12),
 
                               Expanded(
                                 child: Column(
@@ -279,13 +303,30 @@ class _StudentResultsPageState
                                             fontWeight:
                                                 FontWeight.bold)),
 
+                                    const SizedBox(height: 4),
+
                                     Text(title,
                                         style: const TextStyle(
                                             color: Colors.grey)),
 
-                                    Text("📊 $degree درجة",
-                                        style: const TextStyle(
-                                            color: Colors.green)),
+                                    const SizedBox(height: 6),
+
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: getDegreeColor(degree)
+                                            .withValues(alpha: 0.2),
+                                        borderRadius:
+                                            BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        "📊 $degree درجة",
+                                        style: TextStyle(
+                                            color:
+                                                getDegreeColor(degree)),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),

@@ -14,15 +14,15 @@ class StudentsListPage extends StatefulWidget {
 }
 
 class _StudentsListPageState extends State<StudentsListPage> {
-
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
 
   bool loading = false;
 
   Future<void> addStudent() async {
-
     if (nameController.text.trim().isEmpty) return;
+
+    final navigator = Navigator.of(context);
 
     setState(() => loading = true);
 
@@ -38,11 +38,12 @@ class _StudentsListPageState extends State<StudentsListPage> {
       nameController.clear();
       phoneController.clear();
 
-      Navigator.pop(context);
-
+      navigator.pop();
     } catch (e) {
       debugPrint("Add Student Error: $e");
     }
+
+    if (!mounted) return;
 
     setState(() => loading = false);
   }
@@ -52,25 +53,22 @@ class _StudentsListPageState extends State<StudentsListPage> {
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
-        title: const Text("➕ إضافة طالب", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("➕ إضافة طالب", style: TextStyle(color: Colors.white)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-
             TextField(
               controller: nameController,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(hintText: "الاسم"),
             ),
-
             const SizedBox(height: 10),
-
             TextField(
               controller: phoneController,
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(hintText: "رقم الهاتف"),
             ),
-
           ],
         ),
         actions: [
@@ -89,28 +87,24 @@ class _StudentsListPageState extends State<StudentsListPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
-        title: const Text("📋 طلاب السنتر", style: TextStyle(color: AppColors.gold)),
+        title: const Text("📋 طلاب السنتر",
+            style: TextStyle(color: AppColors.gold)),
         backgroundColor: AppColors.black,
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.gold,
         onPressed: showAddDialog,
         child: const Icon(Icons.add, color: Colors.black),
       ),
-
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseService.firestore
             .collection("students")
             .orderBy("createdAt", descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -119,14 +113,14 @@ class _StudentsListPageState extends State<StudentsListPage> {
 
           if (docs.isEmpty) {
             return const Center(
-              child: Text("لا يوجد طلاب", style: TextStyle(color: Colors.white)),
+              child:
+                  Text("لا يوجد طلاب", style: TextStyle(color: Colors.white)),
             );
           }
 
           return ListView.builder(
             itemCount: docs.length,
             itemBuilder: (context, index) {
-
               final data = docs[index].data() as Map<String, dynamic>;
 
               return ListTile(

@@ -6,6 +6,7 @@ import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 import '../../core/constants.dart';
 import '../../widgets/loading_widget.dart';
+import 'subject_sessions_page.dart';
 
 class AttendanceReportPage extends StatefulWidget {
   const AttendanceReportPage({super.key});
@@ -31,7 +32,13 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
 
   bool saving = false;
 
+  bool lateMode = false;
+
+  String selectedSessionId = "";
+  String selectedSessionName = "";
+
   final Map<String, bool> attendanceMap = {};
+  final Map<String, double> attendancePercentageCache = {};
   List<QueryDocumentSnapshot> _lastVisibleStudents = [];
 
   final List<String> years = const ["سنة أولى", "سنة تانية"];
@@ -41,6 +48,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadAttendancePercentages();
   }
 
   @override
@@ -98,7 +106,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
   List<QueryDocumentSnapshot> _filterStudents(
       List<QueryDocumentSnapshot> docs) {
     return docs.where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data() as Map<String, dynamic>? ?? {};
       return _matchesStudent(data);
     }).toList();
   }
@@ -108,7 +116,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     final search = reportSearch.toLowerCase().trim();
 
     final filtered = docs.where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data() as Map<String, dynamic>? ?? {};
       final year = (data['year'] ?? "").toString().trim();
       final term = (data['term'] ?? "").toString().trim();
       final subjectName = (data['subjectName'] ?? "").toString().toLowerCase();
@@ -126,8 +134,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     }).toList();
 
     filtered.sort((a, b) {
-      final ad = a.data() as Map<String, dynamic>;
-      final bd = b.data() as Map<String, dynamic>;
+      final ad = a.data() as Map<String, dynamic>? ?? {};
+      final bd = b.data() as Map<String, dynamic>? ?? {};
       final at = ad['createdAt'];
       final bt = bd['createdAt'];
 
@@ -166,7 +174,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
       lastDate: DateTime(2100),
     );
 
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
 
     setState(() {
       selectedDate = picked;
@@ -179,7 +187,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
       initialTime: selectedTime,
     );
 
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
 
     setState(() {
       selectedTime = picked;
@@ -191,11 +199,13 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     String dialogYear = selectedYear;
     String dialogTerm = selectedTerm;
 
+    final messenger = ScaffoldMessenger.of(context); // ✅ الحل هنا
+
     await showDialog(
       context: context,
       builder: (_) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (dialogCtx, setDialogState) {
             return AlertDialog(
               backgroundColor: AppColors.black,
               title: const Text(
@@ -213,7 +223,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedYear,
+                      initialValue: dialogYear,
                       dropdownColor: AppColors.black,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(hintText: "السنة"),
@@ -221,24 +231,23 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                           .map(
                             (y) => DropdownMenuItem(
                               value: y,
-                              child: Text(y,
-                                  style: const TextStyle(color: Colors.white)),
+                              child: Text(
+                                y,
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                           )
                           .toList(),
                       onChanged: (val) {
                         if (val == null) return;
-                        setState(() {
-                          selectedYear = val;
-                          selectedSubjectId = null;
-                          selectedSubjectName = "";
-                          attendanceMap.clear();
+                        setDialogState(() {
+                          dialogYear = val;
                         });
                       },
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      initialValue: selectedTerm,
+                      initialValue: dialogTerm,
                       dropdownColor: AppColors.black,
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(hintText: "الترم"),
@@ -246,18 +255,17 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                           .map(
                             (t) => DropdownMenuItem(
                               value: t,
-                              child: Text(t,
-                                  style: const TextStyle(color: Colors.white)),
+                              child: Text(
+                                t,
+                                style: const TextStyle(color: Colors.white),
+                              ),
                             ),
                           )
                           .toList(),
                       onChanged: (val) {
                         if (val == null) return;
-                        setState(() {
-                          selectedTerm = val;
-                          selectedSubjectId = null;
-                          selectedSubjectName = "";
-                          attendanceMap.clear();
+                        setDialogState(() {
+                          dialogTerm = val;
                         });
                       },
                     ),
@@ -266,7 +274,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () => Navigator.pop(dialogCtx),
                   child: const Text("إلغاء"),
                 ),
                 ElevatedButton(
@@ -274,11 +282,14 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                     final name = nameController.text.trim();
                     if (name.isEmpty) return;
 
+                    Navigator.pop(dialogCtx);
+
                     try {
                       await FirebaseService.firestore
                           .collection("subjects")
                           .add({
                         "name": name,
+                        "title": name,
                         "year": dialogYear,
                         "term": dialogTerm,
                         "createdAt": FieldValue.serverTimestamp(),
@@ -286,20 +297,31 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                             FirebaseService.auth.currentUser?.uid ?? "",
                       });
 
-                      if (mounted) {
-                        setState(() {
-                          selectedYear = dialogYear;
-                          selectedTerm = dialogTerm;
-                          selectedSubjectId = null;
-                          selectedSubjectName = "";
-                          attendanceMap.clear();
-                        });
-                      }
+                      if (!mounted) return;
 
-                      if (mounted) Navigator.pop(context);
-                      show("تمت إضافة المادة ✅");
+                      setState(() {
+                        selectedYear = dialogYear;
+                        selectedTerm = dialogTerm;
+                        selectedSubjectId = null;
+                        selectedSubjectName = "";
+                        attendanceMap.clear();
+                      });
+
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("تمت إضافة المادة ✅"),
+                        ),
+                      );
                     } catch (e) {
-                      show("حصل خطأ ❌");
+                      debugPrint("Add Subject Error: $e");
+
+                      if (!mounted) return;
+
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text("حصل خطأ ❌"),
+                        ),
+                      );
                     }
                   },
                   child: const Text("حفظ"),
@@ -310,6 +332,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
         );
       },
     );
+
+    nameController.dispose();
   }
 
   Future<void> _saveSession() async {
@@ -317,6 +341,11 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
 
     if (selectedSubjectId == null || selectedSubjectName.isEmpty) {
       show("اختار المادة أولاً");
+      return;
+    }
+
+    if (selectedSessionId.isEmpty) {
+      show("اختار الحصة أولاً");
       return;
     }
 
@@ -347,7 +376,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
       int presentCount = 0;
 
       for (final doc in filteredStudents) {
-        final data = doc.data() as Map<String, dynamic>;
+        final data = doc.data() as Map<String, dynamic>? ?? {};
         final isPresent = attendanceMap[doc.id] == true;
 
         if (isPresent) presentCount++;
@@ -362,8 +391,11 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
           "isVIP": data['isVIP'] == true,
           "blocked": data['blocked'] == true,
           "present": isPresent,
+          "late": lateMode,
           "subjectId": selectedSubjectId,
           "subjectName": selectedSubjectName,
+          "sessionId": selectedSessionId,
+          "sessionName": selectedSessionName,
           "sessionDate": _formatDate(selectedDate),
           "sessionTime": _formatTime(selectedTime),
           "sessionDateTime": Timestamp.fromDate(lectureDateTime),
@@ -376,6 +408,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
         "term": selectedTerm,
         "subjectId": selectedSubjectId,
         "subjectName": selectedSubjectName,
+        "sessionId": selectedSessionId,
+        "sessionName": selectedSessionName,
         "sessionDate": _formatDate(selectedDate),
         "sessionTime": _formatTime(selectedTime),
         "sessionDateTime": Timestamp.fromDate(lectureDateTime),
@@ -387,6 +421,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
       });
 
       await batch.commit();
+
+      await _loadAttendancePercentages();
 
       if (mounted) {
         setState(() {
@@ -402,10 +438,10 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     } catch (e) {
       debugPrint("Attendance Save Error: $e");
       show("حصل خطأ أثناء الحفظ ❌");
-    }
-
-    if (mounted) {
-      setState(() => saving = false);
+    } finally {
+      if (mounted) {
+        setState(() => saving = false);
+      }
     }
   }
 
@@ -413,14 +449,23 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     QueryDocumentSnapshot sessionDoc,
     Map<String, dynamic> sessionData,
   ) async {
+    if (!mounted) return;
+
     await showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
           backgroundColor: AppColors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: Text(
-            (sessionData['subjectName'] ?? "").toString(),
-            style: const TextStyle(color: Colors.white),
+            (sessionData['subjectName'] ?? sessionData['name'] ?? "")
+                .toString(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -455,63 +500,117 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 final records = snapshot.data!.docs;
 
                 records.sort((a, b) {
-                  final ad = a.data() as Map<String, dynamic>;
-                  final bd = b.data() as Map<String, dynamic>;
+                  final ad = a.data() as Map<String, dynamic>? ?? {};
+                  final bd = b.data() as Map<String, dynamic>? ?? {};
                   final an = (ad['name'] ?? "").toString().toLowerCase();
                   final bn = (bd['name'] ?? "").toString().toLowerCase();
                   return an.compareTo(bn);
                 });
 
-                return ListView.builder(
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    final data = record.data() as Map<String, dynamic>;
-                    final present = data['present'] == true;
+                int presentCount = 0;
+                for (var r in records) {
+                  final d = r.data() as Map<String, dynamic>? ?? {};
+                  if (d['present'] == true) presentCount++;
+                }
 
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
+                final total = records.length;
+                final percent = total == 0 ? 0 : (presentCount / total) * 100;
+
+                return Column(
+                  children: [
+                    Container(
                       padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: [
-                          Icon(
-                            present ? Icons.check_circle : Icons.cancel,
-                            color: present ? Colors.green : Colors.red,
+                          Text(
+                            "حضر: $presentCount",
+                            style: const TextStyle(color: Colors.green),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  (data['name'] ?? "").toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  (data['phone'] ?? "").toString(),
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                ),
-                                Text(
-                                  (data['email'] ?? "").toString(),
-                                  style: const TextStyle(
-                                      color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
+                          Text(
+                            "الإجمالي: $total",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          Text(
+                            "${percent.toStringAsFixed(1)}%",
+                            style: TextStyle(
+                              color: percent >= 75
+                                  ? Colors.green
+                                  : percent >= 50
+                                      ? Colors.orange
+                                      : Colors.red,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: records.length,
+                        itemBuilder: (context, index) {
+                          final record = records[index];
+                          final data =
+                              record.data() as Map<String, dynamic>? ?? {};
+                          final present = data['present'] == true;
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.04),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: present
+                                    ? Colors.green.withValues(alpha: 0.3)
+                                    : Colors.red.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  present ? Icons.check_circle : Icons.cancel,
+                                  color: present ? Colors.green : Colors.red,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        (data['name'] ?? "").toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        (data['phone'] ?? "").toString(),
+                                        style: const TextStyle(
+                                            color: Colors.grey, fontSize: 12),
+                                      ),
+                                      Text(
+                                        (data['email'] ?? "").toString(),
+                                        style: const TextStyle(
+                                            color: Colors.grey, fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -519,12 +618,72 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("إغلاق"),
+              child: const Text(
+                "إغلاق",
+                style: TextStyle(color: AppColors.gold),
+              ),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _loadAttendancePercentages() async {
+    try {
+      final sessionsSnap = await FirebaseService.firestore
+          .collection("attendance_sessions")
+          .get();
+
+      final Map<String, int> presentCount = {};
+      final Map<String, int> totalCount = {};
+
+      final List<Future<QuerySnapshot>> futures = [];
+
+      for (final session in sessionsSnap.docs) {
+        futures.add(session.reference.collection("records").get());
+      }
+
+      if (futures.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          attendancePercentageCache.clear();
+        });
+        return;
+      }
+
+      final allRecords = await Future.wait(futures);
+
+      for (final recordsSnap in allRecords) {
+        for (final rec in recordsSnap.docs) {
+          final data = rec.data() as Map<String, dynamic>? ?? {};
+          final uid = (data['userId'] ?? "").toString().trim();
+          if (uid.isEmpty) continue;
+
+          totalCount[uid] = (totalCount[uid] ?? 0) + 1;
+
+          if (data['present'] == true) {
+            presentCount[uid] = (presentCount[uid] ?? 0) + 1;
+          }
+        }
+      }
+
+      final Map<String, double> result = {};
+
+      totalCount.forEach((uid, total) {
+        final present = presentCount[uid] ?? 0;
+        result[uid] = total == 0 ? 0 : (present / total) * 100;
+      });
+
+      if (!mounted) return;
+
+      setState(() {
+        attendancePercentageCache.clear();
+        attendancePercentageCache.addAll(result);
+      });
+    } catch (e) {
+      debugPrint("Attendance % Error: $e");
+    }
   }
 
   Widget _buildYearTermSubjectPanel() {
@@ -541,7 +700,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: selectedYear,
+                  initialValue: selectedYear,
                   dropdownColor: AppColors.black,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(hintText: "السنة"),
@@ -568,7 +727,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
               const SizedBox(width: 10),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: selectedTerm,
+                  initialValue: selectedTerm,
                   dropdownColor: AppColors.black,
                   style: const TextStyle(color: Colors.white),
                   decoration: const InputDecoration(hintText: "الترم"),
@@ -616,48 +775,34 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
               }
 
               final allSubjects = snapshot.hasData ? snapshot.data!.docs : [];
+
               final filteredSubjects = allSubjects.where((doc) {
-                final data = doc.data() as Map<String, dynamic>;
+                final data = doc.data() as Map<String, dynamic>? ?? {};
                 final year = (data['year'] ?? "").toString().trim();
                 final term = (data['term'] ?? "").toString().trim();
                 return year == selectedYear && term == selectedTerm;
               }).toList();
 
-              if (filteredSubjects.isNotEmpty) {
-                final availableIds = filteredSubjects.map((e) => e.id).toSet();
-                if (selectedSubjectId == null ||
-                    !availableIds.contains(selectedSubjectId)) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (!mounted) return;
-                    final first = filteredSubjects.first;
-                    final data = first.data() as Map<String, dynamic>;
-                    setState(() {
-                      selectedSubjectId = first.id;
-                      selectedSubjectName = (data['name'] ?? "").toString();
-                    });
-                  });
-                }
-              }
-
               if (filteredSubjects.isEmpty) {
-                return Row(
+                selectedSubjectId = null;
+                selectedSubjectName = "";
+
+                return Column(
                   children: [
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 14, horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.04),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white10),
-                        ),
-                        child: const Text(
-                          "لا توجد مواد لهذا الترم",
-                          style: TextStyle(color: Colors.grey),
-                        ),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.04),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.white10),
+                      ),
+                      child: const Text(
+                        "لا يوجد مواد حالياً",
+                        style: TextStyle(color: Colors.grey),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: _addSubject,
                       style: ElevatedButton.styleFrom(
@@ -670,13 +815,19 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 );
               }
 
+              final availableIds = filteredSubjects.map((e) => e.id).toSet();
+
+              final currentSubjectId = availableIds.contains(selectedSubjectId)
+                  ? selectedSubjectId
+                  : null;
+
               return DropdownButtonFormField<String>(
-                initialValue: selectedSubjectId,
+                initialValue: currentSubjectId,
                 dropdownColor: AppColors.black,
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(hintText: "اختر المادة"),
                 items: filteredSubjects.map((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
+                  final data = doc.data() as Map<String, dynamic>? ?? {};
                   final name = (data['name'] ?? data['title'] ?? "").toString();
                   return DropdownMenuItem<String>(
                     value: doc.id,
@@ -688,12 +839,25 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                   if (val == null) return;
                   final selected =
                       filteredSubjects.firstWhere((e) => e.id == val);
-                  final data = selected.data() as Map<String, dynamic>;
+                  final data = selected.data() as Map<String, dynamic>? ?? {};
+                  final subjectId = selected.id;
+                  final subjectName =
+                      (data['name'] ?? data['title'] ?? "").toString();
+
                   setState(() {
-                    selectedSubjectId = selected.id;
-                    selectedSubjectName =
-                        (data['name'] ?? data['title'] ?? "").toString();
+                    selectedSubjectId = subjectId;
+                    selectedSubjectName = subjectName;
                   });
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SubjectSessionsPage(
+                        subjectId: subjectId,
+                        subjectName: subjectName,
+                      ),
+                    ),
+                  );
                 },
               );
             },
@@ -712,11 +876,54 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white10),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedSubjectName.isEmpty
+                      ? "اختر مادة لبدء تسجيل الحضور"
+                      : "المادة الحالية: $selectedSubjectName",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _smallBadge("السنة: $selectedYear", Colors.blue),
+                    _smallBadge("الترم: $selectedTerm", Colors.purple),
+                    _smallBadge(
+                        "التاريخ: ${_formatDate(selectedDate)}", Colors.orange),
+                    _smallBadge(
+                        "الوقت: ${_formatTime(selectedTime)}", Colors.teal),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: Column(
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: _addSubject,
                       style: ElevatedButton.styleFrom(
@@ -726,8 +933,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       child: const Text("إضافة مادة"),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: _pickDate,
                       style: ElevatedButton.styleFrom(
@@ -737,8 +944,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       child: Text(_formatDate(selectedDate)),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: _pickTime,
                       style: ElevatedButton.styleFrom(
@@ -751,9 +958,12 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 ],
               ),
               const SizedBox(height: 8),
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: () => _markAllVisible(true),
                       style: ElevatedButton.styleFrom(
@@ -763,8 +973,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       child: const Text("الكل حاضر"),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: () => _markAllVisible(false),
                       style: ElevatedButton.styleFrom(
@@ -774,8 +984,8 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       child: const Text("مسح العلامات"),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                  SizedBox(
+                    width: 150,
                     child: ElevatedButton(
                       onPressed: _saveSession,
                       style: ElevatedButton.styleFrom(
@@ -805,6 +1015,19 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 ),
                 onChanged: (val) => setState(() => studentSearch = val),
               ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              _smallBadge("حاضر: ${_presentCount()}", Colors.green),
+              const SizedBox(width: 8),
+              _smallBadge("غائب: ${_absentCount()}", Colors.red),
+              const SizedBox(width: 8),
+              _smallBadge(
+                  "المعروض: ${_lastVisibleStudents.length}", Colors.blue),
             ],
           ),
         ),
@@ -855,7 +1078,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 itemCount: filtered.length,
                 itemBuilder: (context, index) {
                   final doc = filtered[index];
-                  final data = doc.data() as Map<String, dynamic>;
+                  final data = doc.data() as Map<String, dynamic>? ?? {};
                   final name = (data['name'] ?? "Student").toString();
                   final phone = (data['phone'] ?? "").toString();
                   final email = (data['email'] ?? "").toString();
@@ -866,6 +1089,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                   final linked =
                       data['linked'] == true || data['linkedByAdmin'] == true;
                   final present = attendanceMap[doc.id] == true;
+                  final percent = attendancePercentageCache[doc.id] ?? 0;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -874,10 +1098,12 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       color: Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                          color: present ? Colors.green : Colors.white10),
+                        color: present ? Colors.green : Colors.white10,
+                      ),
                     ),
                     child: InkWell(
                       onTap: () {
+                        if (!mounted) return;
                         setState(() {
                           attendanceMap[doc.id] = !present;
                         });
@@ -887,6 +1113,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                           Checkbox(
                             value: present,
                             onChanged: (val) {
+                              if (!mounted) return;
                               setState(() {
                                 attendanceMap[doc.id] = val == true;
                               });
@@ -906,14 +1133,31 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
+                                  "نسبة الحضور: ${percent.toStringAsFixed(1)}%",
+                                  style: TextStyle(
+                                    color: percent >= 75
+                                        ? Colors.green
+                                        : percent >= 50
+                                            ? Colors.orange
+                                            : Colors.red,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
                                   phone.isNotEmpty ? phone : "لا يوجد رقم",
                                   style: const TextStyle(
-                                      color: Colors.grey, fontSize: 12),
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 Text(
                                   email.isNotEmpty ? email : "لا يوجد إيميل",
                                   style: const TextStyle(
-                                      color: Colors.grey, fontSize: 12),
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Wrap(
@@ -1006,6 +1250,7 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseService.firestore
                 .collection("attendance_sessions")
+                .orderBy("createdAt", descending: true)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1047,13 +1292,18 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                 itemCount: filtered.length,
                 itemBuilder: (context, index) {
                   final doc = filtered[index];
-                  final data = doc.data() as Map<String, dynamic>;
-                  final subjectName = (data['subjectName'] ?? "").toString();
+                  final data = doc.data() as Map<String, dynamic>? ?? {};
+                  final subjectName =
+                      (data['subjectName'] ?? data['name'] ?? "").toString();
                   final sessionDate = (data['sessionDate'] ?? "").toString();
                   final sessionTime = (data['sessionTime'] ?? "").toString();
                   final total = data['totalStudents'] ?? 0;
                   final present = data['presentCount'] ?? 0;
                   final absent = data['absentCount'] ?? 0;
+                  final subjectId = (data['subjectId'] ?? "").toString();
+
+                  final double percent =
+                      total == 0 ? 0 : (present / total) * 100;
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 10),
@@ -1073,15 +1323,66 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          "$selectedYear • $selectedTerm\n$sessionDate • $sessionTime\nحضر $present | غاب $absent | الإجمالي $total",
-                          style:
-                              const TextStyle(color: Colors.grey, fontSize: 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "$selectedYear • $selectedTerm",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "$sessionDate • $sessionTime",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "حضر $present | غاب $absent | الإجمالي $total",
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "نسبة الحضور: ${percent.toStringAsFixed(1)}%",
+                              style: TextStyle(
+                                color: percent >= 75
+                                    ? Colors.green
+                                    : percent >= 50
+                                        ? Colors.orange
+                                        : Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      trailing: const Icon(Icons.chevron_right,
-                          color: Colors.white70),
-                      onTap: () => _showSessionDetails(doc, data),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.white70,
+                      ),
+                      onTap: () {
+                        _showSessionDetails(doc, data);
+                      },
+                      onLongPress: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SubjectSessionsPage(
+                              subjectId: subjectId,
+                              subjectName: subjectName,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   );
                 },
@@ -1117,11 +1418,25 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          "📊 تقارير الحضور",
-          style: TextStyle(color: AppColors.gold),
+        title: Text(
+          selectedSubjectName.isEmpty
+              ? "📊 تقارير الحضور"
+              : "📊 $selectedSubjectName",
+          style: const TextStyle(color: AppColors.gold),
         ),
         backgroundColor: AppColors.black,
+        actions: [
+          IconButton(
+            icon: Icon(
+              lateMode ? Icons.access_time : Icons.access_time_outlined,
+              color: lateMode ? Colors.orange : Colors.white,
+            ),
+            onPressed: () {
+              if (!mounted) return;
+              setState(() => lateMode = !lateMode);
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: AppColors.gold,
@@ -1135,11 +1450,124 @@ class _AttendanceReportPageState extends State<AttendanceReportPage>
       ),
       body: Stack(
         children: [
-          TabBarView(
-            controller: _tabController,
+          Column(
             children: [
-              _buildAttendanceTab(),
-              _buildReportsTab(),
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream:
+                      (selectedSubjectId == null || selectedSubjectId!.isEmpty)
+                          ? null
+                          : FirebaseService.firestore
+                              .collection("attendance_sessions")
+                              .where("subjectId", isEqualTo: selectedSubjectId)
+                              .orderBy("createdAt", descending: true)
+                              .snapshots(),
+                  builder: (context, snapshot) {
+                    if (selectedSubjectId == null ||
+                        selectedSubjectId!.isEmpty) {
+                      return const SizedBox.shrink();
+                    }
+
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Center(
+                          child:
+                              CircularProgressIndicator(color: AppColors.gold),
+                        ),
+                      );
+                    }
+
+                    if (snapshot.hasError) {
+                      return const Text(
+                        "❌ خطأ في تحميل الحصص",
+                        style: TextStyle(color: Colors.red),
+                      );
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Text(
+                        "لا يوجد حصص لهذه المادة",
+                        style: TextStyle(color: Colors.grey),
+                      );
+                    }
+
+                    final sessions = snapshot.data!.docs;
+
+                    final currentSessionId =
+                        sessions.any((e) => e.id == selectedSessionId)
+                            ? selectedSessionId
+                            : null;
+
+                    if (currentSessionId == null && sessions.isNotEmpty) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        final first = sessions.first;
+                        final data =
+                            first.data() as Map<String, dynamic>? ?? {};
+                        setState(() {
+                          selectedSessionId = first.id;
+                          selectedSessionName =
+                              (data['sessionName'] ?? data['name'] ?? "")
+                                  .toString();
+                        });
+                      });
+                    }
+
+                    return DropdownButtonFormField<String>(
+                      initialValue: currentSessionId,
+                      dropdownColor: Colors.black,
+                      decoration: InputDecoration(
+                        hintText: "اختار الحصة",
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: Colors.black,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: sessions.map((e) {
+                        final data = e.data() as Map<String, dynamic>? ?? {};
+                        final name = (data['sessionName'] ?? data['name'] ?? "")
+                            .toString();
+                        final date = (data['date'] ?? data['sessionDate'] ?? "")
+                            .toString();
+                        return DropdownMenuItem<String>(
+                          value: e.id,
+                          child: Text(
+                            date.isEmpty ? name : "$name • $date",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        final selected =
+                            sessions.firstWhere((e) => e.id == val);
+                        final data =
+                            selected.data() as Map<String, dynamic>? ?? {};
+                        if (!mounted) return;
+                        setState(() {
+                          selectedSessionId = selected.id;
+                          selectedSessionName =
+                              (data['sessionName'] ?? data['name'] ?? "")
+                                  .toString();
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAttendanceTab(),
+                    _buildReportsTab(),
+                  ],
+                ),
+              ),
             ],
           ),
           if (saving)

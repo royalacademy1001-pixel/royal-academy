@@ -95,7 +95,7 @@ class VerifyCertificatePage extends StatelessWidget {
       return null;
 
     } catch (e) {
-      print("🔥 VERIFY ERROR: $e");
+      debugPrint("🔥 VERIFY ERROR: $e");
       return null;
     }
   }

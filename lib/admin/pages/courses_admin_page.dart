@@ -19,7 +19,6 @@ class CoursesAdminPage extends StatefulWidget {
 
 class _CoursesAdminPageState extends State<CoursesAdminPage>
     with SingleTickerProviderStateMixin {
-
   late TabController tabController;
 
   String? selectedCourseId;
@@ -70,7 +69,8 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           TextButton(
               onPressed: () =>
                   Navigator.pop(context, rejectController.text.trim()),
-              child: const Text("تأكيد", style: TextStyle(color: AppColors.gold))),
+              child:
+                  const Text("تأكيد", style: TextStyle(color: AppColors.gold))),
         ],
       ),
     );
@@ -107,11 +107,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     await FirebaseService.firestore
         .collection(AppConstants.courses)
         .doc(id)
-        .update({
-      "approved": true,
-      "status": "approved",
-      "rejectReason": ""
-    });
+        .update({"approved": true, "status": "approved", "rejectReason": ""});
 
     if (instructorId.isNotEmpty) {
       await sendNotification(
@@ -142,11 +138,8 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     await FirebaseService.firestore
         .collection(AppConstants.courses)
         .doc(id)
-        .update({
-      "approved": false,
-      "status": "rejected",
-      "rejectReason": reason
-    });
+        .update(
+            {"approved": false, "status": "rejected", "rejectReason": reason});
 
     if (instructorId.isNotEmpty) {
       await sendNotification(
@@ -164,14 +157,18 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           context: context,
           builder: (_) => AlertDialog(
             backgroundColor: AppColors.black,
-            title: Text(text, style: const TextStyle(color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
+            title: Text(text,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 16, fontFamily: 'Cairo')),
             actions: [
               TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text("إلغاء", style: TextStyle(color: Colors.grey))),
+                  child: const Text("إلغاء",
+                      style: TextStyle(color: Colors.grey))),
               TextButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text("تأكيد", style: TextStyle(color: Colors.red))),
+                  child:
+                      const Text("تأكيد", style: TextStyle(color: Colors.red))),
             ],
           ),
         ) ??
@@ -210,7 +207,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
       await ref.putFile(file);
 
       return await ref.getDownloadURL();
-
     } catch (_) {
       return null;
     }
@@ -218,7 +214,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
   // ================= SELECT COURSE =================
   Future selectCourse(String id, String name) async {
-
     var lessons = await FirebaseService.firestore
         .collection(AppConstants.courses)
         .doc(id)
@@ -236,7 +231,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
   // ================= ADD LESSON =================
   Future addLesson() async {
-
     if (selectedCourseId == null) {
       show("اختار كورس الأول ❗");
       return;
@@ -250,7 +244,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     setState(() => loading = true);
 
     try {
-
       String? fileUrl;
 
       if (pickedFile != null) {
@@ -294,7 +287,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
       });
 
       show("تم إضافة المحتوى ✅");
-
     } catch (_) {
       show("خطأ ❌");
     }
@@ -311,7 +303,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
   // ================= DELETE =================
   Future deleteCourse(String id) async {
-
     bool confirm = await _confirm("حذف الكورس نهائياً؟");
     if (!confirm) return;
 
@@ -325,11 +316,9 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
   // ================= EDIT =================
   Future editCourse(DocumentSnapshot doc) async {
-
     var data = doc.data() as Map<String, dynamic>;
 
-    TextEditingController title =
-        TextEditingController(text: data['title']);
+    TextEditingController title = TextEditingController(text: data['title']);
     TextEditingController price =
         TextEditingController(text: "${data['price']}");
 
@@ -337,20 +326,25 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
-        title: const Text("تعديل بيانات الكورس", style: TextStyle(color: AppColors.gold, fontFamily: 'Cairo')),
+        title: const Text("تعديل بيانات الكورس",
+            style: TextStyle(color: AppColors.gold, fontFamily: 'Cairo')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: title,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "اسم الكورس", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: const InputDecoration(
+                  labelText: "اسم الكورس",
+                  labelStyle: TextStyle(color: Colors.grey)),
             ),
             TextField(
               controller: price,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: "السعر", labelStyle: TextStyle(color: Colors.grey)),
+              decoration: const InputDecoration(
+                  labelText: "السعر",
+                  labelStyle: TextStyle(color: Colors.grey)),
             ),
           ],
         ),
@@ -361,11 +355,15 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
             onPressed: () async {
+              Navigator.pop(context); // ✅ اقفل الأول
+
               await doc.reference.update({
                 "title": title.text,
                 "price": int.tryParse(price.text) ?? 0,
               });
-              Navigator.pop(context);
+
+              if (!mounted) return;
+
               show("تم التعديل ✅");
             },
             child: const Text("حفظ", style: TextStyle(color: Colors.black)),
@@ -388,13 +386,12 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("📚 إدارة الكورسات",
-            style: TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
+            style:
+                TextStyle(color: AppColors.gold, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -410,7 +407,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           ],
         ),
       ),
-
       body: Stack(
         children: [
           TabBarView(
@@ -426,7 +422,8 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
               color: Colors.black.withValues(alpha: 0.7),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                child: const Center(child: CircularProgressIndicator(color: AppColors.gold)),
+                child: const Center(
+                    child: CircularProgressIndicator(color: AppColors.gold)),
               ),
             ),
         ],
@@ -448,7 +445,9 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                 prefixIcon: const Icon(Icons.search, color: AppColors.gold),
                 filled: true,
                 fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: BorderSide.none),
               ),
               onChanged: (val) => setState(() => searchText = val),
             ),
@@ -459,9 +458,9 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                 .collection(AppConstants.courses)
                 .snapshots(),
             builder: (context, snapshot) {
-
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: AppColors.gold));
+                return const Center(
+                    child: CircularProgressIndicator(color: AppColors.gold));
               }
 
               var courses = snapshot.data!.docs.where((c) {
@@ -477,7 +476,12 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
               }).toList();
 
               if (courses.isEmpty) {
-                return Center(child: Text(pending ? "لا توجد طلبات معلقة" : "لا توجد كورسات متاحة", style: const TextStyle(color: Colors.grey)));
+                return Center(
+                    child: Text(
+                        pending
+                            ? "لا توجد طلبات معلقة"
+                            : "لا توجد كورسات متاحة",
+                        style: const TextStyle(color: Colors.grey)));
               }
 
               return ListView.builder(
@@ -485,7 +489,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                 itemCount: courses.length,
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: (context, index) {
-
                   var c = courses[index];
                   var d = c.data() as Map<String, dynamic>;
                   String status = (d['status'] ?? "approved").toString();
@@ -502,7 +505,10 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.03),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: selectedCourseId == c.id ? AppColors.gold : Colors.white10),
+                      border: Border.all(
+                          color: selectedCourseId == c.id
+                              ? AppColors.gold
+                              : Colors.white10),
                     ),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(12),
@@ -514,43 +520,54 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
                           color: AppColors.gold.withValues(alpha: 0.1),
                         ),
                         child: image.isNotEmpty
-                            ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(image, fit: BoxFit.cover))
-                            : const Icon(Icons.menu_book, color: AppColors.gold),
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Image.network(image, fit: BoxFit.cover))
+                            : const Icon(Icons.menu_book,
+                                color: AppColors.gold),
                       ),
                       title: Text(d['title'],
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold)),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 5),
                         child: Row(
                           children: [
                             Icon(Icons.circle, color: color, size: 10),
                             const SizedBox(width: 6),
-                            Text(status.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+                            Text(status.toUpperCase(),
+                                style: TextStyle(
+                                    color: color,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold)),
                             const SizedBox(width: 10),
-                            Text("${d['price']} EGP", style: const TextStyle(color: AppColors.gold, fontSize: 11)),
+                            Text("${d['price']} EGP",
+                                style: const TextStyle(
+                                    color: AppColors.gold, fontSize: 11)),
                           ],
                         ),
                       ),
-
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (status == "pending")
-                            _actionCircle(Icons.check, Colors.green, () => approveCourse(c.id)),
+                            _actionCircle(Icons.check, Colors.green,
+                                () => approveCourse(c.id)),
+                          if (status == "pending") const SizedBox(width: 8),
                           if (status == "pending")
-                            const SizedBox(width: 8),
-                          if (status == "pending")
-                            _actionCircle(Icons.close, Colors.red, () => rejectCourse(c.id)),
+                            _actionCircle(Icons.close, Colors.red,
+                                () => rejectCourse(c.id)),
                           if (status != "pending")
-                            _actionCircle(Icons.edit_note, Colors.blue, () => editCourse(c)),
+                            _actionCircle(Icons.edit_note, Colors.blue,
+                                () => editCourse(c)),
                           const SizedBox(width: 8),
-                          _actionCircle(Icons.delete_sweep_outlined, Colors.red, () => deleteCourse(c.id)),
+                          _actionCircle(Icons.delete_sweep_outlined, Colors.red,
+                              () => deleteCourse(c.id)),
                         ],
                       ),
-
                       onTap: () => selectCourse(c.id, d['title']),
                     ),
                   );
@@ -568,7 +585,8 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+        decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
         child: Icon(icon, color: color, size: 20),
       ),
     );
@@ -583,14 +601,20 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
         children: [
           Container(
             padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(color: AppColors.gold.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15), border: Border.all(color: AppColors.gold.withValues(alpha: 0.2))),
+            decoration: BoxDecoration(
+                color: AppColors.gold.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(15),
+                border:
+                    Border.all(color: AppColors.gold.withValues(alpha: 0.2))),
             child: Row(
               children: [
                 const Icon(Icons.info_outline, color: AppColors.gold),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    selectedCourseId == null ? "برجاء اختيار كورس من القائمة أولاً" : "إضافة محتوى لـ: $selectedCourseName",
+                    selectedCourseId == null
+                        ? "برجاء اختيار كورس من القائمة أولاً"
+                        : "إضافة محتوى لـ: $selectedCourseName",
                     style: const TextStyle(color: Colors.white, fontSize: 13),
                   ),
                 ),
@@ -598,20 +622,32 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
             ),
           ),
           const SizedBox(height: 25),
-          const Text("نوع المحتوى", style: TextStyle(color: Colors.grey, fontSize: 12)),
+          const Text("نوع المحتوى",
+              style: TextStyle(color: Colors.grey, fontSize: 12)),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(15)),
+            decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(15)),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: selectedType,
                 isExpanded: true,
                 dropdownColor: AppColors.black,
                 items: const [
-                  DropdownMenuItem(value: "video", child: Text("🎥 فيديو تعليمي", style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: "pdf", child: Text("📄 ملف PDF / ملخص", style: TextStyle(color: Colors.white))),
-                  DropdownMenuItem(value: "audio", child: Text("🎧 ملف صوتي", style: TextStyle(color: Colors.white))),
+                  DropdownMenuItem(
+                      value: "video",
+                      child: Text("🎥 فيديو تعليمي",
+                          style: TextStyle(color: Colors.white))),
+                  DropdownMenuItem(
+                      value: "pdf",
+                      child: Text("📄 ملف PDF / ملخص",
+                          style: TextStyle(color: Colors.white))),
+                  DropdownMenuItem(
+                      value: "audio",
+                      child: Text("🎧 ملف صوتي",
+                          style: TextStyle(color: Colors.white))),
                 ],
                 onChanged: (val) => setState(() => selectedType = val!),
               ),
@@ -626,19 +662,30 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.1), padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      padding: const EdgeInsets.all(15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15))),
                   onPressed: pickFile,
                   icon: const Icon(Icons.upload_file, color: Colors.white),
-                  label: const Text("رفع ملف", style: TextStyle(color: Colors.white)),
+                  label: const Text("رفع ملف",
+                      style: TextStyle(color: Colors.white)),
                 ),
               ),
               const SizedBox(width: 15),
               Expanded(
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold, padding: const EdgeInsets.all(15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15))),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.gold,
+                      padding: const EdgeInsets.all(15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15))),
                   onPressed: addLesson,
                   icon: const Icon(Icons.add, color: Colors.black),
-                  label: const Text("حفظ الدرس", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  label: const Text("حفظ الدرس",
+                      style: TextStyle(
+                          color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -646,14 +693,16 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           if (pickedFile != null)
             Padding(
               padding: const EdgeInsets.only(top: 15),
-              child: Text("📂 تم اختيار: ${pickedFile!.path.split('/').last}", style: const TextStyle(color: Colors.green, fontSize: 12)),
+              child: Text("📂 تم اختيار: ${pickedFile!.path.split('/').last}",
+                  style: const TextStyle(color: Colors.green, fontSize: 12)),
             ),
         ],
       ),
     );
   }
 
-  Widget _inputField(TextEditingController controller, String hint, IconData icon) {
+  Widget _inputField(
+      TextEditingController controller, String hint, IconData icon) {
     return TextField(
       controller: controller,
       style: const TextStyle(color: Colors.white),
@@ -663,7 +712,9 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
         prefixIcon: Icon(icon, color: AppColors.gold),
         filled: true,
         fillColor: Colors.white.withValues(alpha: 0.05),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide.none),
       ),
     );
   }

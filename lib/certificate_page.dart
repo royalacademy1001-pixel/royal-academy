@@ -86,13 +86,11 @@ class _CertificatePageState extends State<CertificatePage> {
           String courseTitle =
               (courseData['title'] ?? "Course").toString();
 
-          /// 🔥 FIX CERT ID (ثابت لكل مستخدم + كورس)
           String certId = "${user.uid}_${widget.courseId}";
 
           String date =
               DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-          /// 🔥 SAVE ONCE ONLY
           if (!saved) {
             saved = true;
 
@@ -129,7 +127,7 @@ class _CertificatePageState extends State<CertificatePage> {
 
                           ElevatedButton(
                             onPressed: () =>
-                                _downloadPDF(name, courseTitle, certId, date, qrData),
+                                _downloadPDF(context, name, courseTitle, certId, date, qrData),
                             child: const Text("📥 تحميل"),
                           ),
 
@@ -137,7 +135,7 @@ class _CertificatePageState extends State<CertificatePage> {
 
                           ElevatedButton(
                             onPressed: () =>
-                                _sharePDF(name, courseTitle, certId, date, qrData),
+                                _sharePDF(context, name, courseTitle, certId, date, qrData),
                             child: const Text("📤 مشاركة"),
                           ),
                         ],
@@ -226,37 +224,89 @@ class _CertificatePageState extends State<CertificatePage> {
   }
 
   Future<void> _downloadPDF(
-      String name, String course, String id, String date, String qr) async {
+      BuildContext context,
+      String name,
+      String course,
+      String id,
+      String date,
+      String qr) async {
+
+    final ctx = context;
+
+    if (!mounted) return;
 
     setState(() => loading = true);
 
-    final pdf = await _buildPdf(name, course, id, date, qr);
+    try {
 
-    final dir = await getApplicationDocumentsDirectory();
-    final file = File("${dir.path}/certificate_$id.pdf");
+      final pdf = await _buildPdf(name, course, id, date, qr);
 
-    await file.writeAsBytes(await pdf.save());
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File("${dir.path}/certificate_$id.pdf");
 
-    setState(() => loading = false);
+      await file.writeAsBytes(await pdf.save());
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("تم الحفظ ✅")));
+      if (!mounted) return;
+
+      setState(() => loading = false);
+
+      if (!ctx.mounted) return;
+
+      ScaffoldMessenger.of(ctx)
+          .showSnackBar(const SnackBar(content: Text("تم الحفظ ✅")));
+
+    } catch (e) {
+
+      if (!mounted) return;
+
+      setState(() => loading = false);
+
+      if (!ctx.mounted) return;
+
+      ScaffoldMessenger.of(ctx)
+          .showSnackBar(const SnackBar(content: Text("خطأ في التحميل ❌")));
+    }
   }
 
   Future<void> _sharePDF(
-      String name, String course, String id, String date, String qr) async {
+      BuildContext context,
+      String name,
+      String course,
+      String id,
+      String date,
+      String qr) async {
+
+    final ctx = context;
+
+    if (!mounted) return;
 
     setState(() => loading = true);
 
-    final pdf = await _buildPdf(name, course, id, date, qr);
+    try {
 
-    final dir = await getTemporaryDirectory();
-    final file = File("${dir.path}/certificate_$id.pdf");
+      final pdf = await _buildPdf(name, course, id, date, qr);
 
-    await file.writeAsBytes(await pdf.save());
+      final dir = await getTemporaryDirectory();
+      final file = File("${dir.path}/certificate_$id.pdf");
 
-    setState(() => loading = false);
+      await file.writeAsBytes(await pdf.save());
 
-    await Share.shareXFiles([XFile(file.path)]);
+      if (!mounted) return;
+
+      setState(() => loading = false);
+
+      await Share.shareXFiles([XFile(file.path)]);
+
+    } catch (e) {
+
+      if (!mounted) return;
+
+      setState(() => loading = false);
+
+      if (!ctx.mounted) return;
+
+      ScaffoldMessenger.of(ctx)
+          .showSnackBar(const SnackBar(content: Text("خطأ في المشاركة ❌")));
+    }
   }
 }

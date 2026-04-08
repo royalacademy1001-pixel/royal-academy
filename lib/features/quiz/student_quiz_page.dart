@@ -6,7 +6,6 @@ import 'dart:async';
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 
-
 /// 🔥🔥🔥 ULTRA QUIZ UI UPGRADE LAYER 🔥🔥🔥
 
 Widget questionHeader(int index, int total) {
@@ -45,7 +44,6 @@ Widget answerBox({
 
 /// 🔥🔥🔥 END UI LAYER 🔥🔥🔥
 
-
 /// 🔥🔥🔥 LOGIC LAYER 🔥🔥🔥
 
 class QuizGuard {
@@ -74,15 +72,11 @@ class QuizXP {
 
       int xp = score * 10;
 
-      await FirebaseService.firestore
-          .collection("users")
-          .doc(user.uid)
-          .update({
+      await FirebaseService.firestore.collection("users").doc(user.uid).update({
         "xp": FieldValue.increment(xp),
       });
 
       _given.add(lessonId);
-
     } catch (e) {
       debugPrint("XP Error: $e");
     }
@@ -106,7 +100,6 @@ Future<void> safeNavigateToResults(
 
 /// 🔥🔥🔥 END LOGIC LAYER 🔥🔥🔥
 
-
 class QuizPage extends StatefulWidget {
   final String lessonId;
 
@@ -116,9 +109,7 @@ class QuizPage extends StatefulWidget {
   State<QuizPage> createState() => QuizPageState();
 }
 
-class QuizPageState extends State<QuizPage>
-    with WidgetsBindingObserver {
-
+class QuizPageState extends State<QuizPage> with WidgetsBindingObserver {
   List<Map<String, dynamic>> questions = [];
   Map<int, int> answers = {};
 
@@ -182,7 +173,6 @@ class QuizPageState extends State<QuizPage>
 
   /// ================= LOAD =================
   Future<void> loadQuiz() async {
-
     final user = FirebaseService.auth.currentUser;
 
     try {
@@ -195,8 +185,7 @@ class QuizPageState extends State<QuizPage>
 
       if (snap.docs.isNotEmpty) {
         final data = snap.docs.first.data();
-        questions = List<Map<String, dynamic>>.from(
-            data['questions'] ?? []);
+        questions = List<Map<String, dynamic>>.from(data['questions'] ?? []);
         questions.shuffle();
       }
 
@@ -213,7 +202,6 @@ class QuizPageState extends State<QuizPage>
 
         await restoreAnswers(user.uid);
       }
-
     } catch (e) {
       debugPrint("Quiz Load Error: $e");
     }
@@ -250,13 +238,11 @@ class QuizPageState extends State<QuizPage>
           answers = Map<int, int>.from(data);
         }
       }
-
     } catch (_) {}
   }
 
   /// ================= SUBMIT =================
   Future<void> submitQuiz() async {
-
     if (submitted || navigating) return;
 
     int correct = 0;
@@ -278,20 +264,29 @@ class QuizPageState extends State<QuizPage>
 
     if (user != null) {
       try {
+        final docId = "${user.uid}_${widget.lessonId}";
 
-        final ref = FirebaseService.firestore
-            .collection("quiz_results")
-            .doc("${user.uid}${widget.lessonId}");
+        final ref =
+            FirebaseService.firestore.collection("quiz_results").doc(docId);
 
         final doc = await ref.get();
+
         int previous = doc.data()?['score'] ?? 0;
+
+        final percentage = ((score / questions.length) * 100).round();
+
+        final passed = percentage >= 50;
 
         if (score > previous) {
           await ref.set({
             "userId": user.uid,
             "lessonId": widget.lessonId,
+            "quizId": widget.lessonId,
             "score": score,
             "total": questions.length,
+            "percentage": percentage,
+            "passed": passed,
+            "answers": answers,
             "updatedAt": FieldValue.serverTimestamp(),
           });
 
@@ -300,9 +295,8 @@ class QuizPageState extends State<QuizPage>
 
         await FirebaseService.firestore
             .collection("quiz_temp")
-            .doc("${user.uid}${widget.lessonId}")
+            .doc(docId)
             .delete();
-
       } catch (e) {
         debugPrint("Submit Error: $e");
       }
@@ -322,25 +316,19 @@ class QuizPageState extends State<QuizPage>
     return "$m:${s.toString().padLeft(2, '0')}";
   }
 
-  double percent() =>
-      questions.isEmpty ? 0 : answers.length / questions.length;
+  double percent() => questions.isEmpty ? 0 : answers.length / questions.length;
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
-        title: const Text("🧪 Quiz",
-            style: TextStyle(color: AppColors.gold)),
+        title: const Text("🧪 Quiz", style: TextStyle(color: AppColors.gold)),
         backgroundColor: AppColors.black,
       ),
-
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(
-                  color: AppColors.gold),
+              child: CircularProgressIndicator(color: AppColors.gold),
             )
           : questions.isEmpty
               ? const Center(
@@ -351,7 +339,6 @@ class QuizPageState extends State<QuizPage>
                 )
               : Column(
                   children: [
-
                     Padding(
                       padding: const EdgeInsets.all(8),
                       child: Text(
@@ -362,19 +349,16 @@ class QuizPageState extends State<QuizPage>
                         ),
                       ),
                     ),
-
                     LinearProgressIndicator(
                       value: percent(),
                       color: AppColors.gold,
                       backgroundColor: Colors.grey.shade800,
                     ),
-
                     Expanded(
                       child: ListView.builder(
                         padding: const EdgeInsets.all(12),
                         itemCount: questions.length,
                         itemBuilder: (context, index) {
-
                           var q = questions[index];
                           List options = q['options'] ?? [];
 
@@ -383,12 +367,9 @@ class QuizPageState extends State<QuizPage>
                             padding: const EdgeInsets.all(12),
                             decoration: AppColors.premiumCard,
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-
                                 questionHeader(index, questions.length),
-
                                 Text(
                                   q['question'] ?? "",
                                   style: const TextStyle(
@@ -396,18 +377,16 @@ class QuizPageState extends State<QuizPage>
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-
                                 const SizedBox(height: 10),
-
                                 ...List.generate(options.length, (i) {
-
                                   bool selected = answers[index] == i;
                                   bool correct = q['correctIndex'] == i;
 
                                   Color color = Colors.grey;
 
                                   if (submitted) {
-                                    if (correct) color = Colors.green;
+                                    if (correct)
+                                      color = Colors.green;
                                     else if (selected) color = Colors.red;
                                   } else if (selected) {
                                     color = AppColors.gold;
@@ -432,13 +411,11 @@ class QuizPageState extends State<QuizPage>
                         },
                       ),
                     ),
-
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: ElevatedButton(
                         style: AppColors.goldButton,
-                        onPressed: answers.length ==
-                                questions.length
+                        onPressed: answers.length == questions.length
                             ? submitQuiz
                             : null,
                         child: const Text("📤 تسليم الإجابات"),

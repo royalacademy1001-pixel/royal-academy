@@ -11,14 +11,24 @@ class StudentActions {
       String userId,
       String courseId) async {
 
-    await FirebaseService.firestore
-        .collection(AppConstants.users)
-        .doc(userId)
-        .set({
-      "enrolledCourses": FieldValue.arrayUnion([courseId])
-    }, SetOptions(merge: true));
+    final ctx = context;
 
-    _show(context, "تم تسجيل الطالب ✅");
+    try {
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(userId)
+          .set({
+        "enrolledCourses": FieldValue.arrayUnion([courseId])
+      }, SetOptions(merge: true));
+
+      if (!ctx.mounted) return;
+
+      _show(ctx, "تم تسجيل الطالب ✅");
+
+    } catch (e) {
+      if (!ctx.mounted) return;
+      _show(ctx, "حدث خطأ ❌");
+    }
   }
 
   static Future unlockCourse(
@@ -26,28 +36,48 @@ class StudentActions {
       String userId,
       String courseId) async {
 
-    await FirebaseService.firestore
-        .collection(AppConstants.users)
-        .doc(userId)
-        .set({
-      "unlockedCourses": FieldValue.arrayUnion([courseId])
-    }, SetOptions(merge: true));
+    final ctx = context;
 
-    _show(context, "تم فتح الكورس 🔓");
+    try {
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(userId)
+          .set({
+        "unlockedCourses": FieldValue.arrayUnion([courseId])
+      }, SetOptions(merge: true));
+
+      if (!ctx.mounted) return;
+
+      _show(ctx, "تم فتح الكورس 🔓");
+
+    } catch (e) {
+      if (!ctx.mounted) return;
+      _show(ctx, "حدث خطأ ❌");
+    }
   }
 
   static Future makeVip(
       BuildContext context,
       String userId) async {
 
-    await FirebaseService.firestore
-        .collection(AppConstants.users)
-        .doc(userId)
-        .set({
-      "subscribed": true,
-    }, SetOptions(merge: true));
+    final ctx = context;
 
-    _show(context, "تم تفعيل الاشتراك ⭐");
+    try {
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(userId)
+          .set({
+        "subscribed": true,
+      }, SetOptions(merge: true));
+
+      if (!ctx.mounted) return;
+
+      _show(ctx, "تم تفعيل الاشتراك ⭐");
+
+    } catch (e) {
+      if (!ctx.mounted) return;
+      _show(ctx, "حدث خطأ ❌");
+    }
   }
 
   static Future blockUser(
@@ -55,15 +85,25 @@ class StudentActions {
       String userId,
       bool current) async {
 
-    await FirebaseService.firestore
-        .collection(AppConstants.users)
-        .doc(userId)
-        .update({
-      "blocked": !current,
-    });
+    final ctx = context;
 
-    _show(context,
-        current ? "تم فك الحظر" : "تم حظر المستخدم 🚫");
+    try {
+      await FirebaseService.firestore
+          .collection(AppConstants.users)
+          .doc(userId)
+          .update({
+        "blocked": !current,
+      });
+
+      if (!ctx.mounted) return;
+
+      _show(ctx,
+          current ? "تم فك الحظر" : "تم حظر المستخدم 🚫");
+
+    } catch (e) {
+      if (!ctx.mounted) return;
+      _show(ctx, "حدث خطأ ❌");
+    }
   }
 
   static void _show(BuildContext context, String msg) {

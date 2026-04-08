@@ -10,13 +10,10 @@ class InstructorRequestsPage extends StatefulWidget {
   const InstructorRequestsPage({super.key});
 
   @override
-  State<InstructorRequestsPage> createState() =>
-      _InstructorRequestsPageState();
+  State<InstructorRequestsPage> createState() => _InstructorRequestsPageState();
 }
 
-class _InstructorRequestsPageState
-    extends State<InstructorRequestsPage> {
-
+class _InstructorRequestsPageState extends State<InstructorRequestsPage> {
   bool loadingAction = false;
 
   final rejectController = TextEditingController();
@@ -33,8 +30,7 @@ class _InstructorRequestsPageState
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
-        title: Text(text,
-            style: const TextStyle(color: Colors.white)),
+        title: Text(text, style: const TextStyle(color: Colors.white)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -58,8 +54,7 @@ class _InstructorRequestsPageState
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: AppColors.black,
-        title: const Text("سبب الرفض",
-            style: TextStyle(color: Colors.white)),
+        title: const Text("سبب الرفض", style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: rejectController,
           style: const TextStyle(color: Colors.white),
@@ -84,17 +79,23 @@ class _InstructorRequestsPageState
   }
 
   Future<String?> pickCourse() async {
+    final ctx = context;
+
     var snap = await FirebaseService.firestore
         .collection("courses")
         .where("status", isEqualTo: "approved")
         .get();
 
+    if (!context.mounted) return null; // ✅ الحل الحقيقي
+
     return await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
         backgroundColor: AppColors.black,
-        title: const Text("اختار الكورس",
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          "اختار الكورس",
+          style: TextStyle(color: Colors.white),
+        ),
         content: SizedBox(
           width: double.maxFinite,
           child: ListView(
@@ -106,7 +107,7 @@ class _InstructorRequestsPageState
                   style: const TextStyle(color: Colors.white),
                 ),
                 onTap: () {
-                  Navigator.pop(context, c.id);
+                  Navigator.pop(dialogCtx, c.id);
                 },
               );
             }).toList(),
@@ -135,28 +136,21 @@ class _InstructorRequestsPageState
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("📩 طلبات المدرسين",
             style: TextStyle(color: AppColors.gold)),
         backgroundColor: AppColors.black,
       ),
-
       body: Stack(
         children: [
-
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseService.firestore
                 .collection("instructor_requests")
                 .snapshots(),
-
             builder: (context, snapshot) {
-
-              if (snapshot.connectionState ==
-                  ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(),
                 );
@@ -164,8 +158,7 @@ class _InstructorRequestsPageState
 
               if (snapshot.hasError) {
                 return const Center(
-                  child: Text("خطأ ❌",
-                      style: TextStyle(color: Colors.red)),
+                  child: Text("خطأ ❌", style: TextStyle(color: Colors.red)),
                 );
               }
 
@@ -182,10 +175,8 @@ class _InstructorRequestsPageState
                 padding: const EdgeInsets.all(10),
                 itemCount: requests.length,
                 itemBuilder: (context, index) {
-
                   var doc = requests[index];
-                  var data =
-                      doc.data() as Map<String, dynamic>? ?? {};
+                  var data = doc.data() as Map<String, dynamic>? ?? {};
 
                   String email = data['email'] ?? "بدون بيانات";
                   String userId = data['userId'] ?? "";
@@ -197,47 +188,38 @@ class _InstructorRequestsPageState
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(15),
                     decoration: AppColors.premiumCard,
-
                     child: Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Text(title,
                             style: const TextStyle(
                               color: AppColors.white,
                               fontWeight: FontWeight.bold,
                             )),
-
                         const SizedBox(height: 5),
-
                         Text(email,
                             style: const TextStyle(
                               color: Colors.white70,
                             )),
-
                         const SizedBox(height: 10),
-
                         Row(
                           children: [
-
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.green,
                                 ),
                                 onPressed: () async {
-
                                   if (loadingAction) return;
 
-                                  bool ok = await confirm("اختار الكورس للمدرس");
+                                  bool ok =
+                                      await confirm("اختار الكورس للمدرس");
                                   if (!ok) return;
 
                                   String? courseId = await pickCourse();
                                   if (courseId == null) return;
 
                                   await runAction(() async {
-
                                     await FirebaseService.firestore
                                         .collection("users")
                                         .doc(instructorId)
@@ -245,7 +227,8 @@ class _InstructorRequestsPageState
                                       "isInstructor": true,
                                       "instructorApproved": true,
                                       "instructorRequest": false,
-                                      "teachingCourses": FieldValue.arrayUnion([courseId])
+                                      "teachingCourses":
+                                          FieldValue.arrayUnion([courseId])
                                     }, SetOptions(merge: true));
 
                                     await doc.reference.delete();
@@ -256,23 +239,19 @@ class _InstructorRequestsPageState
                                 child: const Text("قبول"),
                               ),
                             ),
-
                             const SizedBox(width: 10),
-
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                 ),
                                 onPressed: () async {
-
                                   if (loadingAction) return;
 
                                   String? reason = await getRejectReason();
                                   if (reason == null) return;
 
                                   await runAction(() async {
-
                                     await FirebaseService.firestore
                                         .collection("users")
                                         .doc(instructorId)
@@ -292,9 +271,7 @@ class _InstructorRequestsPageState
                             ),
                           ],
                         ),
-
                         const SizedBox(height: 10),
-
                         ElevatedButton(
                           style: AppColors.goldButton,
                           onPressed: () {},
@@ -307,13 +284,11 @@ class _InstructorRequestsPageState
               );
             },
           ),
-
           if (loadingAction)
             Container(
               color: Colors.black54,
               child: const Center(
-                child: CircularProgressIndicator(
-                    color: AppColors.gold),
+                child: CircularProgressIndicator(color: AppColors.gold),
               ),
             ),
         ],

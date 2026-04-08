@@ -14,7 +14,6 @@ class PaymentsAdvancedPage extends StatefulWidget {
 }
 
 class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
-
   String search = "";
 
   final double coursePrice = 500;
@@ -43,9 +42,7 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
               onPressed: () async {
                 final amount = double.tryParse(amountController.text) ?? 0;
 
-                await FirebaseService.firestore
-                    .collection("payments")
-                    .add({
+                await FirebaseService.firestore.collection("payments").add({
                   "userId": userId,
                   "name": name,
                   "amount": amount,
@@ -81,7 +78,6 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         title: const Text("💰 إدارة المصاريف"),
         backgroundColor: AppColors.black,
@@ -90,23 +86,20 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
             onPressed: () async {
               await NotificationSender.sendPaymentReminders();
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("تم إرسال التذكيرات 🔔"),
-                  ),
-                );
-              }
+              if (!mounted) return;
+
+              ScaffoldMessenger.of(this.context).showSnackBar(
+                const SnackBar(
+                  content: Text("تم إرسال التذكيرات 🔔"),
+                ),
+              );
             },
-            icon: const Icon(Icons.notifications_active,
-                color: AppColors.gold),
+            icon: const Icon(Icons.notifications_active, color: AppColors.gold),
           ),
         ],
       ),
-
       body: Column(
         children: [
-
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -125,24 +118,20 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
               onChanged: (val) => setState(() => search = val),
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseService.firestore
                   .collection(AppConstants.users)
                   .snapshots(),
               builder: (context, snapshot) {
-
                 if (!snapshot.hasData) {
-                  return const Center(
-                      child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final students = snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
 
-                  final name =
-                      (data['name'] ?? "").toString().toLowerCase();
+                  final name = (data['name'] ?? "").toString().toLowerCase();
 
                   return data['isAdmin'] != true &&
                       data['instructorApproved'] != true &&
@@ -152,7 +141,6 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
                 return ListView.builder(
                   itemCount: students.length,
                   itemBuilder: (context, index) {
-
                     final doc = students[index];
                     final data = doc.data() as Map<String, dynamic>;
 
@@ -161,7 +149,6 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
                     return FutureBuilder<double>(
                       future: getTotalPaid(doc.id),
                       builder: (context, snapshot2) {
-
                         final paid = snapshot2.data ?? 0;
                         final remaining = coursePrice - paid;
                         final isPaid = remaining <= 0;
@@ -178,11 +165,9 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
                           ),
                           child: Row(
                             children: [
-
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       name,
@@ -192,34 +177,28 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-
                                     Text(
                                       "مدفوع: $paid جنيه",
-                                      style: const TextStyle(
-                                          color: Colors.green),
+                                      style:
+                                          const TextStyle(color: Colors.green),
                                     ),
-
                                     Text(
                                       isPaid
                                           ? "✅ مدفوع كامل"
                                           : "❌ متبقي: $remaining جنيه",
                                       style: TextStyle(
-                                        color: isPaid
-                                            ? Colors.green
-                                            : Colors.red,
+                                        color:
+                                            isPaid ? Colors.green : Colors.red,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-
                               IconButton(
-                                onPressed: () =>
-                                    addPayment(doc.id, name),
+                                onPressed: () => addPayment(doc.id, name),
                                 icon: const Icon(Icons.add,
                                     color: AppColors.gold),
                               ),
-
                             ],
                           ),
                         );
@@ -230,7 +209,6 @@ class _PaymentsAdvancedPageState extends State<PaymentsAdvancedPage> {
               },
             ),
           ),
-
         ],
       ),
     );

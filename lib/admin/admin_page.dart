@@ -155,23 +155,9 @@ class _AdminPageState extends State<AdminPage> {
 
       isAdmin = data['isAdmin'] == true;
 
-      final r = (data['role'] ?? "").toString().toLowerCase();
-
-      if (r.isNotEmpty) {
-        isAdmin = r == "admin";
-      } else {
-        if (data['isAdmin'] == true) {
-          isAdmin = true;
-        } else if (data['instructorApproved'] == true) {
-          isAdmin = false;
-        } else if (data['isVIP'] == true) {
-          isAdmin = false;
-        } else if (data['subscribed'] == true) {
-          isAdmin = false;
-        } else {
-          isAdmin = false;
-        }
-      }
+      // ✅ FIX FINAL (ثابت 100%)
+      isAdmin = data['isAdmin'] == true ||
+          (data['role'] ?? "").toString().toLowerCase() == "admin";
     } catch (e) {
       debugPrint("Admin Check Error: $e");
     }

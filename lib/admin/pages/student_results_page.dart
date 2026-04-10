@@ -8,7 +8,7 @@ import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 
 // 🔥 WIDGET
-import '../../widgets/loading_widget.dart';
+import '/shared/widgets/loading_widget.dart';
 
 class StudentResultsPage extends StatefulWidget {
   const StudentResultsPage({super.key});

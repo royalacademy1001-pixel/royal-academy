@@ -11,8 +11,8 @@ import '../core/colors.dart';
 // 🔥🔥🔥 NEW ANALYTICS
 import '../core/analytics_service.dart';
 
-import '../widgets/custom_button.dart';
-import '../widgets/custom_textfield.dart';
+import '../shared/widgets/custom_button.dart';
+import '../shared/widgets/custom_textfield.dart';
 
 import 'payment_service.dart';
 import 'widgets/payment_widgets.dart';

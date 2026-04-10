@@ -6,7 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 
-import '../../widgets/loading_widget.dart';
+import '../../../shared/widgets/loading_widget.dart';
 
 class StudentFinancialDetailsPage extends StatefulWidget {
   final String userId;

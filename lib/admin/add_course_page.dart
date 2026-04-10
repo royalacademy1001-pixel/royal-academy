@@ -6,8 +6,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 
 import '../core/firebase_service.dart';
 import '../core/colors.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_textfield.dart';
+import '../shared/widgets/custom_button.dart';
+import '../shared/widgets/custom_textfield.dart';
 
 class AddCoursePage extends StatefulWidget {
   const AddCoursePage({super.key});

@@ -9,8 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'register_page.dart';
 import 'core/colors.dart';
-import 'widgets/custom_button.dart';
-import 'widgets/custom_textfield.dart';
+import 'shared/widgets/custom_button.dart';
+import 'shared/widgets/custom_textfield.dart';
 
 // 🔥🔥🔥 NEW (ANALYTICS)
 import 'core/analytics_service.dart';

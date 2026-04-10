@@ -9,13 +9,13 @@ import '../core/constants.dart';
 import '../core/colors.dart';
 
 // 🔥 PAGES
-import '../courses_page.dart';
+import '../features/courses/pages/courses_page.dart';
 import '../student_profile_page.dart';
 import '../course_details_page.dart';
 import '../payment/payment_page.dart';
 
 // 🔥 WIDGETS
-import '../widgets/loading_widget.dart';
+import '/shared/widgets/loading_widget.dart';
 
 class StudentDashboardPage extends StatefulWidget {
   const StudentDashboardPage({super.key});
@@ -42,7 +42,10 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
   Future loadData() async {
     try {
       final user = FirebaseService.auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        if (mounted) setState(() => loading = false);
+        return;
+      }
 
       final doc = await FirebaseService.firestore
           .collection(AppConstants.users)
@@ -51,11 +54,14 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
 
       final data = doc.data() ?? {};
 
-      enrolledCourses = data['enrolledCourses'] ?? [];
-      isVIP = data['isVIP'] ?? false;
-      isAdmin = data['isAdmin'] ?? false;
+      enrolledCourses = (data['enrolledCourses'] is List)
+          ? List.from(data['enrolledCourses'])
+          : [];
 
-      userData = data;
+      isVIP = data['isVIP'] == true;
+      isAdmin = data['isAdmin'] == true;
+
+      userData = Map<String, dynamic>.from(data);
 
       if (mounted) setState(() => loading = false);
 
@@ -85,6 +91,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
           IconButton(
             icon: const Icon(Icons.person, color: AppColors.gold),
             onPressed: () {
+              if (!context.mounted) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -111,7 +118,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      userData?['name'] ?? "Student",
+                      (userData?['name'] ?? "Student").toString(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -130,6 +137,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
             Row(
               children: [
                 _cardButton("كورساتي", Icons.menu_book, () {
+                  if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -138,6 +146,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                   );
                 }),
                 _cardButton("الدفع", Icons.payment, () {
+                  if (!context.mounted) return;
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -173,7 +182,12 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                 itemCount: enrolledCourses.length,
                 itemBuilder: (context, index) {
 
-                  String courseId = enrolledCourses[index];
+                  final dynamic rawId = enrolledCourses[index];
+                  final String courseId = rawId?.toString() ?? "";
+
+                  if (courseId.isEmpty) {
+                    return const SizedBox();
+                  }
 
                   return FutureBuilder<DocumentSnapshot>(
                     future: FirebaseService.firestore
@@ -182,29 +196,35 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                         .get(),
                     builder: (context, snapshot) {
 
-                      if (!snapshot.hasData) {
+                      if (!snapshot.hasData || snapshot.data == null) {
                         return const SizedBox();
                       }
 
-                      var data =
-                          snapshot.data!.data() as Map<String, dynamic>? ?? {};
+                      final raw = snapshot.data!.data();
+                      final Map<String, dynamic> data =
+                          raw is Map<String, dynamic>
+                              ? raw
+                              : (raw is Map
+                                  ? raw.map((k, v) => MapEntry(k.toString(), v))
+                                  : {});
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 10),
                         decoration: AppColors.premiumCard,
                         child: ListTile(
                           title: Text(
-                            data['title'] ?? "Course",
+                            (data['title'] ?? "Course").toString(),
                             style: const TextStyle(color: Colors.white),
                           ),
                           trailing: const Icon(Icons.arrow_forward_ios,
                               color: AppColors.gold, size: 16),
                           onTap: () {
+                            if (!context.mounted) return;
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CourseDetailsPage(
-                                  title: data['title'] ?? "",
+                                  title: (data['title'] ?? "").toString(),
                                   courseId: courseId,
                                 ),
                               ),
@@ -249,6 +269,7 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                     ElevatedButton(
                       style: AppColors.goldButton,
                       onPressed: () {
+                        if (!context.mounted) return;
                         Navigator.push(
                           context,
                           MaterialPageRoute(

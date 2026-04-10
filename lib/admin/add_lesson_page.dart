@@ -14,9 +14,9 @@ import '../core/colors.dart';
 import '../core/utils.dart';
 
 // 🔥 Widgets
-import '../widgets/custom_button.dart';
-import '../widgets/custom_textfield.dart';
-import '../widgets/loading_widget.dart';
+import '../shared/widgets/custom_button.dart';
+import '../shared/widgets/custom_textfield.dart';
+import '/shared/widgets/loading_widget.dart';
 
 class AddLessonPage extends StatefulWidget {
 

@@ -5,7 +5,7 @@ import 'dart:ui';
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 import '../../core/constants.dart';
-import '../../widgets/loading_widget.dart';
+import '../../../shared/widgets/loading_widget.dart';
 import 'subject_sessions_page.dart';
 
 class AttendanceReportPage extends StatefulWidget {

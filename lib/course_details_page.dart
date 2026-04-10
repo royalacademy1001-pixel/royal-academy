@@ -1,56 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:url_launcher/url_launcher.dart';
-import '../video_page.dart';
-import 'reviews_page.dart';
-import '../admin/add_lesson_page.dart';
-import '../payment/payment_page.dart';
-import '../core/firebase_service.dart';
-import '../core/constants.dart';
-import '../core/colors.dart';
-import '../core/analytics_service.dart';
-import '../widgets/course_progress.dart';
-import '../widgets/resume_button.dart';
-import '../widgets/lesson_card.dart';
-import '../widgets/loading_widget.dart';
 
-void cleanCourseCache() {
-  if (_CourseDetailsPageState._courseCache.length > 10) {
-    _CourseDetailsPageState._courseCache.clear();
-  }
-  if (_CourseDetailsPageState._lessonCache.length > 10) {
-    _CourseDetailsPageState._lessonCache.clear();
-  }
-}
+import 'package:royal_academy/core/firebase_service.dart';
+import 'package:royal_academy/core/constants.dart';
+import 'package:royal_academy/core/colors.dart';
+import 'package:royal_academy/core/analytics_service.dart';
 
-Widget fadeItem(Widget child) {
-  return TweenAnimationBuilder<double>(
-    duration: const Duration(milliseconds: 250),
-    tween: Tween(begin: 0.95, end: 1.0),
-    builder: (context, value, widget) =>
-        Transform.scale(scale: value, child: widget),
-    child: child,
-  );
-}
+import 'package:royal_academy/features/courses/widgets/course_progress.dart';
+import 'package:royal_academy/features/home/widgets/resume_button.dart';
+import 'package:royal_academy/shared/widgets/skeleton_loader.dart';
 
-class _NavGuard {
-  static bool navigating = false;
-
-  static void go(VoidCallback action) {
-    if (navigating) return;
-    navigating = true;
-
-    try {
-      action();
-    } catch (e) {
-      debugPrint("🔥 Navigation Error: $e");
-    }
-
-    Future.delayed(const Duration(milliseconds: 400), () {
-      navigating = false;
-    });
-  }
-}
+import 'package:royal_academy/features/course_details/widgets/course_tabs.dart';
+import 'package:royal_academy/features/course_details/widgets/lessons_list.dart';
+import 'package:royal_academy/features/course_details/widgets/file_lessons_list.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   final String title;
@@ -67,8 +29,9 @@ class CourseDetailsPage extends StatefulWidget {
 }
 
 class _CourseDetailsPageState extends State<CourseDetailsPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
+  late AnimationController _anim;
 
   Map<String, dynamic>? userData;
   Map<String, dynamic>? courseData;
@@ -76,576 +39,290 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   List<QueryDocumentSnapshot> lessons = [];
   Set<String> watched = {};
   String? lastLessonId;
-  bool hasAccess = false;
 
+  bool hasAccess = false;
   bool loading = true;
 
   int views = 0;
   int purchases = 0;
 
-  static final Map<String, dynamic> _courseCache = {};
-  static final Map<String, List<QueryDocumentSnapshot>> _lessonCache = {};
+  final ScrollController _scrollController = ScrollController();
+  double scrollOffset = 0;
 
   @override
   void initState() {
     super.initState();
-    cleanCourseCache();
 
     _tabController = TabController(length: 3, vsync: this);
 
-    Future.microtask(() {
-      AnalyticsService.logCourseView(widget.courseId, title: widget.title);
-      FirebaseService.firestore.collection("analytics_events").add({
-        "type": "course_view",
-        "courseId": widget.courseId,
-        "courseTitle": widget.title,
-        "userId": FirebaseService.auth.currentUser?.uid ?? "guest",
-        "timestamp": Timestamp.now(),
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _anim.forward();
+
+    _scrollController.addListener(() {
+      if (!mounted) return;
+      setState(() {
+        scrollOffset = _scrollController.offset;
       });
     });
 
-    loadData();
-    loadStats();
+    loadAllData();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _anim.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> loadStats() async {
-    views = await AnalyticsService.getCourseViews(widget.courseId);
-    purchases = await AnalyticsService.getCoursePurchases(widget.courseId);
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  Future<void> loadData() async {
+  Future<void> loadAllData() async {
     final user = FirebaseService.auth.currentUser;
 
     try {
-      if (_courseCache.containsKey(widget.courseId)) {
-        courseData = _courseCache[widget.courseId];
+      final results = await Future.wait([
+        FirebaseService.firestore
+            .collection(AppConstants.courses)
+            .doc(widget.courseId)
+            .get(),
+        if (user != null)
+          FirebaseService.firestore
+              .collection(AppConstants.users)
+              .doc(user.uid)
+              .get(),
+        FirebaseService.firestore
+            .collection(AppConstants.courses)
+            .doc(widget.courseId)
+            .collection(AppConstants.lessons)
+            .orderBy('order')
+            .get(),
+      ]);
+
+      courseData =
+          (results[0] as DocumentSnapshot).data() as Map<String, dynamic>?;
+
+      if (user != null && results.length > 2) {
+        userData =
+            (results[1] as DocumentSnapshot).data() as Map<String, dynamic>?;
       }
 
-      final List<Future> tasks = [
-        courseData == null
-            ? FirebaseService.firestore
-                .collection(AppConstants.courses)
-                .doc(widget.courseId)
-                .get()
-            : Future.value(null),
-      ];
+      lessons = (results.last as QuerySnapshot).docs;
 
       if (user != null) {
-        tasks.add(FirebaseService.firestore
-            .collection(AppConstants.users)
-            .doc(user.uid)
-            .get());
-      }
-
-      final results = await Future.wait(tasks);
-
-      if (courseData == null && results[0] != null) {
-        courseData = (results[0] as DocumentSnapshot).data() as Map<String, dynamic>? ?? {};
-        _courseCache[widget.courseId] = courseData!;
-      }
-
-      if (user != null && results.length > 1) {
-        userData = (results[1] as DocumentSnapshot).data() as Map<String, dynamic>? ?? {};
-      }
-
-      if (!mounted) return;
-      setState(() => loading = false);
-
-      await loadExtra(user?.uid);
-    } catch (e) {
-      debugPrint("🔥 Load Data Error: $e");
-      if (!mounted) return;
-      setState(() => loading = false);
-    }
-  }
-
-  Future<void> loadExtra(String? userId) async {
-    try {
-      if (_lessonCache.containsKey(widget.courseId)) {
-        lessons = _lessonCache[widget.courseId]!;
-      }
-
-      final List<Future> tasks = [
-        lessons.isEmpty
-            ? FirebaseService.firestore
-                .collection(AppConstants.courses)
-                .doc(widget.courseId)
-                .collection(AppConstants.lessons)
-                .orderBy('order')
-                .get()
-            : Future.value(null),
-      ];
-
-      if (userId != null) {
-        tasks.add(FirebaseService.firestore
+        final progressSnap = await FirebaseService.firestore
             .collection(AppConstants.progress)
-            .where('userId', isEqualTo: userId)
+            .where('userId', isEqualTo: user.uid)
             .where('courseId', isEqualTo: widget.courseId)
-            .get());
-        tasks.add(FirebaseService.firestore
-            .collection(AppConstants.lastWatch)
-            .where('userId', isEqualTo: userId)
-            .where('courseId', isEqualTo: widget.courseId)
-            .limit(1)
-            .get());
-      }
+            .get();
 
-      final results = await Future.wait(tasks);
-
-      if (results[0] != null) {
-        lessons = List.from((results[0] as QuerySnapshot).docs);
-        lessons.sort((a, b) => (a['order'] ?? 0).compareTo(b['order'] ?? 0));
-        _lessonCache[widget.courseId] = lessons;
-      }
-
-      if (userId != null && results.length > 2) {
-        watched = (results[1] as QuerySnapshot)
-            .docs
-            .map((e) => (e['lessonId'] ?? "").toString())
+        watched = progressSnap.docs
+            .map((e) => e['lessonId'].toString())
             .toSet();
 
-        final lastSnap = results[2] as QuerySnapshot;
-        if (lastSnap.docs.isNotEmpty) {
-          lastLessonId = (lastSnap.docs.first['lessonId'] ?? "").toString();
+        if (progressSnap.docs.isNotEmpty) {
+          lastLessonId = progressSnap.docs.last['lessonId'];
         }
       }
 
-      if (lastLessonId != null && !watched.contains(lastLessonId)) {
-        lastLessonId = null;
-      }
+      views = await AnalyticsService.getCourseViews(widget.courseId);
+      purchases =
+          await AnalyticsService.getCoursePurchases(widget.courseId);
 
-      calculateAccess(userId);
+      hasAccess = _calculateAccess(user);
 
-      if (!mounted) return;
-      setState(() {});
+      loading = false;
+      if (mounted) setState(() {});
     } catch (e) {
-      debugPrint("🔥 Load Extra Error: $e");
+      loading = false;
+      if (mounted) setState(() {});
     }
   }
 
-  void calculateAccess(String? userId) {
-    if (userId == null) {
-      hasAccess = false;
-      return;
-    }
+  bool _calculateAccess(user) {
+    if (user == null) return false;
 
     bool isAdmin = userData?['isAdmin'] == true;
-    bool subscribed = userData?['subscribed'] == true;
     bool isVIP = userData?['isVIP'] == true;
-    bool blocked = userData?['blocked'] == true;
-    bool instructorApproved = userData?['instructorApproved'] == true;
-
-    bool validSubscription = false;
-    final endDate = userData?['subscriptionEnd'];
-
-    if (endDate != null) {
-      try {
-        validSubscription = DateTime.parse(endDate.toString()).isAfter(DateTime.now());
-      } catch (_) {}
-    }
-
-    if (isAdmin) {
-      subscribed = true;
-      validSubscription = true;
-    }
+    bool subscribed = userData?['subscribed'] == true;
 
     List unlocked = userData?['unlockedCourses'] ?? [];
-    List enrolled = userData?['enrolledCourses'] ?? [];
 
-    hasAccess = !blocked &&
-        (isAdmin ||
-            isVIP ||
-            instructorApproved ||
-            (subscribed && validSubscription) ||
-            unlocked.contains(widget.courseId) ||
-            enrolled.contains(widget.courseId));
+    return isAdmin ||
+        isVIP ||
+        subscribed ||
+        unlocked.contains(widget.courseId);
   }
 
-  Widget safeImage(String image) {
-    if (image.isEmpty) {
-      return Container(color: Colors.black);
-    }
+  Widget header() {
+    final image = (courseData?['image'] ?? "").toString();
+
+    int total = lessons.length;
+    int done = watched.length;
+    double progress = total == 0 ? 0 : done / total;
+
+    double opacity = (scrollOffset / 200).clamp(0, 1);
 
     return Stack(
-      fit: StackFit.expand,
       children: [
-        Image.network(
-          FirebaseService.fixImage(image),
-          fit: BoxFit.cover,
+        SizedBox(
+          height: 260,
+          width: double.infinity,
+          child: image.isEmpty
+              ? Container(color: Colors.black)
+              : Image.network(
+                  FirebaseService.fixImage(image),
+                  fit: BoxFit.cover,
+                ),
         ),
+
         Container(
+          height: 260,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                Colors.black.withValues(alpha: 0.2),
-                Colors.black.withValues(alpha: 0.85),
+                Colors.black.withOpacity(0.2 + opacity * 0.6),
+                Colors.black.withOpacity(0.9),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
-        )
+        ),
+
+        Positioned(
+          bottom: 20,
+          left: 15,
+          right: 15,
+          child: FadeTransition(
+            opacity: _anim,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.title,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Text("👁 $views",
+                        style: const TextStyle(color: Colors.white)),
+                    const SizedBox(width: 15),
+                    Text("💰 $purchases",
+                        style: const TextStyle(color: AppColors.gold)),
+                  ],
+                ),
+
+                const SizedBox(height: 10),
+
+                CourseProgress(
+                  progress: progress,
+                  done: done,
+                  total: total,
+                ),
+
+                const SizedBox(height: 10),
+
+                if (lastLessonId != null)
+                  ResumeButton(
+                    lessonId: lastLessonId!,
+                    courseId: widget.courseId,
+                    hasAccess: hasAccess,
+                  ),
+              ],
+            ),
+          ),
+        ),
+
+        Positioned(
+          top: 35,
+          left: 10,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
       ],
     );
   }
 
-  bool get canEditCourse {
-    bool isAdmin = userData?['isAdmin'] == true;
-    bool isInstructor = userData?['instructorApproved'] == true;
-    return isAdmin || isInstructor;
+  Widget glassTabs() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: CourseTabs(controller: _tabController),
+    );
   }
 
-  bool _canOpenLesson(QueryDocumentSnapshot lesson) {
-    final data = lesson.data() as Map<String, dynamic>? ?? {};
-    if (courseData?['isFree'] == true) return true;
-    if (hasAccess) return true;
-    if (data['isFree'] == true) return true;
-    if (lessons.isEmpty) return false;
-    if (FirebaseService.auth.currentUser == null) {
-      return lessons.first.id == lesson.id && data['isFree'] == true;
-    }
-    return lessons.first.id == lesson.id;
-  }
-
-  void _showLockedLessonDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.black,
-          title: const Text(
-            "🔒 الدرس مقفول",
-            style: TextStyle(color: Colors.white),
-          ),
-          content: const Text(
-            "اشترك لفتح باقي الدروس",
-            style: TextStyle(color: Colors.white),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("إلغاء"),
-            ),
-            ElevatedButton(
-              style: AppColors.goldButton,
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const PaymentPage(),
-                  ),
-                );
-              },
-              child: const Text("اشترك الآن"),
-            ),
-          ],
-        );
-      },
+  Widget empty(String text) {
+    return Center(
+      child: Text(text,
+          style: const TextStyle(color: Colors.grey, fontSize: 14)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     if (loading) {
-      return const Scaffold(body: LoadingWidget());
+      return const Scaffold(body: SkeletonLoader());
     }
 
-    String image = (courseData?['image'] ?? "").toString();
+    final video =
+        lessons.where((l) => (l['type'] ?? "video") == "video").toList();
 
-    int total = lessons.length;
-    int done = watched.length > total ? total : watched.length;
-    double progress = total == 0 ? 0 : done / total;
+    final pdf =
+        lessons.where((l) => (l['type'] ?? "") == "pdf").toList();
 
-    List<QueryDocumentSnapshot> videoLessons = lessons.where((l) {
-      var d = l.data() as Map<String, dynamic>? ?? {};
-      return (d['type'] ?? "video") == "video";
-    }).toList();
-
-    List<QueryDocumentSnapshot> pdfLessons = lessons.where((l) {
-      var d = l.data() as Map<String, dynamic>? ?? {};
-      return (d['type'] ?? "") == "pdf";
-    }).toList();
-
-    List<QueryDocumentSnapshot> audioLessons = lessons.where((l) {
-      var d = l.data() as Map<String, dynamic>? ?? {};
-      return (d['type'] ?? "") == "audio";
-    }).toList();
+    final audio =
+        lessons.where((l) => (l['type'] ?? "") == "audio").toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      floatingActionButton: canEditCourse
-          ? FloatingActionButton(
-              backgroundColor: AppColors.gold,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => AddLessonPage(
-                      courseId: widget.courseId,
-                    ),
-                  ),
-                );
-              },
-              child: const Icon(Icons.add, color: Colors.black),
-            )
-          : null,
       body: Column(
         children: [
-          Stack(
-            children: [
-              SizedBox(
-                height: 260,
-                width: double.infinity,
-                child: safeImage(image),
-              ),
-              Positioned(
-                top: 10,
-                left: 10,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              if (canEditCourse)
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: IconButton(
-                    icon: const Icon(Icons.edit, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => AddLessonPage(
-                            courseId: widget.courseId,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              Positioned(
-                bottom: 15,
-                left: 15,
-                right: 15,
-                child: fadeItem(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.title,
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20)),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Text("👁 $views",
-                              style: const TextStyle(color: Colors.white)),
-                          const SizedBox(width: 15),
-                          Text("💰 $purchases",
-                              style: const TextStyle(color: AppColors.gold)),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      CourseProgress(
-                        progress: progress,
-                        done: done,
-                        total: total,
-                      ),
-                      const SizedBox(height: 10),
-                      if (lastLessonId != null)
-                        ResumeButton(
-                          lessonId: lastLessonId!,
-                          courseId: widget.courseId,
-                          hasAccess: hasAccess,
-                        ),
-                      const SizedBox(height: 10),
-                      ElevatedButton(
-                        style: AppColors.goldButton,
-                        onPressed: () {
-                          _NavGuard.go(() {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ReviewsPage(courseId: widget.courseId),
-                              ),
-                            );
-                          });
-                        },
-                        child: const Text("⭐ التقييمات"),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.black.withValues(alpha: 0.4),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(25)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              labelColor: AppColors.gold,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: AppColors.gold,
-              tabs: const [
-                Tab(text: "الفيديوهات"),
-                Tab(text: "PDF"),
-                Tab(text: "الصوتيات"),
-              ],
-            ),
-          ),
+          header(),
+          glassTabs(),
+
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
-                ListView(
-                  padding: const EdgeInsets.all(10),
-                  children: [
-                    ...videoLessons.map((lesson) {
-                      var data = lesson.data() as Map<String, dynamic>? ?? {};
-                      final canOpenLesson = _canOpenLesson(lesson);
+                video.isEmpty
+                    ? empty("لا يوجد فيديوهات")
+                    : LessonsList(
+                        lessons: video,
+                        watched: watched,
+                        hasAccess: hasAccess,
+                        courseId: widget.courseId,
+                      ),
 
-                      String videoUrl =
-                          (data['contentUrl'] ?? data['video'] ?? "")
-                              .toString();
+                pdf.isEmpty
+                    ? empty("لا يوجد ملفات PDF")
+                    : FileLessonsList(
+                        lessons: pdf,
+                        hasAccess: hasAccess,
+                        icon: Icons.picture_as_pdf,
+                        color: Colors.red,
+                      ),
 
-                      if (videoUrl == "null") videoUrl = "";
-
-                      return fadeItem(
-                        GestureDetector(
-                          onTap: () {
-                            if (!canOpenLesson) {
-                              _showLockedLessonDialog();
-                              return;
-                            }
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => VideoPage(
-                                  title: data['title'] ?? "",
-                                  videoUrl: videoUrl,
-                                  courseId: widget.courseId,
-                                  lessonId: lesson.id,
-                                  isFree: data['isFree'] == true ||
-                                      lessons.isNotEmpty &&
-                                          lessons.first.id == lesson.id,
-                                ),
-                              ),
-                            );
-                          },
-                          child: LessonCard(
-                            lesson: lesson,
-                            data: data,
-                            canOpen: canOpenLesson,
-                            isFree: data['isFree'] == true ||
-                                lessons.isNotEmpty &&
-                                    lessons.first.id == lesson.id,
-                            isWatched: watched.contains(lesson.id),
-                            isLocked: !canOpenLesson,
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                ListView(
-                  padding: const EdgeInsets.all(10),
-                  children: [
-                    ...pdfLessons.map((lesson) {
-                      var data = lesson.data() as Map<String, dynamic>? ?? {};
-                      final canOpenLesson = _canOpenLesson(lesson);
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.black.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: ListTile(
-                          title: Text(data['title'] ?? "",
-                              style: const TextStyle(color: Colors.white)),
-                          leading: Icon(
-                            canOpenLesson
-                                ? Icons.picture_as_pdf
-                                : Icons.lock_outline,
-                            color: canOpenLesson ? Colors.red : Colors.grey,
-                          ),
-                          trailing: canOpenLesson
-                              ? null
-                              : const Icon(Icons.lock, color: Colors.red),
-                          onTap: () {
-                            if (!canOpenLesson) {
-                              _showLockedLessonDialog();
-                              return;
-                            }
-
-                            String url = (data['contentUrl'] ?? "").toString();
-                            if (url.isNotEmpty) {
-                              launchUrl(Uri.parse(url));
-                            }
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-                ListView(
-                  padding: const EdgeInsets.all(10),
-                  children: [
-                    ...audioLessons.map((lesson) {
-                      var data = lesson.data() as Map<String, dynamic>? ?? {};
-                      final canOpenLesson = _canOpenLesson(lesson);
-
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        decoration: BoxDecoration(
-                          color: AppColors.black.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: ListTile(
-                          title: Text(data['title'] ?? "",
-                              style: const TextStyle(color: Colors.white)),
-                          leading: Icon(
-                            canOpenLesson
-                                ? Icons.headphones
-                                : Icons.lock_outline,
-                            color: canOpenLesson ? Colors.blue : Colors.grey,
-                          ),
-                          trailing: canOpenLesson
-                              ? null
-                              : const Icon(Icons.lock, color: Colors.red),
-                          onTap: () {
-                            if (!canOpenLesson) {
-                              _showLockedLessonDialog();
-                              return;
-                            }
-
-                            String url = (data['contentUrl'] ?? "").toString();
-                            if (url.isNotEmpty) {
-                              launchUrl(Uri.parse(url));
-                            }
-                          },
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+                audio.isEmpty
+                    ? empty("لا يوجد صوتيات")
+                    : FileLessonsList(
+                        lessons: audio,
+                        hasAccess: hasAccess,
+                        icon: Icons.headphones,
+                        color: Colors.blue,
+                      ),
               ],
             ),
           ),

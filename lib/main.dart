@@ -6,16 +6,16 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'firebase_options.dart';
 
-import 'core/analytics_service.dart';
 import 'core/colors.dart';
 import 'core/constants.dart';
 import 'core/firebase_service.dart';
-import 'core/notifications_service.dart';
+import 'shared/services/analytics_service.dart';
+import 'shared/services/auth_service.dart';
+import 'shared/services/notification_service.dart';
 
 import 'main_navigation_page.dart';
 import 'login_page.dart';
@@ -23,6 +23,8 @@ import 'onboarding_page.dart';
 import 'splash_page.dart';
 import 'payment/payment_page.dart';
 import 'payment/checkout_page.dart';
+import 'features/courses/pages/courses_page.dart';
+import 'student_profile_page.dart';
 import 'web/verify_web_page.dart';
 import 'features/quiz/student_quiz_page.dart';
 import 'features/quiz/admin_add_quiz_page.dart';
@@ -33,7 +35,7 @@ import 'admin/pages/analytics_dashboard_page.dart';
 import 'admin/pages/attendance_report_page.dart';
 import 'admin/pages/attendance_take_page.dart';
 import 'admin/pages/comments_page.dart';
-import 'admin/pages/center_management_page.dart';
+import 'features/center_management/pages/center_management_page.dart';
 import 'admin/pages/courses_admin_page.dart';
 import 'admin/pages/dashboard_page.dart';
 import 'admin/pages/finance_reports_page.dart';
@@ -107,18 +109,7 @@ Future<void> main() async {
     FlutterError.dumpErrorToConsole(details);
   };
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  await FirebaseService.initNotifications();
-
-  try {
-    await AnalyticsService.init();
-    await AnalyticsService.logEvent("app_open");
-  } catch (e) {
-    debugPrint("Analytics Init Error: $e");
-  }
+  await FirebaseInit.init();
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -158,50 +149,16 @@ class _RoyalAppState extends State<RoyalApp> {
 
   Future<void> _initializeApp() async {
     try {
-      await FirebaseService.initNotifications();
+      await FirebaseInit.init();
 
-      if (!kIsWeb) {
-        try {
-          await NotificationsService.init();
-          await FirebaseMessaging.instance.requestPermission();
-        } catch (e) {
-          debugPrint("Notification Error: $e");
-        }
-
-        try {
-          final token = await FirebaseMessaging.instance.getToken();
-          if (token != null && token.isNotEmpty) {
-            final user = FirebaseService.auth.currentUser;
-            if (user != null) {
-              await FirebaseService.firestore
-                  .collection(AppConstants.users)
-                  .doc(user.uid)
-                  .set({
-                "fcmToken": token,
-                "updatedAt": FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true));
-            }
-          }
-
-          FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-            if (message.notification != null) {
-              messengerKey.currentState?.showSnackBar(
-                SnackBar(
-                  content: Text(
-                    message.notification?.title ?? "New Notification",
-                  ),
-                ),
-              );
-            }
-          });
-        } catch (e) {
-          debugPrint("FCM Error: $e");
-        }
+      try {
+        await NotificationService.init();
+      } catch (e) {
+        debugPrint("Notification Error: $e");
       }
 
       try {
-        await AnalyticsService.logEvent("app_started");
-        await AnalyticsService.trackUserActive();
+        await AnalyticsService.logEvent(type: "app_started");
       } catch (e) {
         debugPrint("Analytics Error: $e");
       }
@@ -244,30 +201,7 @@ class _RoyalAppState extends State<RoyalApp> {
         }
 
         if (snapshot.hasData) {
-          return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-            future: FirebaseService.firestore
-                .collection(AppConstants.users)
-                .doc(snapshot.data!.uid)
-                .get(),
-            builder: (context, userSnapshot) {
-              if (userSnapshot.connectionState == ConnectionState.waiting) {
-                return SplashPage();
-              }
-
-              if (userSnapshot.hasError) {
-                return MainNavigationPage();
-              }
-
-              final data = userSnapshot.data?.data();
-              final isVIP = data?['isVIP'] == true;
-
-              if (isVIP) {
-                return MainNavigationPage();
-              }
-
-              return MainNavigationPage();
-            },
-          );
+          return MainNavigationPage();
         }
 
         return LoginPage();
@@ -285,6 +219,12 @@ class _RoyalAppState extends State<RoyalApp> {
 
       case '/login':
         return MaterialPageRoute(builder: (_) => LoginPage());
+
+      case '/courses':
+        return MaterialPageRoute(builder: (_) => const CoursesPage());
+
+      case '/profile':
+        return MaterialPageRoute(builder: (_) => const StudentProfilePage());
 
       case '/payment':
         return MaterialPageRoute(

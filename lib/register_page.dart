@@ -8,8 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import 'core/colors.dart';
-import 'widgets/custom_button.dart';
-import 'widgets/custom_textfield.dart';
+import 'shared/widgets/custom_button.dart';
+import 'shared/widgets/custom_textfield.dart';
 
 // 🔥🔥🔥 NEW ANALYTICS
 import 'core/analytics_service.dart';

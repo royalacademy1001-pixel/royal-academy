@@ -9,7 +9,7 @@ import 'constants.dart';
 
 import '../main.dart';
 import '../course_details_page.dart';
-import '../video_page.dart';
+import '../features/video/pages/video_page.dart';
 
 class NotificationsService {
 

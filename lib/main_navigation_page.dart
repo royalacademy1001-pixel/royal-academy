@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // 🔥 Pages
-import 'home_page.dart';
-import 'courses_page.dart';
+import 'home/home_page.dart';
+import 'features/courses/pages/courses_page.dart';
 import 'student_profile_page.dart';
 import 'payment/payment_page.dart';
 import 'admin/pages/payments_admin_page.dart';
@@ -21,7 +21,7 @@ import 'admin/pages/students_management_page.dart';
 import 'admin/pages/news_admin_page.dart';
 import 'admin/pages/students_crm_page.dart';
 import 'admin/pages/attendance_report_page.dart';
-import 'admin/pages/center_management_page.dart';
+import 'features/center_management/pages/center_management_page.dart';
 
 // 🔥 Instructor
 import 'instructor/instructor_dashboard_page.dart';

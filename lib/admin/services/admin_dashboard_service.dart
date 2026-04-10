@@ -28,6 +28,7 @@ class AdminStatsService {
 
   static Map<String, dynamic>? _cache;
   static bool _fetching = false;
+  static DateTime? _lastFetch;
 
   static int _toInt(dynamic v) {
     if (v == null) return 0;
@@ -35,20 +36,34 @@ class AdminStatsService {
     return int.tryParse(v.toString()) ?? 0;
   }
 
+  static Map<String, dynamic> _safeMap(dynamic data) {
+    if (data is Map<String, dynamic>) return data;
+    if (data is Map) return Map<String, dynamic>.from(data);
+    return {};
+  }
+
   static Future<Map<String, dynamic>> getStats() async {
 
     try {
+
+      if (_cache != null &&
+          _lastFetch != null &&
+          DateTime.now().difference(_lastFetch!).inSeconds < 15) {
+        return _cache!;
+      }
 
       if (_fetching && _cache != null) return _cache!;
 
       _fetching = true;
 
-      final results = await Future.wait([
+      final futures = [
         safeCall(() => FirebaseService.firestore.collection(AppConstants.users).get()),
         safeCall(() => FirebaseService.firestore.collection(AppConstants.courses).get()),
         safeCall(() => FirebaseService.firestore.collection(AppConstants.payments).get()),
-        safeCall(() => FirebaseService.firestore.collection("analytics_events").get()),
-      ]);
+        safeCall(() => FirebaseService.firestore.collection("analytics_events").limit(500).get()),
+      ];
+
+      final results = await Future.wait(futures);
 
       final usersSnap = results[0] as QuerySnapshot?;
       final coursesSnap = results[1] as QuerySnapshot?;
@@ -69,7 +84,7 @@ class AdminStatsService {
 
       for (var u in usersSnap.docs) {
 
-        final data = u.data() as Map<String, dynamic>;
+        final data = _safeMap(u.data());
 
         if (data['subscribed'] == true) {
           subscribed++;
@@ -113,7 +128,7 @@ class AdminStatsService {
 
       for (var p in paymentsSnap.docs) {
 
-        final data = p.data() as Map<String, dynamic>;
+        final data = _safeMap(p.data());
 
         final paid = _toInt(data['paid']) == 0
             ? _toInt(data['price'])
@@ -155,7 +170,7 @@ class AdminStatsService {
 
       if (analyticsSnap != null) {
         for (var e in analyticsSnap.docs) {
-          final data = e.data() as Map<String, dynamic>;
+          final data = _safeMap(e.data());
 
           final type = (data['type'] ?? "").toString();
           final userId = (data['userId'] ?? "").toString();
@@ -181,7 +196,7 @@ class AdminStatsService {
 
       if (courseViews.isEmpty && analyticsSnap != null) {
         for (var e in analyticsSnap.docs) {
-          final data = e.data() as Map<String, dynamic>;
+          final data = _safeMap(e.data());
           final courseId = (data['courseId'] ?? "").toString();
           if (courseId.isNotEmpty) {
             courseViews[courseId] =
@@ -192,7 +207,7 @@ class AdminStatsService {
 
       if (userActivity.isEmpty && analyticsSnap != null) {
         for (var e in analyticsSnap.docs) {
-          final data = e.data() as Map<String, dynamic>;
+          final data = _safeMap(e.data());
           final userId = (data['userId'] ?? "").toString();
           if (userId.isNotEmpty) {
             userActivity[userId] =
@@ -254,6 +269,7 @@ class AdminStatsService {
       };
 
       _cache = result;
+      _lastFetch = DateTime.now();
 
       return result;
 
@@ -289,5 +305,6 @@ class AdminStatsService {
 
   static void clearCache() {
     _cache = null;
+    _lastFetch = null;
   }
 }

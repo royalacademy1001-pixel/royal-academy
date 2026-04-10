@@ -1,4 +1,4 @@
-// 🔥 FINAL COMMENTS PAGE (PRO MAX++ ULTRA UPGRADED + REPLIES + CACHE FIXED)
+// 🔥 FINAL COMMENTS PAGE (ULTRA PERFORMANCE + NO LAG + CACHE + OPTIMIZED)
 
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,7 +27,6 @@ class _CommentsPageState extends State<CommentsPage> {
 
   DateTime? lastSend;
 
-  // ================= ADD COMMENT =================
   Future addComment() async {
 
     if (sending) return;
@@ -72,7 +71,6 @@ class _CommentsPageState extends State<CommentsPage> {
     if (mounted) setState(() => sending = false);
   }
 
-  // ================= LIKE =================
   Future toggleLike(DocumentSnapshot doc) async {
 
     final user = FirebaseService.auth.currentUser;
@@ -89,14 +87,12 @@ class _CommentsPageState extends State<CommentsPage> {
     });
   }
 
-  // ================= DELETE =================
   Future deleteComment(DocumentSnapshot doc) async {
     try {
       await doc.reference.delete();
     } catch (_) {}
   }
 
-  // ================= LOAD USER =================
   Future<Map<String, dynamic>> getUser(String uid) async {
 
     if (uid.isEmpty) return {};
@@ -121,7 +117,6 @@ class _CommentsPageState extends State<CommentsPage> {
     }
   }
 
-  // ================= FORMAT =================
   String formatTime(Timestamp? t) {
     try {
       if (t == null) return "";
@@ -154,7 +149,6 @@ class _CommentsPageState extends State<CommentsPage> {
       body: Column(
         children: [
 
-          /// LIST
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseService.firestore
@@ -194,106 +188,112 @@ class _CommentsPageState extends State<CommentsPage> {
                     bool isLiked =
                         user != null && likes.contains(user.uid);
 
-                    return FutureBuilder<Map<String, dynamic>>(
-                      future: getUser(data['userId'] ?? ""),
-                      builder: (context, userSnap) {
+                    String uid = data['userId'] ?? "";
 
-                        var userData = userSnap.data ?? {};
+                    Map<String, dynamic>? cachedUser =
+                        usersCache[uid];
 
-                        String name = userData['name'] ?? "User";
-                        String avatar =
-                            userData['image'] ??
-                                AppConstants.defaultAvatar;
+                    if (cachedUser == null) {
+                      getUser(uid).then((value) {
+                        if (mounted) {
+                          setState(() {});
+                        }
+                      });
+                    }
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: AppColors.premiumCard,
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                    String name =
+                        cachedUser?['name'] ?? "User";
+                    String avatar =
+                        cachedUser?['image'] ??
+                            AppConstants.defaultAvatar;
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: AppColors.premiumCard,
+                      child: Column(
+                        crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                        children: [
+
+                          Row(
                             children: [
-
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 16,
-                                    backgroundImage:
-                                        NetworkImage(avatar),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      color: AppColors.gold,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const Spacer(),
-                                  Text(
-                                    formatTime(data['createdAt']),
-                                    style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 10),
-                                  ),
-                                ],
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundImage:
+                                    NetworkImage(avatar),
                               ),
-
-                              const SizedBox(height: 10),
-
+                              const SizedBox(width: 8),
                               Text(
-                                data['text'] ?? "",
+                                name,
                                 style: const TextStyle(
-                                  color: AppColors.white,
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-
-                              const SizedBox(height: 8),
-
-                              Row(
-                                children: [
-
-                                  GestureDetector(
-                                    onTap: () => toggleLike(doc),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.favorite,
-                                          size: 18,
-                                          color: isLiked
-                                              ? Colors.red
-                                              : Colors.grey,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text("${likes.length}",
-                                            style:
-                                                const TextStyle(color: Colors.grey)),
-                                      ],
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 15),
-
-                                  ReplyWidget(commentDoc: doc),
-
-                                  const Spacer(),
-
-                                  if (user != null &&
-                                      user.uid == data['userId'])
-                                    GestureDetector(
-                                      onTap: () => deleteComment(doc),
-                                      child: const Icon(
-                                        Icons.delete,
-                                        size: 18,
-                                        color: Colors.red,
-                                      ),
-                                    ),
-                                ],
+                              const Spacer(),
+                              Text(
+                                formatTime(data['createdAt']),
+                                style: const TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 10),
                               ),
                             ],
                           ),
-                        );
-                      },
+
+                          const SizedBox(height: 10),
+
+                          Text(
+                            data['text'] ?? "",
+                            style: const TextStyle(
+                              color: AppColors.white,
+                            ),
+                          ),
+
+                          const SizedBox(height: 8),
+
+                          Row(
+                            children: [
+
+                              GestureDetector(
+                                onTap: () => toggleLike(doc),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.favorite,
+                                      size: 18,
+                                      color: isLiked
+                                          ? Colors.red
+                                          : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text("${likes.length}",
+                                        style:
+                                            const TextStyle(color: Colors.grey)),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(width: 15),
+
+                              ReplyWidget(commentDoc: doc),
+
+                              const Spacer(),
+
+                              if (user != null &&
+                                  user.uid == data['userId'])
+                                GestureDetector(
+                                  onTap: () => deleteComment(doc),
+                                  child: const Icon(
+                                    Icons.delete,
+                                    size: 18,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
                     );
                   },
                 );
@@ -301,7 +301,6 @@ class _CommentsPageState extends State<CommentsPage> {
             ),
           ),
 
-          /// INPUT
           Container(
             padding: const EdgeInsets.all(10),
             color: AppColors.black,
@@ -341,7 +340,6 @@ class _CommentsPageState extends State<CommentsPage> {
   }
 }
 
-/// ================= REPLY =================
 class ReplyWidget extends StatefulWidget {
   final DocumentSnapshot commentDoc;
 

@@ -5,7 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/colors.dart';
 import '../../core/constants.dart';
 import '../../core/firebase_service.dart';
-import '../../widgets/loading_widget.dart';
+import '/shared/widgets/loading_widget.dart';
 import '../widgets/courses_dialog.dart';
 import 'edit_student_page.dart';
 

@@ -11,7 +11,7 @@ class HomeNotificationIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
-      stream: stream,
+      stream: stream ?? const Stream.empty(),
       builder: (context, snapshot) {
         int count = 0;
 

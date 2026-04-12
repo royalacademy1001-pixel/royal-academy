@@ -51,6 +51,9 @@ class VideoController {
 
   Timer? youtubeTimer;
 
+  bool _disposed = false;
+  Timer? _throttleTimer;
+
   Future<void> checkAccess() async {
     try {
       var user = FirebaseService.auth.currentUser;
@@ -110,6 +113,8 @@ class VideoController {
   }
 
   Future<void> initVideo(BuildContext context) async {
+    if (_disposed) return;
+
     String url = videoUrl.trim();
 
     if (url == "null") url = "";
@@ -139,10 +144,12 @@ class VideoController {
         await audioPlayer!.setUrl(url);
 
         audioPlayer!.positionStream.listen((pos) {
+          if (_disposed) return;
           currentSecond = pos.inSeconds;
         });
 
         audioPlayer!.durationStream.listen((dur) {
+          if (_disposed) return;
           if (dur != null) {
             totalSeconds = dur.inSeconds;
           }
@@ -169,8 +176,9 @@ class VideoController {
         autoPlay: true,
       );
 
+      youtubeTimer?.cancel();
       youtubeTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
-        if (youtubeController == null) {
+        if (_disposed || youtubeController == null) {
           timer.cancel();
           return;
         }
@@ -192,9 +200,7 @@ class VideoController {
 
           if (currentSecond % 5 == 0 && !savingNow) {
             savingNow = true;
-            saveProgress().then((_) {
-              savingNow = false;
-            });
+            _throttledSave();
           }
 
           if (progress >= 0.9 && !completedSent) {
@@ -215,9 +221,13 @@ class VideoController {
       videoController = VideoPlayerController.networkUrl(Uri.parse(url));
       await videoController!.initialize();
 
+      if (_disposed) return;
+
       totalSeconds = videoController!.value.duration.inSeconds;
 
       await handleResume(context);
+
+      if (_disposed) return;
 
       chewieController = ChewieController(
         videoPlayerController: videoController!,
@@ -234,6 +244,7 @@ class VideoController {
 
   void startListener() {
     videoController?.addListener(() {
+      if (_disposed) return;
       if (videoController == null) return;
 
       final value = videoController!.value;
@@ -261,9 +272,7 @@ class VideoController {
 
       if (currentSecond % 5 == 0 && !savingNow) {
         savingNow = true;
-        saveProgress().then((_) {
-          savingNow = false;
-        });
+        _throttledSave();
       }
 
       if (progress >= 0.9 && !completedSent) {
@@ -271,6 +280,15 @@ class VideoController {
         saveProgress();
         markCompleted();
       }
+    });
+  }
+
+  void _throttledSave() {
+    _throttleTimer?.cancel();
+    _throttleTimer = Timer(const Duration(milliseconds: 800), () async {
+      if (_disposed) return;
+      await saveProgress();
+      savingNow = false;
     });
   }
 
@@ -295,6 +313,7 @@ class VideoController {
       await Future.delayed(const Duration(milliseconds: 300));
 
       if (!context.mounted) return;
+      if (_disposed) return;
 
       showDialog(
         context: context,
@@ -321,6 +340,8 @@ class VideoController {
 
   Future<void> saveProgress() async {
     try {
+      if (_disposed) return;
+
       var user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
@@ -342,6 +363,8 @@ class VideoController {
 
   Future<void> markCompleted() async {
     try {
+      if (_disposed) return;
+
       var user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
@@ -358,8 +381,11 @@ class VideoController {
   }
 
   void dispose() {
+    _disposed = true;
+
     try {
       youtubeTimer?.cancel();
+      _throttleTimer?.cancel();
       videoController?.dispose();
       chewieController?.dispose();
       youtubeController?.close();

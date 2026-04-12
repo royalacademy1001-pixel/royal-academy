@@ -50,15 +50,15 @@ class HomeStatsCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.42),
+            color: Colors.black.withValues(alpha: 0.42),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: AppColors.gold.withOpacity(0.05),
+            color: AppColors.gold.withValues(alpha: 0.05),
             blurRadius: 18,
             offset: const Offset(0, 0),
           ),
@@ -72,9 +72,9 @@ class HomeStatsCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: AppColors.gold.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.16)),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.16)),
                 ),
                 child: const Text(
                   "ملخص سريع",
@@ -90,7 +90,7 @@ class HomeStatsCard extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.04),
+                  color: Colors.white.withValues(alpha: 0.04),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -146,9 +146,9 @@ class HomeStatsCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.03),
+        color: Colors.white.withValues(alpha: 0.03),
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -157,9 +157,9 @@ class HomeStatsCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.14),
+              color: accent.withValues(alpha: 0.14),
               shape: BoxShape.circle,
-              border: Border.all(color: accent.withOpacity(0.16)),
+              border: Border.all(color: accent.withValues(alpha: 0.16)),
             ),
             child: Icon(icon, color: accent, size: 20),
           ),
@@ -191,7 +191,7 @@ class HomeStatsCard extends StatelessWidget {
             height: 3,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.18),
+              color: accent.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(999),
             ),
           ),

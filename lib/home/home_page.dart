@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage>
   Stream<QuerySnapshot>? notificationStream;
   final ScrollController _scrollController = ScrollController();
   bool loading = true;
+  bool _disposed = false;
 
   bool get isAdmin => userData?['isAdmin'] == true;
   bool get isVIP => userData?['isVIP'] == true;
@@ -50,39 +51,56 @@ class _HomePageState extends State<HomePage>
   @override
   void initState() {
     super.initState();
+
+    notificationStream = FirebaseService.firestore
+        .collection(AppConstants.notifications)
+        .snapshots();
+
     _init();
   }
 
   Future<void> _init() async {
     try {
       final user = FirebaseService.auth.currentUser;
+
       if (user == null) {
-        if (mounted) {
-          setState(() => loading = false);
+        if (!_disposed && mounted) {
+          setState(() {
+            userData = {};
+            loading = false;
+          });
         }
         return;
       }
 
       final data = await FirebaseService.getUserData();
 
-      if (!mounted) return;
+      if (_disposed || !mounted) return;
 
       userData = data;
 
-      notificationStream = FirebaseService.firestore
-          .collection(AppConstants.notifications)
-          .snapshots();
+      if (notificationStream == null) {
+        notificationStream = FirebaseService.firestore
+            .collection(AppConstants.notifications)
+            .snapshots();
+      }
 
-      setState(() => loading = false);
-    } catch (_) {
-      if (mounted) {
+      if (!_disposed && mounted) {
         setState(() => loading = false);
+      }
+    } catch (_) {
+      if (!_disposed && mounted) {
+        setState(() {
+          userData = {};
+          loading = false;
+        });
       }
     }
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _scrollController.dispose();
     super.dispose();
   }
@@ -91,12 +109,14 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (loading || userData == null) {
+    if (loading) {
       return const HomeSkeleton();
     }
 
+    final currentUserData = userData ?? {};
+
     final String userName =
-        (userData!['name'] ?? userData!['displayName'] ?? "أهلاً بيك")
+        (currentUserData['name'] ?? currentUserData['displayName'] ?? "أهلاً بيك")
             .toString();
 
     return Scaffold(
@@ -115,39 +135,41 @@ class _HomePageState extends State<HomePage>
             ],
           ),
           SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HomeHero(
-                  userName: userName,
-                  onStartTap: () {
-                    if (!context.mounted) return;
-                    Navigator.pushNamed(context, '/courses');
-                  },
-                ),
-                HomeVipCard(
-                  isAdmin: isAdmin,
-                  isVIP: isVIP,
-                  subscribed: subscribed,
-                ),
-                HomeStatsCard(
-                  isAdmin: isAdmin,
-                  isVIP: isVIP,
-                  subscribed: subscribed,
-                  userXP: userXP,
-                  streak: streak,
-                ),
-                HomeGrid(
-                  isAdmin: isAdmin,
-                  isInstructor: isInstructor,
-                ),
-                if (isAdmin) HomeAdminSection(),
-                const HomeNewsSection(),
-                const HomeContinueWatchingSection(),
-                const HomeRecommendedSection(),
-                const HomeCoursesSection(),
-                const SizedBox(height: 50),
-              ],
+            child: RepaintBoundary(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HomeHero(
+                    userName: userName,
+                    onStartTap: () {
+                      if (!context.mounted) return;
+                      Navigator.pushNamed(context, '/courses');
+                    },
+                  ),
+                  HomeVipCard(
+                    isAdmin: isAdmin,
+                    isVIP: isVIP,
+                    subscribed: subscribed,
+                  ),
+                  HomeStatsCard(
+                    isAdmin: isAdmin,
+                    isVIP: isVIP,
+                    subscribed: subscribed,
+                    userXP: userXP,
+                    streak: streak,
+                  ),
+                  HomeGrid(
+                    isAdmin: isAdmin,
+                    isInstructor: isInstructor,
+                  ),
+                  if (isAdmin) const RepaintBoundary(child: HomeAdminSection()),
+                  const RepaintBoundary(child: HomeNewsSection()),
+                  const RepaintBoundary(child: HomeContinueWatchingSection()),
+                  const RepaintBoundary(child: HomeRecommendedSection()),
+                  const RepaintBoundary(child: HomeCoursesSection()),
+                  const SizedBox(height: 50),
+                ],
+              ),
             ),
           ),
         ],

@@ -61,8 +61,9 @@ class FirebaseService {
   static final FirebaseStorage storage = FirebaseStorage.instance;
   static final FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-  /// 🔥 Lock عام
   static final Map<String, DateTime> _lock = {};
+  static final Map<String, String> _imageCache = {};
+  static final Map<String, Future<String>> _imageFutureCache = {};
 
   static bool canRun(String key, {int seconds = 10}) {
     final now = DateTime.now();
@@ -77,7 +78,6 @@ class FirebaseService {
     return true;
   }
 
-  /// 🔄 Refresh User
   static Future<User?> refreshCurrentUser() async {
     try {
       await FirebaseInit.init();
@@ -98,7 +98,6 @@ class FirebaseService {
     }
   }
 
-  /// 🧱 Safe Update
   static Future<void> safeUpdate(
     DocumentReference ref,
     Map<String, dynamic> data,
@@ -111,7 +110,6 @@ class FirebaseService {
     }
   }
 
-  /// ❌ Safe Delete
   static Future<void> safeDelete(DocumentReference ref) async {
     try {
       await FirebaseInit.init();
@@ -121,7 +119,6 @@ class FirebaseService {
     }
   }
 
-  /// ➕ Safe Add
   static Future<DocumentReference?> safeAdd(
     CollectionReference ref,
     Map<String, dynamic> data,
@@ -135,28 +132,91 @@ class FirebaseService {
     }
   }
 
-  /// 🖼 Fix Image URL
-  static String fixImage(String url) {
-    if (url.isEmpty) return url;
+  static String fixImage(String url, {String? version}) {
+    final clean = url.trim();
+    if (clean.isEmpty) return clean;
 
     try {
-      if (url.startsWith("gs://")) return url;
+      if (clean.startsWith("gs://")) return clean;
 
-      if (url.startsWith("http")) {
-        if (!url.contains("v=")) {
-          return "$url?v=${DateTime.now().millisecondsSinceEpoch}";
+      if (clean.startsWith("http")) {
+        final uri = Uri.tryParse(clean);
+        if (uri == null) return clean;
+
+        final qp = Map<String, String>.from(uri.queryParameters);
+
+        if (version != null && version.trim().isNotEmpty) {
+          qp['v'] = version.trim();
+          qp['t'] = DateTime.now().millisecondsSinceEpoch.toString();
         }
-        return url;
+
+        return uri.replace(queryParameters: qp).toString();
       }
 
-      return url;
+      return clean;
     } catch (e) {
       debugPrint("🔥 Image Fix Error: $e");
-      return url;
+      return clean;
     }
   }
 
-  /// 🚪 Logout
+  static Future<String> resolveImageUrl(
+    String url, {
+    String? version,
+  }) async {
+    final clean = url.trim();
+    if (clean.isEmpty) return clean;
+
+    final cacheKey = "$clean|${version ?? ""}";
+
+    if (_imageCache.containsKey(cacheKey)) {
+      return _imageCache[cacheKey]!;
+    }
+
+    if (_imageFutureCache.containsKey(cacheKey)) {
+      return _imageFutureCache[cacheKey]!;
+    }
+
+    final future = _resolveInternal(clean, version: version);
+    _imageFutureCache[cacheKey] = future;
+
+    final result = await future;
+
+    _imageCache[cacheKey] = result;
+    _imageFutureCache.remove(cacheKey);
+
+    return result;
+  }
+
+  static Future<String> _resolveInternal(
+    String clean, {
+    String? version,
+  }) async {
+    try {
+      if (clean.startsWith("gs://")) {
+        final downloadUrl = await storage.refFromURL(clean).getDownloadURL();
+        return fixImage(downloadUrl, version: version);
+      }
+
+      if (clean.startsWith("http") && !clean.contains("alt=media")) {
+        try {
+          final ref = storage.refFromURL(clean);
+          final downloadUrl = await ref.getDownloadURL();
+          return fixImage(downloadUrl, version: version);
+        } catch (_) {}
+      }
+
+      final fixed = fixImage(clean, version: version);
+      if (fixed.isEmpty) return clean;
+      if (!fixed.startsWith("http")) return clean;
+
+      return fixed;
+    } catch (e) {
+      debugPrint("🔥 Resolve Image Error: $e");
+      return clean;
+    }
+  }
+
   static Future<void> logout() async {
     try {
       await FirebaseInit.init();
@@ -173,7 +233,6 @@ class FirebaseService {
     await auth.signOut();
   }
 
-  /// 👤 Get User Data
   static Future<Map<String, dynamic>> getUserData(
       {bool refresh = false}) async {
     try {
@@ -204,7 +263,6 @@ class FirebaseService {
     }
   }
 
-  /// 🔥 XP LOCK
   static final Map<String, DateTime> _xpLock = {};
 
   static bool canAddXP(String lessonId) {
@@ -220,7 +278,6 @@ class FirebaseService {
     return true;
   }
 
-  /// 🔥 ADD XP (محسن + Atomic)
   static Future<void> addXP(int xp) async {
     try {
       await FirebaseInit.init();

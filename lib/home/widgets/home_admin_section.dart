@@ -66,107 +66,13 @@ class HomeAdminSection extends StatelessWidget {
     required Color accent,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          if (!context.mounted) return;
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                const Color(0xFF1A1A1A),
-                const Color(0xFF121212),
-                accent.withValues(alpha: 0.08),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: accent.withValues(alpha: 0.18)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.42),
-                blurRadius: 18,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: accent.withValues(alpha: 0.06),
-                blurRadius: 16,
-                offset: const Offset(0, 0),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: accent.withValues(alpha: 0.18)),
-                ),
-                child: Icon(
-                  icon,
-                  color: accent,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      subtitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    final Color safeAccent = accent;
+    return _AnimatedAdminCard(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      accent: safeAccent,
+      onTap: onTap,
     );
   }
 
@@ -181,4 +87,169 @@ class HomeAdminSection extends StatelessWidget {
           ),
         ),
       );
+}
+
+class _AnimatedAdminCard extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _AnimatedAdminCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  State<_AnimatedAdminCard> createState() => _AnimatedAdminCardState();
+}
+
+class _AnimatedAdminCardState extends State<_AnimatedAdminCard> {
+  bool hovered = false;
+  bool pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => hovered = true),
+      onExit: (_) => setState(() {
+        hovered = false;
+        pressed = false;
+      }),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => pressed = true),
+        onTapUp: (_) => setState(() => pressed = false),
+        onTapCancel: () => setState(() => pressed = false),
+        onTap: () {
+          try {
+            if (!context.mounted) return;
+            widget.onTap();
+          } catch (_) {}
+        },
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 150),
+          scale: pressed
+              ? 0.95
+              : hovered
+                  ? 1.03
+                  : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1A1A1A),
+                  const Color(0xFF121212),
+                  widget.accent.withValues(alpha: hovered ? 0.18 : 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: hovered
+                    ? widget.accent.withValues(alpha: 0.5)
+                    : widget.accent.withValues(alpha: 0.18),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: hovered
+                      ? widget.accent.withValues(alpha: 0.35)
+                      : Colors.black.withValues(alpha: 0.42),
+                  blurRadius: hovered ? 26 : 18,
+                  spreadRadius: hovered ? 1 : 0,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: widget.accent.withValues(alpha: hovered ? 0.25 : 0.14),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: widget.accent.withValues(alpha: hovered ? 0.5 : 0.18),
+                    ),
+                    boxShadow: hovered
+                        ? [
+                            BoxShadow(
+                              color: widget.accent.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : [],
+                  ),
+                  child: Icon(
+                    widget.icon,
+                    color: widget.accent,
+                    size: hovered ? 32 : 30,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: TextStyle(
+                          color: hovered ? widget.accent : Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: hovered ? 16 : 15,
+                        ),
+                        child: Text(
+                          widget.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: hovered ? 0.1 : 0.04),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.chevron_right_rounded,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

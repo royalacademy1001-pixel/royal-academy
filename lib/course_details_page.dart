@@ -49,6 +49,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   final ScrollController _scrollController = ScrollController();
   double scrollOffset = 0;
 
+  String resolvedImage = "";
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +107,25 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
       courseData =
           (results[0] as DocumentSnapshot).data() as Map<String, dynamic>?;
 
+      if (courseData != null) {
+        final raw = (courseData?['image'] ?? "").toString().trim();
+
+        final dynamic versionValue =
+            courseData?['imageUpdatedAt'] ??
+                courseData?['updatedAt'] ??
+                courseData?['modifiedAt'];
+
+        String version = "";
+        if (versionValue is Timestamp) {
+          version = versionValue.millisecondsSinceEpoch.toString();
+        } else if (versionValue != null) {
+          version = versionValue.toString().trim();
+        }
+
+        resolvedImage =
+            await FirebaseService.resolveImageUrl(raw, version: version);
+      }
+
       if (user != null && results.length > 2) {
         userData =
             (results[1] as DocumentSnapshot).data() as Map<String, dynamic>?;
@@ -158,7 +179,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   }
 
   Widget header() {
-    final image = (courseData?['image'] ?? "").toString();
+    final image = resolvedImage;
 
     int total = lessons.length;
     int done = watched.length;
@@ -174,8 +195,9 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
           child: image.isEmpty
               ? Container(color: Colors.black)
               : Image.network(
-                  FirebaseService.fixImage(image),
+                  image,
                   fit: BoxFit.cover,
+                  gaplessPlayback: true,
                 ),
         ),
 

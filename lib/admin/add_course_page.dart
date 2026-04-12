@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,7 +37,15 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
   Map<String, dynamic> userData = {};
 
-  Future loadUser() async {
+  bool uploadingImage = false;
+  double uploadProgress = 0;
+  String uploadStatus = "";
+
+  StreamSubscription<TaskSnapshot>? _uploadSubscription;
+
+  bool _uploadingLock = false;
+
+  Future<void> loadUser() async {
     try {
       userData = await FirebaseService.getUserData();
     } catch (_) {}
@@ -73,7 +84,58 @@ class _AddCoursePageState extends State<AddCoursePage> {
     return ".jpg";
   }
 
-  Future pickImage() async {
+  bool _canShowUploadBar() {
+    return uploadingImage || uploadProgress > 0 || uploadStatus.isNotEmpty;
+  }
+
+  Widget _buildUploadProgress() {
+    if (!_canShowUploadBar()) {
+      return const SizedBox.shrink();
+    }
+
+    final double safeValue = uploadProgress.clamp(0.0, 1.0).toDouble();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: AppColors.premiumCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            uploadStatus.isEmpty ? "جاري رفع الصورة..." : uploadStatus,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: LinearProgressIndicator(
+              value: uploadingImage ? safeValue : (safeValue >= 1 ? 1 : safeValue),
+              minHeight: 8,
+              color: AppColors.gold,
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            uploadProgress >= 1 ? "100%" : "${(safeValue * 100).toInt()}%",
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> pickImage() async {
+    if (_uploadingLock) return;
+
     try {
       final picked = await picker.pickImage(source: ImageSource.gallery);
       if (picked == null) return;
@@ -81,19 +143,32 @@ class _AddCoursePageState extends State<AddCoursePage> {
       imageName = picked.name;
       imageBytes = await picked.readAsBytes();
 
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {
+          uploadProgress = 0;
+          uploadStatus = "";
+        });
+      }
     } catch (e) {
       showSnack("فشل اختيار الصورة ❌");
     }
   }
 
   Future<String?> uploadImage() async {
+    if (_uploadingLock) return null;
+    _uploadingLock = true;
+
     try {
       final bytes = imageBytes;
-      if (bytes == null) return null;
+      if (bytes == null || bytes.isEmpty) return null;
 
-      await FirebaseService.auth.currentUser?.reload();
-      await FirebaseService.auth.currentUser?.getIdToken(true);
+      final currentUser = FirebaseService.auth.currentUser;
+      if (currentUser != null) {
+        try {
+          await currentUser.reload();
+          await currentUser.getIdToken(true);
+        } catch (_) {}
+      }
 
       final user = FirebaseService.auth.currentUser;
       if (user == null) return null;
@@ -117,17 +192,66 @@ class _AddCoursePageState extends State<AddCoursePage> {
         contentType: _contentTypeFromName(imageName),
       );
 
-      final task = ref.putData(bytes, metadata);
-      await task.timeout(const Duration(seconds: 30));
+      if (mounted) {
+        setState(() {
+          uploadingImage = true;
+          uploadProgress = 0;
+          uploadStatus = "جاري رفع الصورة...";
+        });
+      }
+
+      final uploadTask = ref.putData(bytes, metadata);
+
+      await _uploadSubscription?.cancel();
+      _uploadSubscription = uploadTask.snapshotEvents.listen((snapshot) {
+        if (!mounted) return;
+
+        final total = snapshot.totalBytes;
+        final transferred = snapshot.bytesTransferred;
+
+        final progress = total <= 0 ? 0.0 : transferred / total;
+
+        setState(() {
+          uploadProgress = progress.clamp(0.0, 1.0).toDouble();
+          uploadStatus = uploadProgress >= 1
+              ? "انتهى الرفع"
+              : "جاري رفع الصورة ${(uploadProgress * 100).toInt()}%";
+        });
+      });
+
+      await uploadTask.whenComplete(() {});
 
       final url = await ref.getDownloadURL();
-      if (url.isEmpty) return null;
-      if (!url.startsWith("http")) return null;
+      if (url.isEmpty || !url.startsWith("http")) return null;
+
+      if (mounted) {
+        setState(() {
+          uploadingImage = false;
+          uploadProgress = 1;
+          uploadStatus = "انتهى الرفع";
+        });
+      }
 
       return url;
     } catch (e) {
       debugPrint("🔥 Upload Error: $e");
+
+      if (mounted) {
+        setState(() {
+          uploadingImage = false;
+          uploadStatus = "فشل رفع الصورة";
+        });
+      }
+
       return null;
+    } finally {
+      await _uploadSubscription?.cancel();
+      _uploadSubscription = null;
+      _uploadingLock = false;
+
+      if (mounted && uploadingImage) {
+        setState(() => uploadingImage = false);
+      }
     }
   }
 
@@ -158,7 +282,160 @@ class _AddCoursePageState extends State<AddCoursePage> {
         userData['instructorApproved'] == true;
   }
 
-  Future addCourse() async {
+  Widget _buildImagePicker() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GestureDetector(
+          onTap: uploadingImage ? null : pickImage,
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            decoration: AppColors.premiumCard,
+            child: imageBytes != null
+                ? Image.memory(
+                    imageBytes!,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(
+                        Icons.add_a_photo,
+                        color: Colors.white70,
+                        size: 40,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        "إضافة صورة للكورس",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildUploadProgress(),
+      ],
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseService.firestore
+          .collection("categories")
+          .orderBy("order")
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Text(
+            "❌ خطأ في تحميل التصنيفات",
+            style: TextStyle(color: Colors.white),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const CircularProgressIndicator();
+        }
+
+        final categories = snapshot.data!.docs;
+
+        if (categories.isEmpty) {
+          return const Text(
+            "لا توجد تصنيفات",
+            style: TextStyle(color: Colors.white),
+          );
+        }
+
+        final currentValue = selectedCategoryId != null &&
+                categories.any((c) => c.id == selectedCategoryId)
+            ? selectedCategoryId
+            : null;
+
+        return DropdownButtonFormField<String>(
+          initialValue: currentValue,
+          dropdownColor: AppColors.black,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: "اختار التصنيف",
+          ),
+          items: categories.map((c) {
+            final data = c.data() as Map<String, dynamic>;
+            return DropdownMenuItem<String>(
+              value: c.id,
+              child: Text(
+                (data['title'] ?? "").toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            );
+          }).toList(),
+          onChanged: (v) {
+            setState(() => selectedCategoryId = v);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildForm() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildImagePicker(),
+        const SizedBox(height: 15),
+        CustomTextField(
+          hint: "اسم الكورس",
+          controller: title,
+        ),
+        const SizedBox(height: 10),
+        CustomTextField(
+          hint: "وصف الكورس",
+          controller: description,
+        ),
+        const SizedBox(height: 10),
+        _buildCategoryDropdown(),
+        const SizedBox(height: 10),
+        if (!isFree)
+          CustomTextField(
+            hint: "السعر",
+            controller: price,
+            keyboardType: TextInputType.number,
+          ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "كورس مجاني",
+              style: TextStyle(color: Colors.white),
+            ),
+            Switch(
+              value: isFree,
+              onChanged: (v) {
+                setState(() => isFree = v);
+              },
+            )
+          ],
+        ),
+        const SizedBox(height: 20),
+        loading
+            ? const Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              )
+            : CustomButton(
+                text: "🚀 إضافة الكورس",
+                onPressed: addCourse,
+              ),
+      ],
+    );
+  }
+
+  Future<void> addCourse() async {
     if (loading) return;
 
     if (!canCreateCourse()) {
@@ -177,12 +454,12 @@ class _AddCoursePageState extends State<AddCoursePage> {
     setState(() => loading = true);
 
     try {
-      String imageUrl = "images/instructor.png";
+      String imageUrl = "";
 
       if (imageBytes != null) {
         imageUrl = (await uploadImage() ?? "").trim();
         if (imageUrl.isEmpty) {
-          imageUrl = "images/instructor.png";
+          imageUrl = "";
         }
       }
 
@@ -234,6 +511,8 @@ class _AddCoursePageState extends State<AddCoursePage> {
           imageBytes = null;
           imageName = null;
           selectedCategoryId = null;
+          uploadProgress = 0;
+          uploadStatus = "";
         });
       }
     } catch (e) {
@@ -262,6 +541,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
   @override
   void dispose() {
+    _uploadSubscription?.cancel();
     title.dispose();
     description.dispose();
     price.dispose();
@@ -294,137 +574,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  GestureDetector(
-                    onTap: pickImage,
-                    child: Container(
-                      height: 160,
-                      width: double.infinity,
-                      decoration: AppColors.premiumCard,
-                      child: imageBytes != null
-                          ? Image.memory(imageBytes!, fit: BoxFit.cover)
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(
-                                  Icons.add_a_photo,
-                                  color: Colors.white70,
-                                  size: 40,
-                                ),
-                                SizedBox(height: 10),
-                                Text(
-                                  "إضافة صورة للكورس",
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 15),
-                  CustomTextField(
-                    hint: "اسم الكورس",
-                    controller: title,
-                  ),
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                    hint: "وصف الكورس",
-                    controller: description,
-                  ),
-                  const SizedBox(height: 10),
-                  StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseService.firestore
-                        .collection("categories")
-                        .orderBy("order")
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return const Text(
-                          "❌ خطأ في تحميل التصنيفات",
-                          style: TextStyle(color: Colors.white),
-                        );
-                      }
-
-                      if (!snapshot.hasData) {
-                        return const CircularProgressIndicator();
-                      }
-
-                      final categories = snapshot.data!.docs;
-
-                      if (categories.isEmpty) {
-                        return const Text(
-                          "لا توجد تصنيفات",
-                          style: TextStyle(color: Colors.white),
-                        );
-                      }
-
-                      final currentValue = selectedCategoryId != null &&
-                              categories.any((c) => c.id == selectedCategoryId)
-                          ? selectedCategoryId
-                          : null;
-
-                      return DropdownButtonFormField<String>(
-                        initialValue: currentValue,
-                        dropdownColor: AppColors.black,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          hintText: "اختار التصنيف",
-                        ),
-                        items: categories.map((c) {
-                          final data = c.data() as Map<String, dynamic>;
-                          return DropdownMenuItem<String>(
-                            value: c.id,
-                            child: Text(
-                              (data['title'] ?? "").toString(),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          );
-                        }).toList(),
-                        onChanged: (v) {
-                          setState(() => selectedCategoryId = v);
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  if (!isFree)
-                    CustomTextField(
-                      hint: "السعر",
-                      controller: price,
-                      keyboardType: TextInputType.number,
-                    ),
-                  const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        "كورس مجاني",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      Switch(
-                        value: isFree,
-                        onChanged: (v) {
-                          setState(() => isFree = v);
-                        },
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  loading
-                      ? const Center(
-                          child:
-                              CircularProgressIndicator(color: AppColors.gold),
-                        )
-                      : CustomButton(
-                          text: "🚀 إضافة الكورس",
-                          onPressed: addCourse,
-                        ),
-                ],
-              ),
+              child: _buildForm(),
             ),
     );
   }

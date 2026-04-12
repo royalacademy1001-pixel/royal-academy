@@ -13,23 +13,26 @@ class HomeNewsSection extends StatelessWidget {
   void _showNewsDetails(BuildContext context, String title, String image) {
     if (!context.mounted) return;
 
+    final String safeTitle = title.trim().isEmpty ? "" : title.trim();
+    final String safeImage = image.trim();
+
     showDialog(
       context: context,
       builder: (dialogContext) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Dialog(
-          backgroundColor: AppColors.black.withOpacity(0.85),
+          backgroundColor: AppColors.black.withValues(alpha: 0.85),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (image.isNotEmpty)
+              if (safeImage.isNotEmpty && safeImage.startsWith("http"))
                 ClipRRect(
                   borderRadius:
                       const BorderRadius.vertical(top: Radius.circular(24)),
                   child: CachedNetworkImage(
-                    imageUrl: image,
+                    imageUrl: safeImage,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => const SizedBox(
                       height: 180,
@@ -41,10 +44,27 @@ class HomeNewsSection extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (safeImage.isEmpty || !safeImage.startsWith("http"))
+                Container(
+                  height: 180,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: Colors.white54,
+                    ),
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Text(
-                  title,
+                  safeTitle,
                   style: const TextStyle(color: Colors.white, fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
@@ -113,8 +133,8 @@ class HomeNewsSection extends StatelessWidget {
                   final data = docs[index].data();
                   final image = FirebaseService.fixImage(
                     (data['image'] ?? "").toString(),
-                  );
-                  final title = (data['title'] ?? "").toString();
+                  ).trim();
+                  final title = (data['title'] ?? "").toString().trim();
 
                   return GestureDetector(
                     onTap: () {
@@ -128,17 +148,17 @@ class HomeNewsSection extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(26),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.08),
+                          color: Colors.white.withValues(alpha: 0.08),
                         ),
                         color: const Color(0xFF151515),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.55),
+                            color: Colors.black.withValues(alpha: 0.55),
                             blurRadius: 20,
                             offset: const Offset(0, 12),
                           ),
                           BoxShadow(
-                            color: AppColors.gold.withOpacity(0.05),
+                            color: AppColors.gold.withValues(alpha: 0.05),
                             blurRadius: 16,
                             offset: const Offset(0, 0),
                           ),
@@ -149,7 +169,7 @@ class HomeNewsSection extends StatelessWidget {
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: image.isEmpty
+                              child: image.isEmpty || !image.startsWith("http")
                                   ? Container(color: const Color(0xFF1A1A1A))
                                   : CachedNetworkImage(
                                       imageUrl: image,
@@ -162,6 +182,12 @@ class HomeNewsSection extends StatelessWidget {
                                       ),
                                       errorWidget: (_, __, ___) => Container(
                                         color: const Color(0xFF1A1A1A),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.white54,
+                                          ),
+                                        ),
                                       ),
                                     ),
                             ),
@@ -173,7 +199,7 @@ class HomeNewsSection extends StatelessWidget {
                                     end: Alignment.bottomCenter,
                                     colors: [
                                       Colors.transparent,
-                                      Colors.black.withOpacity(0.9),
+                                      Colors.black.withValues(alpha: 0.9),
                                     ],
                                   ),
                                 ),

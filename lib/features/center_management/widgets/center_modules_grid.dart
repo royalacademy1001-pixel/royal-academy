@@ -100,16 +100,35 @@ class CenterModulesGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final module = list[index];
 
-            return CenterModuleCard(
-              module: module,
-              onTap: () {
-                try {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => module.page),
-                  );
-                } catch (_) {}
+            return TweenAnimationBuilder<double>(
+              key: ValueKey(module.title),
+              duration: Duration(milliseconds: 300 + (index * 60)),
+              tween: Tween(begin: 0.85, end: 1),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) {
+                return Opacity(
+                  opacity: value.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - value) * 40),
+                    child: Transform.scale(
+                      scale: value,
+                      child: child,
+                    ),
+                  ),
+                );
               },
+              child: CenterModuleCard(
+                module: module,
+                onTap: () {
+                  try {
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => module.page),
+                    );
+                  } catch (_) {}
+                },
+              ),
             );
           },
         );

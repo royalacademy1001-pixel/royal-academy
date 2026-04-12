@@ -14,6 +14,7 @@ class HomeSkeleton extends StatelessWidget {
             height: 50,
             child: CircularProgressIndicator(
               strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
         ),

@@ -3,6 +3,7 @@ import 'package:chewie/chewie.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio/just_audio.dart' as ja;
 
 class VideoPlayerWidget extends StatelessWidget {
   final bool videoError;
@@ -39,17 +40,18 @@ class VideoPlayerWidget extends StatelessWidget {
       );
     }
 
-    if (isPdf && videoUrl.isNotEmpty) {
+    if (isPdf && videoUrl.trim().isNotEmpty) {
       return SizedBox(
         height: 500,
-        child: SfPdfViewer.network(videoUrl),
+        child: SfPdfViewer.network(videoUrl.trim()),
       );
     }
 
     if (isAudio && audioPlayer != null) {
       return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          StreamBuilder<Duration>(
+          StreamBuilder<Duration?>(
             stream: audioPlayer!.positionStream,
             builder: (context, snapshot) {
               final position = snapshot.data?.inSeconds ?? 0;
@@ -59,16 +61,44 @@ class VideoPlayerWidget extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.play_arrow, size: 50),
-            onPressed: () {
-              audioPlayer!.play();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.pause, size: 50),
-            onPressed: () {
-              audioPlayer!.pause();
+          const SizedBox(height: 10),
+          StreamBuilder<ja.PlayerState>(
+            stream: audioPlayer!.playerStateStream,
+            builder: (context, snapshot) {
+              final playing = snapshot.data?.playing ?? false;
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.replay_10, size: 30),
+                    onPressed: () async {
+                      final pos = audioPlayer!.position.inSeconds - 10;
+                      await audioPlayer!.seek(Duration(seconds: pos < 0 ? 0 : pos));
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      playing ? Icons.pause : Icons.play_arrow,
+                      size: 50,
+                    ),
+                    onPressed: () async {
+                      if (playing) {
+                        await audioPlayer!.pause();
+                      } else {
+                        await audioPlayer!.play();
+                      }
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.forward_10, size: 30),
+                    onPressed: () async {
+                      final pos = audioPlayer!.position.inSeconds + 10;
+                      await audioPlayer!.seek(Duration(seconds: pos));
+                    },
+                  ),
+                ],
+              );
             },
           ),
         ],
@@ -86,15 +116,17 @@ class VideoPlayerWidget extends StatelessWidget {
 
     if (chewieController != null &&
         chewieController!.videoPlayerController.value.isInitialized) {
+      final ratio =
+          chewieController!.videoPlayerController.value.aspectRatio;
+
       return AspectRatio(
-        aspectRatio:
-            chewieController!.videoPlayerController.value.aspectRatio == 0
-                ? 16 / 9
-                : chewieController!.videoPlayerController.value.aspectRatio,
+        aspectRatio: ratio <= 0 ? 16 / 9 : ratio,
         child: Chewie(controller: chewieController!),
       );
     }
 
-    return const Center(child: CircularProgressIndicator());
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
   }
 }

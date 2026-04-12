@@ -109,7 +109,9 @@ Future<void> main() async {
     FlutterError.dumpErrorToConsole(details);
   };
 
-  await FirebaseInit.init();
+  try {
+    await FirebaseInit.init();
+  } catch (_) {}
 
   if (!kIsWeb) {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -133,13 +135,14 @@ class _RoyalAppState extends State<RoyalApp> {
   bool initialized = false;
   bool showOnboarding = false;
   bool splashDone = false;
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
 
     Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
+      if (!_disposed && mounted) {
         setState(() => splashDone = true);
       }
     });
@@ -149,7 +152,9 @@ class _RoyalAppState extends State<RoyalApp> {
 
   Future<void> _initializeApp() async {
     try {
-      await FirebaseInit.init();
+      try {
+        await FirebaseInit.init();
+      } catch (_) {}
 
       try {
         await NotificationService.init();
@@ -169,7 +174,7 @@ class _RoyalAppState extends State<RoyalApp> {
     } catch (e) {
       debugPrint("Init Error: $e");
     } finally {
-      if (mounted) {
+      if (!_disposed && mounted) {
         setState(() => initialized = true);
       }
     }
@@ -181,7 +186,7 @@ class _RoyalAppState extends State<RoyalApp> {
         onFinish: () async {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool("seen_onboarding", true);
-          if (!mounted) return;
+          if (!mounted || _disposed) return;
           setState(() {
             showOnboarding = false;
           });
@@ -420,6 +425,12 @@ class _RoyalAppState extends State<RoyalApp> {
         brightness: Brightness.dark,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   @override

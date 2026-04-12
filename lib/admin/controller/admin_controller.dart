@@ -9,7 +9,7 @@ class AdminController {
   bool checkingAdmin = true;
   bool loadingRefresh = false;
 
-  late Future<Map<String, dynamic>> statsFuture;
+  Future<Map<String, dynamic>> statsFuture = Future.value({});
 
   Future<void> init(List<Map<String, dynamic>> allAdminPages, VoidCallback refreshUI) async {
     await _initAdmin();

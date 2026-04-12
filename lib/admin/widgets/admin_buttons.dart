@@ -49,6 +49,7 @@ class AdminButtons extends StatelessWidget {
       title: title,
       icon: icon,
       onTap: () {
+        if (!context.mounted) return;
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => page),
@@ -94,44 +95,72 @@ class _AnimatedAdminCardState extends State<_AnimatedAdminCard> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      onEnter: (_) => setState(() => hovered = true),
-      onExit: (_) => setState(() {
-        hovered = false;
-        pressed = false;
-      }),
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) {
+        if (!mounted) return;
+        setState(() => hovered = true);
+      },
+      onExit: (_) {
+        if (!mounted) return;
+        setState(() {
+          hovered = false;
+          pressed = false;
+        });
+      },
       child: GestureDetector(
-        onTapDown: (_) => setState(() => pressed = true),
-        onTapUp: (_) => setState(() => pressed = false),
-        onTapCancel: () => setState(() => pressed = false),
-        onTap: widget.onTap,
+        onTapDown: (_) {
+          if (!mounted) return;
+          setState(() => pressed = true);
+        },
+        onTapUp: (_) {
+          if (!mounted) return;
+          setState(() => pressed = false);
+        },
+        onTapCancel: () {
+          if (!mounted) return;
+          setState(() => pressed = false);
+        },
+        onTap: () {
+          try {
+            widget.onTap();
+          } catch (_) {}
+        },
         child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          scale: pressed ? 0.96 : (hovered ? 1.02 : 1),
+          duration: const Duration(milliseconds: 140),
+          scale: pressed
+              ? 0.92
+              : hovered
+                  ? 1.08
+                  : 1,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutCubic,
+            transform: Matrix4.identity()
+              ..translate(0.0, hovered ? -6.0 : 0.0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: hovered ? 0.08 : 0.05),
+                  Colors.white.withValues(alpha: hovered ? 0.12 : 0.05),
                   Colors.white.withValues(alpha: 0.01),
                 ],
               ),
               border: Border.all(
                 color: hovered
-                    ? AppColors.gold.withValues(alpha: 0.35)
+                    ? AppColors.gold.withValues(alpha: 0.8)
                     : AppColors.gold.withValues(alpha: 0.15),
+                width: hovered ? 1.6 : 1.2,
               ),
               boxShadow: [
                 BoxShadow(
                   color: hovered
-                      ? AppColors.gold.withValues(alpha: 0.15)
-                      : Colors.black.withValues(alpha: 0.2),
-                  blurRadius: hovered ? 18 : 10,
-                  offset: const Offset(0, 6),
+                      ? AppColors.gold.withValues(alpha: 0.45)
+                      : Colors.black.withValues(alpha: 0.25),
+                  blurRadius: hovered ? 28 : 10,
+                  spreadRadius: hovered ? 2 : 0,
+                  offset: Offset(0, hovered ? 14 : 8),
                 ),
               ],
             ),
@@ -141,30 +170,42 @@ class _AnimatedAdminCardState extends State<_AnimatedAdminCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.all(10),
+                    duration: const Duration(milliseconds: 220),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.gold.withValues(
-                        alpha: hovered ? 0.18 : 0.08,
+                        alpha: hovered ? 0.3 : 0.08,
                       ),
+                      boxShadow: hovered
+                          ? [
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.5),
+                                blurRadius: 24,
+                                spreadRadius: 2,
+                              )
+                            ]
+                          : [],
                     ),
                     child: Icon(
                       widget.icon,
                       color: AppColors.gold,
-                      size: hovered ? 28 : 26,
+                      size: hovered ? 32 : 26,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    widget.title,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 10),
+                  AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
                     style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: hovered ? 13 : 12,
+                      color: hovered ? AppColors.gold : Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: hovered ? 14 : 12,
+                    ),
+                    child: Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

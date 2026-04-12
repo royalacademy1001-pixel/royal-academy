@@ -57,15 +57,15 @@ class HomeVipCard extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: accent.withOpacity(0.25)),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.32),
+            color: Colors.black.withValues(alpha: 0.32),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
           BoxShadow(
-            color: accent.withOpacity(0.08),
+            color: accent.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 0),
           ),
@@ -77,9 +77,9 @@ class HomeVipCard extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: accent.withOpacity(0.14),
+              color: accent.withValues(alpha: 0.14),
               shape: BoxShape.circle,
-              border: Border.all(color: accent.withOpacity(0.25)),
+              border: Border.all(color: accent.withValues(alpha: 0.25)),
             ),
             child: Icon(
               safeIsAdmin
@@ -115,7 +115,7 @@ class HomeVipCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.75),
+                    color: Colors.white.withValues(alpha: 0.75),
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -130,9 +130,9 @@ class HomeVipCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.14),
+                  color: accent.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: accent.withOpacity(0.22)),
+                  border: Border.all(color: accent.withValues(alpha: 0.22)),
                 ),
                 child: Text(
                   badge,
@@ -148,7 +148,7 @@ class HomeVipCard extends StatelessWidget {
                 width: 40,
                 height: 3,
                 decoration: BoxDecoration(
-                  color: accent.withOpacity(0.25),
+                  color: accent.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),

@@ -38,85 +38,122 @@ class HomeGrid extends StatelessWidget {
       );
 
   Widget _item(BuildContext context, String title, String asset, VoidCallback f) {
-    return GestureDetector(
-      onTap: () {
-        try {
-          if (!context.mounted) return;
-          f();
-        } catch (_) {}
-      },
-      child: Container(
-        width: 82,
-        margin: const EdgeInsets.only(right: 12),
-        child: Column(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeInOut,
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColors.gold.withValues(alpha: 0.25),
-                    AppColors.gold.withValues(alpha: 0.05),
-                    Colors.transparent,
-                  ],
-                ),
-                border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.35),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    blurRadius: 10,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              alignment: Alignment.center,
-              child: ClipOval(
-                child: SizedBox(
-                  width: 52,
-                  height: 52,
-                  child: Image.asset(
-                    asset,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.black,
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool hovered = false;
+        bool pressed = false;
+
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => hovered = true),
+          onExit: (_) => setState(() {
+            hovered = false;
+            pressed = false;
+          }),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (_) => setState(() => pressed = true),
+            onTapUp: (_) => setState(() => pressed = false),
+            onTapCancel: () => setState(() => pressed = false),
+            onTap: () {
+              try {
+                if (!context.mounted) return;
+                f();
+              } catch (_) {}
+            },
+            child: RepaintBoundary(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                width: 82,
+                margin: const EdgeInsets.only(right: 12),
+                transform: Matrix4.identity()
+                  ..scale(pressed
+                      ? 0.92
+                      : hovered
+                          ? 1.1
+                          : 1.0)
+                  ..translate(0.0, hovered ? -6.0 : 0.0),
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      width: hovered ? 64 : 60,
+                      height: hovered ? 64 : 60,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppColors.gold.withValues(
+                                alpha: hovered ? 0.6 : 0.25),
+                            AppColors.gold.withValues(
+                                alpha: hovered ? 0.2 : 0.05),
+                            Colors.transparent,
+                          ],
+                        ),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(
+                              alpha: hovered ? 1 : 0.35),
+                          width: hovered ? 1.8 : 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.gold.withValues(
+                                alpha: hovered ? 0.6 : 0.25),
+                            blurRadius: hovered ? 30 : 14,
+                            spreadRadius: hovered ? 3 : 1,
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            blurRadius: hovered ? 14 : 10,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
                       alignment: Alignment.center,
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: AppColors.gold.withValues(alpha: 0.7),
-                        size: 22,
+                      child: ClipOval(
+                        child: SizedBox(
+                          width: hovered ? 56 : 52,
+                          height: hovered ? 56 : 52,
+                          child: Image.asset(
+                            asset,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.black,
+                              alignment: Alignment.center,
+                              child: Icon(
+                                Icons.image_not_supported,
+                                color: AppColors.gold.withValues(alpha: 0.7),
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 6),
+                    AnimatedDefaultTextStyle(
+                      duration: const Duration(milliseconds: 200),
+                      style: TextStyle(
+                        color: hovered ? AppColors.gold : Colors.white,
+                        fontSize: hovered ? 12 : 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

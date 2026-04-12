@@ -81,11 +81,13 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   Widget build(BuildContext context) {
+    final safeFuture = controller.statsFuture;
+
     return AdminBody(
       checkingAdmin: controller.checkingAdmin,
       isAdmin: controller.isAdmin,
       loadingRefresh: controller.loadingRefresh,
-      statsFuture: controller.statsFuture,
+      statsFuture: safeFuture,
       onRefresh: refresh,
       onAdd: openAddMenu,
     );

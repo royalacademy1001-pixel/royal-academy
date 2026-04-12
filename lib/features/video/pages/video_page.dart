@@ -25,14 +25,17 @@ class VideoPage extends StatefulWidget {
   State<VideoPage> createState() => _VideoPageState();
 }
 
-class _VideoPageState extends State<VideoPage> {
+class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
 
   late VideoController controller;
   bool isMini = false;
+  bool _disposed = false;
 
   @override
   void initState() {
     super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
 
     controller = VideoController(
       videoUrl: widget.videoUrl,
@@ -47,6 +50,8 @@ class _VideoPageState extends State<VideoPage> {
   Future<void> init() async {
     await controller.checkAccess();
 
+    if (_disposed) return;
+
     if (!controller.hasAccess) {
       if (!mounted) return;
       setState(() => controller.loading = false);
@@ -55,11 +60,53 @@ class _VideoPageState extends State<VideoPage> {
 
     await controller.initVideo(context);
 
+    if (_disposed) return;
     if (!mounted) return;
 
     setState(() {
       controller.loading = false;
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_disposed) return;
+
+    if (state == AppLifecycleState.paused) {
+      controller.videoController?.pause();
+      controller.audioPlayer?.pause();
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      if (!isMini) {
+        controller.videoController?.play();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+
+    WidgetsBinding.instance.removeObserver(this);
+
+    try {
+      controller.videoController?.dispose();
+    } catch (_) {}
+
+    try {
+      controller.chewieController?.dispose();
+    } catch (_) {}
+
+    try {
+      controller.youtubeController?.close();
+    } catch (_) {}
+
+    try {
+      controller.audioPlayer?.dispose();
+    } catch (_) {}
+
+    super.dispose();
   }
 
   @override
@@ -90,6 +137,7 @@ class _VideoPageState extends State<VideoPage> {
                   onVerticalDragUpdate: (details) {
                     if (details.primaryDelta != null &&
                         details.primaryDelta! < -10) {
+                      if (!mounted) return;
                       setState(() => isMini = true);
                     }
                   },
@@ -164,11 +212,13 @@ class _VideoPageState extends State<VideoPage> {
               right: 10,
               child: GestureDetector(
                 onTap: () {
+                  if (!mounted) return;
                   setState(() => isMini = false);
                 },
                 onVerticalDragUpdate: (details) {
                   if (details.primaryDelta != null &&
                       details.primaryDelta! > 10) {
+                    if (!mounted) return;
                     setState(() => isMini = false);
                   }
                 },

@@ -79,7 +79,7 @@ class AdminBody extends StatelessWidget {
         child: FutureBuilder<Map<String, dynamic>>(
           future: statsFuture,
           builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
               return const LoadingWidget();
             }
 

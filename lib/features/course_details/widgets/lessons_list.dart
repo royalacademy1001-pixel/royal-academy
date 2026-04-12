@@ -24,39 +24,56 @@ class LessonsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isLoggedIn = FirebaseService.auth.currentUser != null;
 
-    return ListView(
+    if (lessons.isEmpty) {
+      return const Center(
+        child: Text(
+          "لا يوجد دروس",
+          style: TextStyle(color: Colors.white70),
+        ),
+      );
+    }
+
+    return ListView.builder(
       padding: const EdgeInsets.all(10),
-      children: [
-        ...lessons.map((lesson) {
-          final data = lesson.data() as Map<String, dynamic>? ?? {};
+      itemCount: lessons.length,
+      itemBuilder: (context, index) {
+        final lesson = lessons[index];
 
-          final canOpen = CoursePermissions.canOpenLesson(
-            hasAccess: hasAccess,
-            lessonData: data,
-            isLoggedIn: isLoggedIn,
-          );
+        final data = lesson.data() as Map<String, dynamic>? ?? {};
 
-          String videoUrl =
-              (data['contentUrl'] ?? data['video'] ?? "").toString();
+        final canOpen = CoursePermissions.canOpenLesson(
+          hasAccess: hasAccess,
+          lessonData: data,
+          isLoggedIn: isLoggedIn,
+        );
 
-          if (videoUrl == "null") videoUrl = "";
+        String videoUrl =
+            (data['contentUrl'] ?? data['video'] ?? "").toString().trim();
 
-          return GestureDetector(
+        if (videoUrl == "null") videoUrl = "";
+
+        final bool isFree = data['isFree'] == true;
+        final String title = (data['title'] ?? "").toString();
+
+        return RepaintBoundary(
+          child: GestureDetector(
             onTap: () {
               if (!canOpen) {
                 showLockedDialog(context);
                 return;
               }
 
+              if (!context.mounted) return;
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (_) => VideoPage(
-                    title: data['title'] ?? "",
+                    title: title,
                     videoUrl: videoUrl,
                     courseId: courseId,
                     lessonId: lesson.id,
-                    isFree: data['isFree'] == true,
+                    isFree: isFree,
                   ),
                 ),
               );
@@ -65,13 +82,13 @@ class LessonsList extends StatelessWidget {
               lesson: lesson,
               data: data,
               canOpen: canOpen,
-              isFree: data['isFree'] == true,
+              isFree: isFree,
               isWatched: watched.contains(lesson.id),
               isLocked: !canOpen,
             ),
-          );
-        }),
-      ],
+          ),
+        );
+      },
     );
   }
 }

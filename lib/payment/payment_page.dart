@@ -8,7 +8,6 @@ import '../core/constants.dart';
 import '../core/utils.dart';
 import '../core/colors.dart';
 
-// 🔥🔥🔥 NEW ANALYTICS
 import '../core/analytics_service.dart';
 
 import '../shared/widgets/custom_button.dart';
@@ -18,8 +17,6 @@ import 'payment_service.dart';
 import 'widgets/payment_widgets.dart';
 
 
-// 🔥🔥🔥 ULTRA PAYMENT UPGRADE LAYER 🔥🔥🔥
-
 class _PaymentGuard {
   static bool locked = false;
 }
@@ -27,11 +24,6 @@ class _PaymentGuard {
 Widget paymentSafe(Widget child) {
   return RepaintBoundary(child: child);
 }
-
-// 🔥🔥🔥 END UPGRADE LAYER 🔥🔥🔥
-
-
-// 🔥 FINAL PAYMENT PAGE
 
 class PaymentPage extends StatefulWidget {
   final String? courseId;
@@ -301,7 +293,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
       if (!success) throw Exception("submit failed");
 
-      await AnalyticsService.logPurchase(paid);
+      await AnalyticsService.logPurchase(paid, courseId: effectiveCourseId);
 
       await AnalyticsService.logEvent(
         "payment_submitted",

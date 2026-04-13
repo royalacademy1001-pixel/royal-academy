@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,10 +12,16 @@ import '../firebase_options.dart';
 
 class FirebaseInit {
   static bool _initialized = false;
+  static Future<void>? _initFuture;
 
   static Future<void> init() async {
     if (_initialized) return;
 
+    _initFuture ??= _initialize();
+    await _initFuture;
+  }
+
+  static Future<void> _initialize() async {
     try {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
@@ -23,6 +30,9 @@ class FirebaseInit {
       debugPrint("🔥 Firebase Initialized");
     } catch (e) {
       debugPrint("🔥 Firebase Init Error: $e");
+      rethrow;
+    } finally {
+      _initFuture = null;
     }
   }
 }
@@ -76,6 +86,19 @@ class FirebaseService {
 
     _lock[key] = now;
     return true;
+  }
+
+  static void clearImageCache({String? url}) {
+    final clean = url?.trim();
+
+    if (clean == null || clean.isEmpty) {
+      _imageCache.clear();
+      _imageFutureCache.clear();
+      return;
+    }
+
+    _imageCache.removeWhere((key, _) => key.startsWith("$clean|"));
+    _imageFutureCache.removeWhere((key, _) => key.startsWith("$clean|"));
   }
 
   static Future<User?> refreshCurrentUser() async {
@@ -163,29 +186,41 @@ class FirebaseService {
   static Future<String> resolveImageUrl(
     String url, {
     String? version,
+    bool forceRefresh = false,
   }) async {
     final clean = url.trim();
     if (clean.isEmpty) return clean;
 
     final cacheKey = "$clean|${version ?? ""}";
 
-    if (_imageCache.containsKey(cacheKey)) {
-      return _imageCache[cacheKey]!;
+    if (forceRefresh) {
+      _imageCache.remove(cacheKey);
+      _imageFutureCache.remove(cacheKey);
     }
 
-    if (_imageFutureCache.containsKey(cacheKey)) {
-      return _imageFutureCache[cacheKey]!;
+    final cached = _imageCache[cacheKey];
+    if (cached != null) {
+      return cached;
+    }
+
+    final pending = _imageFutureCache[cacheKey];
+    if (pending != null) {
+      return pending;
     }
 
     final future = _resolveInternal(clean, version: version);
     _imageFutureCache[cacheKey] = future;
 
-    final result = await future;
-
-    _imageCache[cacheKey] = result;
-    _imageFutureCache.remove(cacheKey);
-
-    return result;
+    try {
+      final result = await future;
+      _imageCache[cacheKey] = result;
+      return result;
+    } catch (e) {
+      debugPrint("🔥 Resolve Image Future Error: $e");
+      return clean;
+    } finally {
+      _imageFutureCache.remove(cacheKey);
+    }
   }
 
   static Future<String> _resolveInternal(
@@ -230,6 +265,7 @@ class FirebaseService {
       debugPrint("Logout Error: $e");
     }
 
+    clearImageCache();
     await auth.signOut();
   }
 
@@ -294,6 +330,53 @@ class FirebaseService {
       });
     } catch (e) {
       debugPrint("🔥 addXP Error: $e");
+    }
+  }
+
+  static String _contentTypeFromName(String? name) {
+    final lower = (name ?? "").toLowerCase();
+
+    if (lower.endsWith(".png")) return "image/png";
+    if (lower.endsWith(".gif")) return "image/gif";
+    if (lower.endsWith(".webp")) return "image/webp";
+    if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+
+    return "application/octet-stream";
+  }
+
+  static Future<String?> uploadCourseImage(Uint8List bytes, String fileName) async {
+    try {
+      await FirebaseInit.init();
+
+      final user = auth.currentUser;
+      if (user == null) return null;
+
+      final userDoc = await firestore.collection("users").doc(user.uid).get();
+      final data = userDoc.data() ?? {};
+
+      if (data['blocked'] == true) return null;
+      if (data['isAdmin'] != true && data['instructorApproved'] != true) return null;
+
+      final ref = storage.ref().child("courses/images/$fileName");
+
+      final metadata = SettableMetadata(contentType: _contentTypeFromName(fileName));
+
+      final task = ref.putData(bytes, metadata);
+
+      final snapshot = await task;
+
+      if (snapshot.state != TaskState.success) return null;
+
+      final url = await ref.getDownloadURL();
+
+      if (url.isEmpty || !url.startsWith("http")) return null;
+
+      clearImageCache(url: url);
+
+      return url;
+    } catch (e) {
+      debugPrint("🔥 uploadCourseImage Error: $e");
+      return null;
     }
   }
 }

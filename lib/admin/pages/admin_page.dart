@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 
-// 🔥 NEW
 import '../controller/admin_controller.dart';
 import '../widgets/admin_body.dart';
 import '../widgets/admin_add_menu.dart';
 
-// 🔥 Pages
 import '../pick_lesson_page.dart';
 
 class AdminPage extends StatefulWidget {
@@ -26,6 +24,7 @@ class _AdminPageState extends State<AdminPage> {
     {"id": "admin_categories", "title": "إدارة التصنيفات", "icon": "categories"},
     {"id": "admin_notifications", "title": "الإشعارات", "icon": "notifications"},
     {"id": "admin_payments", "title": "المدفوعات", "icon": "payment"},
+    {"id": "admin_qr_attendance", "title": "توليد QR الحضور", "icon": "qr"},
     {"id": "admin_users", "title": "المستخدمين", "icon": "users"},
     {"id": "admin_students", "title": "إدارة الطلاب", "icon": "users"},
     {"id": "admin_requests", "title": "طلبات المدرسين", "icon": "instructor"},
@@ -50,11 +49,11 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<String?> pickLesson() async {
+    if (tapping) return null;
+
+    tapping = true;
+
     try {
-      if (tapping) return null;
-
-      tapping = true;
-
       final lessonId = await Navigator.push<String>(
         context,
         MaterialPageRoute(
@@ -62,8 +61,12 @@ class _AdminPageState extends State<AdminPage> {
         ),
       );
 
-      tapping = false;
+      if (!mounted) {
+        tapping = false;
+        return null;
+      }
 
+      tapping = false;
       return lessonId;
     } catch (_) {
       tapping = false;
@@ -72,6 +75,8 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   void openAddMenu() {
+    if (!mounted) return;
+
     AdminAddMenu.open(
       context: context,
       refresh: refresh,

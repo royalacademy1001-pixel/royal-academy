@@ -1,10 +1,6 @@
-// 🔥 IMPORTS FIRST
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../core/firebase_service.dart';
 import '../../core/constants.dart';
-
-
-// 🔥🔥🔥 ADMIN DASHBOARD ULTRA UPGRADE LAYER 🔥🔥🔥
 
 Future<T?> safeCall<T>(Future<T> Function() fn) async {
   try {
@@ -18,11 +14,6 @@ Future<T?> safeCall<T>(Future<T> Function() fn) async {
     }
   }
 }
-
-// 🔥🔥🔥 END UPGRADE LAYER 🔥🔥🔥
-
-
-// 🔥 FINAL ADMIN STATS SERVICE
 
 class AdminStatsService {
 
@@ -169,6 +160,8 @@ class AdminStatsService {
       }
 
       if (analyticsSnap != null) {
+        final seenUsers = <String>{};
+
         for (var e in analyticsSnap.docs) {
           final data = _safeMap(e.data());
 
@@ -178,7 +171,10 @@ class AdminStatsService {
           final time = (data['timestamp'] as Timestamp?)?.toDate();
 
           if (time != null &&
-              now.difference(time).inMinutes < 5) {
+              now.difference(time).inMinutes < 5 &&
+              userId.isNotEmpty &&
+              !seenUsers.contains(userId)) {
+            seenUsers.add(userId);
             activeUsers++;
           }
 

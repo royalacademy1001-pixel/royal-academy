@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'firebase_options.dart';
 
@@ -111,6 +112,9 @@ Future<void> main() async {
 
   try {
     await FirebaseInit.init();
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: false,
+    );
   } catch (_) {}
 
   if (!kIsWeb) {
@@ -154,6 +158,9 @@ class _RoyalAppState extends State<RoyalApp> {
     try {
       try {
         await FirebaseInit.init();
+        FirebaseFirestore.instance.settings = const Settings(
+          persistenceEnabled: false,
+        );
       } catch (_) {}
 
       try {

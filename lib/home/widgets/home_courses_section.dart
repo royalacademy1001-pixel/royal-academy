@@ -18,6 +18,8 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
 
   int focusedIndex = 0;
 
+  bool _didPreload = false;
+
   Widget _title(String text) => Padding(
         padding: const EdgeInsets.fromLTRB(15, 20, 15, 10),
         child: Row(
@@ -118,7 +120,9 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
 
   void _snapToItem() {
     if (!_scrollController.hasClients) return;
-    final target = focusedIndex * 247.0;
+    final maxIndex = (_scrollController.position.maxScrollExtent / 247).round();
+    final safeIndex = focusedIndex.clamp(0, maxIndex);
+    final target = safeIndex * 247.0;
     _scrollController.animateTo(
       target,
       duration: const Duration(milliseconds: 350),
@@ -145,11 +149,12 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
 
           final courses = rawDocs.where((doc) {
             final data = doc.data();
-            if (data == null || data.isEmpty) return false;
+            if (data.isEmpty) return false;
             return _isVisibleCourse(data);
           }).toList().cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
 
-          if (courses.isNotEmpty) {
+          if (courses.isNotEmpty && !_didPreload) {
+            _didPreload = true;
             _preloadImages(courses);
           }
 
@@ -195,7 +200,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
                                   final course = courses[index];
                                   final data = course.data();
 
-                                  if (data == null || data.isEmpty) {
+                                  if (data.isEmpty) {
                                     return const SizedBox();
                                   }
 

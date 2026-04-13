@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
-
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
 import '../../core/constants.dart';

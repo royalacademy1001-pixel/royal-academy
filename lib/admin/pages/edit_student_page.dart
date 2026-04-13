@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:ui';
 
-// 🔥 Core
 import '../../core/firebase_service.dart';
 import '../../core/constants.dart';
 import '../../core/colors.dart';

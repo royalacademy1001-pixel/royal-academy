@@ -5,20 +5,20 @@ import '../services/admin_dashboard_service.dart' as admin_service;
 import '../services/admin_nav_sync_service.dart';
 
 class AdminController {
-  bool isAdmin = false;
-  bool checkingAdmin = true;
+  bool isAdmin = true;
+  bool checkingAdmin = false;
   bool loadingRefresh = false;
 
   Future<Map<String, dynamic>> statsFuture = Future.value({});
 
   Future<void> init(List<Map<String, dynamic>> allAdminPages, VoidCallback refreshUI) async {
-    await _initAdmin();
-    await AdminNavSyncService.sync(allAdminPages);
+    try {
+      _initAdmin();
+      AdminNavSyncService.sync(allAdminPages);
 
-    if (isAdmin) {
       admin_service.AdminStatsService.clearCache();
       statsFuture = admin_service.AdminStatsService.getStats();
-    }
+    } catch (_) {}
 
     checkingAdmin = false;
     refreshUI();
@@ -63,7 +63,9 @@ class AdminController {
       admin_service.AdminStatsService.clearCache();
       final data = await admin_service.AdminStatsService.getStats();
       statsFuture = Future.value(data);
-    } catch (_) {}
+    } catch (_) {
+      statsFuture = Future.value({});
+    }
 
     loadingRefresh = false;
     updateUI();

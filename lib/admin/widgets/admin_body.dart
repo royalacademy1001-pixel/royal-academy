@@ -19,6 +19,7 @@ import '../pages/news_admin_page.dart';
 import '../pages/students_crm_page.dart';
 import '../pages/admin_navigation_control_page.dart';
 import '../pages/analytics_dashboard_page.dart' as analytics;
+import '../admin_qr_generator_page.dart';
 
 class AdminBody extends StatelessWidget {
   final bool checkingAdmin;
@@ -178,6 +179,7 @@ class AdminBody extends StatelessWidget {
                             {"title": "📂 إدارة التصنيفات", "page": const CategoriesAdminPage()},
                             {"title": "🔔 الإشعارات", "page": const NotificationsAdminPage()},
                             {"title": "💰 المدفوعات", "page": const PaymentsAdminPage()},
+                            {"title": "📷 توليد QR الحضور", "page": const AdminQRGeneratorPage()},
                             {"title": "👥 المستخدمين", "page": const UsersPage()},
                             {"title": "🎓 إدارة الطلاب", "page": const StudentsManagementPage()},
                             {"title": "👨‍🏫 طلبات المدرسين", "page": const InstructorRequestsAdminPage()},

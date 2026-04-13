@@ -1,4 +1,3 @@
-// 🔥 IMPORTS FIRST
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_service.dart';
@@ -7,18 +6,27 @@ class AnalyticsService {
 
   static bool _locked = false;
   static DateTime? _lastEventTime;
+  static final Map<String, DateTime> _eventLock = {};
+  static final Map<String, int> _cacheCounts = {};
 
-  static bool _canLog() {
+  static bool _canLog([String key = "global"]) {
     final now = DateTime.now();
 
     if (_locked) return false;
 
+    if (_eventLock.containsKey(key)) {
+      if (now.difference(_eventLock[key]!).inMilliseconds < 800) {
+        return false;
+      }
+    }
+
     if (_lastEventTime != null &&
-        now.difference(_lastEventTime!).inMilliseconds < 300) {
+        now.difference(_lastEventTime!).inMilliseconds < 200) {
       return false;
     }
 
     _lastEventTime = now;
+    _eventLock[key] = now;
     return true;
   }
 
@@ -30,10 +38,11 @@ class AnalyticsService {
     }
   }
 
-  static Future<void> _log(Map<String, dynamic> data) async {
+  static Future<void> _log(Map<String, dynamic> data,
+      {String key = "global"}) async {
     try {
 
-      if (!_canLog()) return;
+      if (!_canLog(key)) return;
 
       final user = FirebaseService.auth.currentUser;
       final firestore = FirebaseService.firestore;
@@ -57,26 +66,26 @@ class AnalyticsService {
     await _log({
       "type": name,
       "params": params ?? {},
-    });
+    }, key: name);
   }
 
   static Future<void> logScreen(String name) async {
     await _log({
       "type": "screen_view",
       "screen": name,
-    });
+    }, key: "screen_$name");
   }
 
   static Future<void> logLogin() async {
     await _log({
       "type": "login",
-    });
+    }, key: "login");
   }
 
   static Future<void> logRegister() async {
     await _log({
       "type": "register",
-    });
+    }, key: "register");
   }
 
   static Future<void> logCourseView(String courseId, {String? title}) async {
@@ -85,7 +94,7 @@ class AnalyticsService {
 
     try {
 
-      if (!_canLog()) return;
+      if (!_canLog("course_$courseId")) return;
 
       final user = FirebaseService.auth.currentUser;
 
@@ -96,22 +105,13 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       };
 
-      final batch = firestore.batch();
-
-      final ref1 = firestore.collection("analytics_events").doc();
-      final ref2 = firestore.collection("analytics_events").doc();
-
-      batch.set(ref1, {
+      await firestore.collection("analytics_events").add({
         ...baseData,
         "type": "course_view",
       });
 
-      batch.set(ref2, {
-        ...baseData,
-        "type": "course_view_extra",
-      });
-
-      await batch.commit();
+      _cacheCounts["views_$courseId"] =
+          (_cacheCounts["views_$courseId"] ?? 0) + 1;
 
     } catch (e) {
       debugPrint("🔥 Course View Error: $e");
@@ -123,7 +123,7 @@ class AnalyticsService {
       "type": "lesson_open",
       "lessonId": lessonId,
       "courseId": courseId ?? "",
-    });
+    }, key: "lesson_$lessonId");
   }
 
   static Future<void> logPurchase(int amount, {String? courseId}) async {
@@ -132,7 +132,7 @@ class AnalyticsService {
 
     try {
 
-      if (!_canLog()) return;
+      if (!_canLog("purchase_$courseId")) return;
 
       final user = FirebaseService.auth.currentUser;
 
@@ -143,22 +143,15 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       };
 
-      final batch = firestore.batch();
-
-      final ref1 = firestore.collection("analytics_events").doc();
-      final ref2 = firestore.collection("analytics_events").doc();
-
-      batch.set(ref1, {
+      await firestore.collection("analytics_events").add({
         ...baseData,
         "type": "purchase",
       });
 
-      batch.set(ref2, {
-        ...baseData,
-        "type": "purchase_log",
-      });
-
-      await batch.commit();
+      if (courseId != null) {
+        _cacheCounts["purchase_$courseId"] =
+            (_cacheCounts["purchase_$courseId"] ?? 0) + 1;
+      }
 
     } catch (e) {
       debugPrint("🔥 Purchase Error: $e");
@@ -169,7 +162,7 @@ class AnalyticsService {
 
     try {
 
-      if (!_canLog()) return;
+      if (!_canLog("active")) return;
 
       final user = FirebaseService.auth.currentUser;
       if (user == null) return;
@@ -187,13 +180,22 @@ class AnalyticsService {
 
   static Future<int> getCourseViews(String courseId) async {
     try {
+
+      if (_cacheCounts.containsKey("views_$courseId")) {
+        return _cacheCounts["views_$courseId"]!;
+      }
+
       final snap = await FirebaseService.firestore
           .collection("analytics_events")
           .where("type", isEqualTo: "course_view")
           .where("courseId", isEqualTo: courseId)
           .get();
 
-      return snap.docs.length;
+      final count = snap.docs.length;
+
+      _cacheCounts["views_$courseId"] = count;
+
+      return count;
     } catch (_) {
       return 0;
     }
@@ -201,13 +203,22 @@ class AnalyticsService {
 
   static Future<int> getCoursePurchases(String courseId) async {
     try {
+
+      if (_cacheCounts.containsKey("purchase_$courseId")) {
+        return _cacheCounts["purchase_$courseId"]!;
+      }
+
       final snap = await FirebaseService.firestore
           .collection("analytics_events")
           .where("type", isEqualTo: "purchase")
           .where("courseId", isEqualTo: courseId)
           .get();
 
-      return snap.docs.length;
+      final count = snap.docs.length;
+
+      _cacheCounts["purchase_$courseId"] = count;
+
+      return count;
     } catch (_) {
       return 0;
     }

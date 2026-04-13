@@ -91,7 +91,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     } catch (_) {}
   }
 
-  // ================= APPROVAL =================
   Future approveCourse(String id) async {
     bool confirm = await _confirm("هل أنت متأكد من الموافقة على الكورس؟");
     if (!confirm) return;
@@ -175,7 +174,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
         false;
   }
 
-  // ================= PICK FILE =================
   Future pickFile() async {
     if (selectedType == "video") {
       final picked = await picker.pickVideo(source: ImageSource.gallery);
@@ -191,7 +189,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     }
   }
 
-  // ================= UPLOAD =================
   Future<String?> uploadFile(File file) async {
     try {
       String name = DateTime.now().millisecondsSinceEpoch.toString();
@@ -212,7 +209,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     }
   }
 
-  // ================= SELECT COURSE =================
   Future selectCourse(String id, String name) async {
     var lessons = await FirebaseService.firestore
         .collection(AppConstants.courses)
@@ -229,7 +225,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     show("📌 تم اختيار: $name");
   }
 
-  // ================= ADD LESSON =================
   Future addLesson() async {
     if (selectedCourseId == null) {
       show("اختار كورس الأول ❗");
@@ -254,7 +249,9 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
       if (fileUrl == null || fileUrl.isEmpty) {
         show("أضف ملف أو لينك ❗");
-        setState(() => loading = false);
+        if (mounted) {
+          setState(() => loading = false);
+        }
         return;
       }
 
@@ -282,16 +279,20 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
 
       clearLesson();
 
-      setState(() {
-        lessonsCount++;
-      });
+      if (mounted) {
+        setState(() {
+          lessonsCount++;
+        });
+      }
 
       show("تم إضافة المحتوى ✅");
     } catch (_) {
       show("خطأ ❌");
     }
 
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   void clearLesson() {
@@ -301,7 +302,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     selectedType = "video";
   }
 
-  // ================= DELETE =================
   Future deleteCourse(String id) async {
     bool confirm = await _confirm("حذف الكورس نهائياً؟");
     if (!confirm) return;
@@ -314,7 +314,6 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     show("تم حذف الكورس ❌");
   }
 
-  // ================= EDIT =================
   Future editCourse(DocumentSnapshot doc) async {
     var data = doc.data() as Map<String, dynamic>;
 
@@ -355,7 +354,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.gold),
             onPressed: () async {
-              Navigator.pop(context); // ✅ اقفل الأول
+              Navigator.pop(context);
 
               await doc.reference.update({
                 "title": title.text,
@@ -374,6 +373,7 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
   }
 
   void show(String msg) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, style: const TextStyle(fontFamily: 'Cairo')),
@@ -383,7 +383,15 @@ class _CoursesAdminPageState extends State<CoursesAdminPage>
     );
   }
 
-  // ================= UI =================
+  @override
+  void dispose() {
+    tabController.dispose();
+    lessonTitle.dispose();
+    video.dispose();
+    rejectController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -84,6 +85,64 @@ class _AddCoursePageState extends State<AddCoursePage> {
     return ".jpg";
   }
 
+  Future<Uint8List> _prepareSquarePngBytes(Uint8List bytes) async {
+    try {
+      final ui.Codec codec = await ui.instantiateImageCodec(bytes);
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image image = frameInfo.image;
+
+      final int width = image.width;
+      final int height = image.height;
+
+      if (width <= 0 || height <= 0) {
+        return bytes;
+      }
+
+      final int square = width < height ? width : height;
+      if (square <= 0) {
+        return bytes;
+      }
+
+      final int outputSize = square > 1200 ? 1200 : square;
+
+      final double left = (width - square) / 2.0;
+      final double top = (height - square) / 2.0;
+
+      final ui.Rect src = ui.Rect.fromLTWH(
+        left,
+        top,
+        square.toDouble(),
+        square.toDouble(),
+      );
+
+      final ui.Rect dst = ui.Rect.fromLTWH(
+        0,
+        0,
+        outputSize.toDouble(),
+        outputSize.toDouble(),
+      );
+
+      final ui.PictureRecorder recorder = ui.PictureRecorder();
+      final ui.Canvas canvas = ui.Canvas(recorder);
+      final ui.Paint paint = ui.Paint()..filterQuality = ui.FilterQuality.high;
+
+      canvas.drawImageRect(image, src, dst, paint);
+
+      final ui.Picture picture = recorder.endRecording();
+      final ui.Image outImage = await picture.toImage(outputSize, outputSize);
+      final ByteData? byteData =
+          await outImage.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) {
+        return bytes;
+      }
+
+      return byteData.buffer.asUint8List();
+    } catch (_) {
+      return bytes;
+    }
+  }
+
   bool _canShowUploadBar() {
     return uploadingImage || uploadProgress > 0 || uploadStatus.isNotEmpty;
   }
@@ -137,11 +196,29 @@ class _AddCoursePageState extends State<AddCoursePage> {
     if (_uploadingLock) return;
 
     try {
-      final picked = await picker.pickImage(source: ImageSource.gallery);
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
       if (picked == null) return;
 
-      imageName = picked.name;
-      imageBytes = await picked.readAsBytes();
+      final bytes = await picked.readAsBytes();
+      if (bytes.isEmpty) {
+        showSnack("الصورة غير صالحة ❌");
+        return;
+      }
+
+      final preparedBytes = await _prepareSquarePngBytes(bytes);
+      final pickedName = picked.name.trim();
+
+      imageName = identical(preparedBytes, bytes)
+          ? pickedName
+          : (pickedName.toLowerCase().endsWith(".png")
+              ? pickedName
+              : "$pickedName.png");
+      imageBytes = preparedBytes;
 
       if (mounted) {
         setState(() {
@@ -150,6 +227,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
         });
       }
     } catch (e) {
+      debugPrint("🔥 Pick Image Error: $e");
       showSnack("فشل اختيار الصورة ❌");
     }
   }
@@ -162,35 +240,11 @@ class _AddCoursePageState extends State<AddCoursePage> {
       final bytes = imageBytes;
       if (bytes == null || bytes.isEmpty) return null;
 
-      final currentUser = FirebaseService.auth.currentUser;
-      if (currentUser != null) {
-        try {
-          await currentUser.reload();
-          await currentUser.getIdToken(true);
-        } catch (_) {}
-      }
-
       final user = FirebaseService.auth.currentUser;
       if (user == null) return null;
 
-      final userDoc = await FirebaseService.firestore
-          .collection("users")
-          .doc(user.uid)
-          .get();
-
-      final userDataDoc = userDoc.data() ?? {};
-
-      if (userDataDoc['blocked'] == true) return null;
-
       final fileName =
           "${user.uid}_${DateTime.now().microsecondsSinceEpoch}${_extensionFromName(imageName)}";
-
-      final ref =
-          FirebaseService.storage.ref().child("courses/images/$fileName");
-
-      final metadata = SettableMetadata(
-        contentType: _contentTypeFromName(imageName),
-      );
 
       if (mounted) {
         setState(() {
@@ -200,29 +254,17 @@ class _AddCoursePageState extends State<AddCoursePage> {
         });
       }
 
-      final uploadTask = ref.putData(bytes, metadata);
+      final url = await FirebaseService.uploadCourseImage(bytes, fileName);
 
-      await _uploadSubscription?.cancel();
-      _uploadSubscription = uploadTask.snapshotEvents.listen((snapshot) {
-        if (!mounted) return;
-
-        final total = snapshot.totalBytes;
-        final transferred = snapshot.bytesTransferred;
-
-        final progress = total <= 0 ? 0.0 : transferred / total;
-
-        setState(() {
-          uploadProgress = progress.clamp(0.0, 1.0).toDouble();
-          uploadStatus = uploadProgress >= 1
-              ? "انتهى الرفع"
-              : "جاري رفع الصورة ${(uploadProgress * 100).toInt()}%";
-        });
-      });
-
-      await uploadTask.whenComplete(() {});
-
-      final url = await ref.getDownloadURL();
-      if (url.isEmpty || !url.startsWith("http")) return null;
+      if (url == null || url.trim().isEmpty) {
+        if (mounted) {
+          setState(() {
+            uploadingImage = false;
+            uploadStatus = "فشل رفع الصورة";
+          });
+        }
+        return null;
+      }
 
       if (mounted) {
         setState(() {
@@ -232,7 +274,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
         });
       }
 
-      return url;
+      return url.trim();
     } catch (e) {
       debugPrint("🔥 Upload Error: $e");
 
@@ -293,11 +335,15 @@ class _AddCoursePageState extends State<AddCoursePage> {
             width: double.infinity,
             decoration: AppColors.premiumCard,
             child: imageBytes != null
-                ? Image.memory(
-                    imageBytes!,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    height: double.infinity,
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.memory(
+                      imageBytes!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                      filterQuality: FilterQuality.high,
+                    ),
                   )
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -457,10 +503,16 @@ class _AddCoursePageState extends State<AddCoursePage> {
       String imageUrl = "";
 
       if (imageBytes != null) {
-        imageUrl = (await uploadImage() ?? "").trim();
-        if (imageUrl.isEmpty) {
-          imageUrl = "";
+        final uploadedImageUrl = await uploadImage();
+        if (uploadedImageUrl == null || uploadedImageUrl.trim().isEmpty) {
+          showSnack("فشل رفع الصورة ❌");
+          if (mounted) {
+            setState(() => loading = false);
+          }
+          return;
         }
+
+        imageUrl = uploadedImageUrl.trim();
       }
 
       final isAdminUser = userData['isAdmin'] == true;
@@ -469,7 +521,7 @@ class _AddCoursePageState extends State<AddCoursePage> {
 
       final courseRef = FirebaseService.firestore.collection("courses").doc();
 
-      await courseRef.set({
+      final Map<String, dynamic> courseData = {
         "title": title.text.trim(),
         "description": description.text.trim(),
         "categoryId": selectedCategoryId,
@@ -486,7 +538,13 @@ class _AddCoursePageState extends State<AddCoursePage> {
         "approved": courseApproved,
         "rejectReason": "",
         "createdAt": FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (imageUrl.isNotEmpty) {
+        courseData["imageUpdatedAt"] = FieldValue.serverTimestamp();
+      }
+
+      await courseRef.set(courseData);
 
       await FirebaseService.firestore
           .collection("users")

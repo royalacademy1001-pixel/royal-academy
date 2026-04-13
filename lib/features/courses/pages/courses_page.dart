@@ -42,16 +42,18 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 
   Future<void> loadData() async {
-    final user = FirebaseService.auth.currentUser;
+    try {
+      final user = FirebaseService.auth.currentUser;
 
-    if (user != null) {
-      final doc = await FirebaseService.firestore
-          .collection(AppConstants.users)
-          .doc(user.uid)
-          .get();
+      if (user != null) {
+        final doc = await FirebaseService.firestore
+            .collection(AppConstants.users)
+            .doc(user.uid)
+            .get();
 
-      userData = doc.data();
-    }
+        userData = doc.data();
+      }
+    } catch (_) {}
 
     if (!mounted) return;
     setState(() {});
@@ -143,7 +145,11 @@ class _CoursesPageState extends State<CoursesPage> {
                     .snapshots(),
                 builder: (context, snap) {
 
-                  if (!snap.hasData) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (!snap.hasData || snap.data == null) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
@@ -151,6 +157,8 @@ class _CoursesPageState extends State<CoursesPage> {
 
                   final List<QueryDocumentSnapshot> filtered = raw.where((c) {
                     final data = (c.data() as Map<String, dynamic>? ?? {});
+
+                    if (data.isEmpty) return false;
 
                     final level = (data['level'] ?? "").toString().toLowerCase();
                     final isFree = data['isFree'] == true;
@@ -217,6 +225,8 @@ class _CoursesPageState extends State<CoursesPage> {
                       onTap: (c) {
 
                         final data = (c.data() as Map<String, dynamic>? ?? {});
+
+                        if (data.isEmpty) return;
 
                         NavGuard.go(() {
 

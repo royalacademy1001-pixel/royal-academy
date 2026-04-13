@@ -63,15 +63,20 @@ class _CourseCardContentState extends State<CourseCardContent>
 
     final double safeProgress = _safeProgress(widget.progress);
     final double safeRating = _safeDouble(widget.rating, 0.0);
+    final String cleanImageUrl = widget.imageUrl.trim();
 
     return MouseRegion(
       onEnter: (_) {
         if (!mounted) return;
-        setState(() => hovered = true);
+        if (!hovered) {
+          setState(() => hovered = true);
+        }
       },
       onExit: (_) {
         if (!mounted) return;
-        setState(() => hovered = false);
+        if (hovered) {
+          setState(() => hovered = false);
+        }
       },
       child: PressEffect(
         onTap: () {
@@ -113,101 +118,106 @@ class _CourseCardContentState extends State<CourseCardContent>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      height: 132,
-                      width: double.infinity,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: AnimatedScale(
-                              duration: const Duration(milliseconds: 400),
-                              scale: hovered ? 1.06 : 1,
-                              child: _CourseCardImage(
-                                imageUrl: widget.imageUrl,
-                                placeholder: _placeholder,
-                              ),
-                            ),
-                          ),
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.black.withValues(alpha: 0.95),
-                                    Colors.transparent,
-                                  ],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (widget.isPopular)
-                            Positioned(
-                              bottom: 8,
-                              left: 8,
+                    RepaintBoundary(
+                      child: SizedBox(
+                        height: 132,
+                        width: double.infinity,
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
                               child: AnimatedScale(
-                                duration: const Duration(milliseconds: 200),
-                                scale: hovered ? 1.05 : 1,
+                                duration: const Duration(milliseconds: 400),
+                                scale: hovered ? 1.06 : 1,
+                                child: _CourseCardImage(
+                                  key: ValueKey(cleanImageUrl),
+                                  imageUrl: cleanImageUrl,
+                                  placeholder: _placeholder,
+                                ),
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: IgnorePointer(
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppColors.gold,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Text(
-                                    "🔥 الأكثر مشاهدة",
-                                    style: TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.black.withValues(alpha: 0.95),
+                                        Colors.transparent,
+                                      ],
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          if (!widget.hasAccess)
-                            const Positioned(
+                            if (widget.isPopular)
+                              Positioned(
+                                bottom: 8,
+                                left: 8,
+                                child: AnimatedScale(
+                                  duration: const Duration(milliseconds: 200),
+                                  scale: hovered ? 1.05 : 1,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gold,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      "🔥 الأكثر مشاهدة",
+                                      style: TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            if (!widget.hasAccess)
+                              const Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Icon(Icons.lock, color: Colors.red, size: 18),
+                              ),
+                            Positioned(
                               top: 8,
-                              right: 8,
-                              child: Icon(Icons.lock, color: Colors.red, size: 18),
-                            ),
-                          Positioned(
-                            top: 8,
-                            left: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.72),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.06),
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.72),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.06),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                      size: 13,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      safeRating.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                    size: 13,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    safeRating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                     Expanded(
@@ -295,6 +305,7 @@ class _CourseCardImage extends StatelessWidget {
   final Widget Function() placeholder;
 
   const _CourseCardImage({
+    super.key,
     required this.imageUrl,
     required this.placeholder,
   });
@@ -309,9 +320,10 @@ class _CourseCardImage extends StatelessWidget {
 
     return Image.network(
       cleanUrl,
+      key: ValueKey(cleanUrl),
       fit: BoxFit.cover,
-      gaplessPlayback: true,
-      filterQuality: FilterQuality.medium,
+      gaplessPlayback: false,
+      filterQuality: FilterQuality.low,
       errorBuilder: (_, __, ___) => placeholder(),
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
         if (wasSynchronouslyLoaded || frame != null) {

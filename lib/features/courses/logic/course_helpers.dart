@@ -94,8 +94,11 @@ List<QueryDocumentSnapshot> sortCourses(
   required String sort,
 }) {
   list.sort((a, b) {
-    final aData = (a.data() as Map<String, dynamic>? ?? {});
-    final bData = (b.data() as Map<String, dynamic>? ?? {});
+    final aRaw = a.data();
+    final bRaw = b.data();
+
+    final aData = aRaw is Map<String, dynamic> ? aRaw : <String, dynamic>{};
+    final bData = bRaw is Map<String, dynamic> ? bRaw : <String, dynamic>{};
 
     if (sort == "popular") {
       int aViews = safeInt(aData['views']);
@@ -117,7 +120,11 @@ List<QueryDocumentSnapshot> sortCourses(
       if (aTime == null) return 1;
       if (bTime == null) return -1;
 
-      return bTime.compareTo(aTime);
+      try {
+        return (bTime as dynamic).compareTo(aTime);
+      } catch (_) {
+        return 0;
+      }
     }
 
     return 0;

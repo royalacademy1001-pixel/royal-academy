@@ -104,10 +104,17 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
             .get(),
       ]);
 
-      courseData =
-          (results[0] as DocumentSnapshot).data() as Map<String, dynamic>?;
+      if (results.isEmpty) {
+        loading = false;
+        if (mounted) setState(() {});
+        return;
+      }
 
-      if (courseData != null) {
+      final courseSnap = results[0] as DocumentSnapshot;
+      courseData =
+          courseSnap.data() as Map<String, dynamic>? ?? <String, dynamic>{};
+
+      if (courseData != null && courseData!.isNotEmpty) {
         final raw = (courseData?['image'] ?? "").toString().trim();
 
         final dynamic versionValue =
@@ -122,13 +129,21 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
           version = versionValue.toString().trim();
         }
 
-        resolvedImage =
+        final resolved =
             await FirebaseService.resolveImageUrl(raw, version: version);
+
+        if (resolved.isNotEmpty && resolved.startsWith("http")) {
+          resolvedImage =
+              FirebaseService.fixImage(resolved, version: version);
+        } else {
+          resolvedImage = "";
+        }
       }
 
       if (user != null && results.length > 2) {
+        final userSnap = results[1] as DocumentSnapshot;
         userData =
-            (results[1] as DocumentSnapshot).data() as Map<String, dynamic>?;
+            userSnap.data() as Map<String, dynamic>? ?? <String, dynamic>{};
       }
 
       lessons = (results.last as QuerySnapshot).docs;
@@ -141,11 +156,16 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
             .get();
 
         watched = progressSnap.docs
-            .map((e) => e['lessonId'].toString())
+            .map((e) => (e['lessonId'] ?? "").toString())
+            .where((e) => e.isNotEmpty)
             .toSet();
 
         if (progressSnap.docs.isNotEmpty) {
-          lastLessonId = progressSnap.docs.last['lessonId'];
+          lastLessonId =
+              (progressSnap.docs.last['lessonId'] ?? "").toString();
+          if (lastLessonId != null && lastLessonId!.isEmpty) {
+            lastLessonId = null;
+          }
         }
       }
 
@@ -184,6 +204,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
     int total = lessons.length;
     int done = watched.length;
     double progress = total == 0 ? 0 : done / total;
+    if (!progress.isFinite) progress = 0;
 
     double opacity = (scrollOffset / 200).clamp(0, 1);
 
@@ -198,9 +219,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                   image,
                   fit: BoxFit.cover,
                   gaplessPlayback: true,
+                  errorBuilder: (_, __, ___) =>
+                      Container(color: Colors.black),
                 ),
         ),
-
         Container(
           height: 260,
           decoration: BoxDecoration(
@@ -214,7 +236,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
             ),
           ),
         ),
-
         Positioned(
           bottom: 20,
           left: 15,
@@ -229,9 +250,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.bold)),
-
                 const SizedBox(height: 8),
-
                 Row(
                   children: [
                     Text("👁 $views",
@@ -241,17 +260,13 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                         style: const TextStyle(color: AppColors.gold)),
                   ],
                 ),
-
                 const SizedBox(height: 10),
-
                 CourseProgress(
                   progress: progress,
                   done: done,
                   total: total,
                 ),
-
                 const SizedBox(height: 10),
-
                 if (lastLessonId != null)
                   ResumeButton(
                     lessonId: lastLessonId!,
@@ -262,7 +277,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
             ),
           ),
         ),
-
         Positioned(
           top: 35,
           left: 10,
@@ -314,7 +328,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
         children: [
           header(),
           glassTabs(),
-
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -327,7 +340,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                         hasAccess: hasAccess,
                         courseId: widget.courseId,
                       ),
-
                 pdf.isEmpty
                     ? empty("لا يوجد ملفات PDF")
                     : FileLessonsList(
@@ -336,7 +348,6 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                         icon: Icons.picture_as_pdf,
                         color: Colors.red,
                       ),
-
                 audio.isEmpty
                     ? empty("لا يوجد صوتيات")
                     : FileLessonsList(

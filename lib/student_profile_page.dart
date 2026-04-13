@@ -16,6 +16,8 @@ import 'features/profile/widgets/profile_actions.dart';
 
 import 'shared/widgets/loading_widget.dart';
 
+import 'pages/student_qr_page.dart';
+
 class StudentProfilePage extends StatefulWidget {
   const StudentProfilePage({super.key});
 
@@ -141,6 +143,37 @@ class _StudentProfilePageState extends State<StudentProfilePage>
 
                       ProfileEdit(controller: controller),
                       const SizedBox(height: 16),
+
+                      if (controller.studentData?['vip'] == true)
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.gold,
+                              padding: const EdgeInsets.all(14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const StudentQRPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.qr_code, color: Colors.black),
+                            label: const Text(
+                              "📱 QR الخاص بي",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
 
                       ProfileActions(controller: controller),
                       const SizedBox(height: 30),

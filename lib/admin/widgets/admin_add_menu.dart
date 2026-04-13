@@ -6,6 +6,7 @@ import '../../admin/add_course_page.dart';
 import '../../admin/add_lesson_page.dart';
 import '../../admin/add_news_page.dart';
 import '../../features/quiz/admin_add_quiz_page.dart';
+import '../../admin/add_vip_student_page.dart';
 
 class AdminAddMenu {
 
@@ -165,6 +166,31 @@ class AdminAddMenu {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(builder: (_) => const AddNewsPage()),
+                    );
+
+                    if (!context.mounted) return;
+
+                    await refresh();
+                  },
+                ),
+
+                _item(
+                  icon: Icons.person_add,
+                  color: Colors.purple,
+                  title: "إضافة طالب",
+                  subtitle: "إضافة طالب يدوي للنظام",
+                  onTap: () async {
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    if (!context.mounted) return;
+
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AddVipStudentPage()),
                     );
 
                     if (!context.mounted) return;

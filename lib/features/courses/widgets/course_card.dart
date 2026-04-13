@@ -78,7 +78,11 @@ class _CourseCardState extends State<CourseCard> {
     if (raw.isEmpty) return "";
 
     final version = _imageVersion(widget.data);
-    final resolved = await FirebaseService.resolveImageUrl(raw, version: version);
+    final resolved = await FirebaseService.resolveImageUrl(
+      raw,
+      version: version,
+      forceRefresh: true,
+    );
     final fixed = FirebaseService.fixImage(resolved, version: version);
 
     if (fixed.isEmpty) return "";
@@ -114,7 +118,7 @@ class _CourseCardState extends State<CourseCard> {
 
     return RepaintBoundary(
       child: CourseCardContent(
-        key: ValueKey('${widget.id}_${_imageSignature(widget.data)}'),
+        key: ValueKey('${widget.id}_${_imageSignature(widget.data)}_$imageUrl'),
         imageUrl: imageUrl,
         rating: rating,
         totalLessons: total,
@@ -135,14 +139,20 @@ class _CourseCardState extends State<CourseCard> {
   @override
   void initState() {
     super.initState();
-    _imageFuture = _resolveImageUrl();
+    _imageFuture = Future.delayed(
+      const Duration(milliseconds: 50),
+      () => _resolveImageUrl(),
+    );
   }
 
   @override
   void didUpdateWidget(covariant CourseCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_imageSignature(oldWidget.data) != _imageSignature(widget.data)) {
-      _imageFuture = _resolveImageUrl();
+      _imageFuture = Future.delayed(
+        const Duration(milliseconds: 50),
+        () => _resolveImageUrl(),
+      );
     }
   }
 
@@ -176,7 +186,9 @@ class _CourseCardState extends State<CourseCard> {
           builder: (context, snapshot) {
             int done = widget.doneLessons;
 
-            if (snapshot.hasData && snapshot.data != null) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              done = widget.doneLessons;
+            } else if (snapshot.hasData && snapshot.data != null) {
               done = snapshot.data!.docs.length;
             }
 

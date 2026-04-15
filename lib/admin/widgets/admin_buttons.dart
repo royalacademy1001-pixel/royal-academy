@@ -1,13 +1,94 @@
 import 'package:flutter/material.dart';
-import '../../core/colors.dart';
 
-class AdminButtons extends StatelessWidget {
+import '../../core/colors.dart';
+import '../../core/firebase_service.dart';
+import '../../core/permission_service.dart';
+
+class AdminButtons extends StatefulWidget {
   final List<Map<String, dynamic>> pages;
 
   const AdminButtons({super.key, required this.pages});
 
   @override
+  State<AdminButtons> createState() => _AdminButtonsState();
+}
+
+class _AdminButtonsState extends State<AdminButtons> {
+  bool _ready = false;
+  String _role = "guest";
+  Map<String, dynamic> _userData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContext();
+  }
+
+  Future<void> _loadContext() async {
+    try {
+      await PermissionService.load();
+      _userData = await FirebaseService.getUserData();
+      _role = PermissionService.getRole(_userData);
+    } catch (_) {
+      _role = "guest";
+      _userData = {};
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _ready = true;
+    });
+  }
+
+  String _permissionKeyForTitle(String title) {
+    if (title.contains("إضافة كورس")) return "add_course";
+    if (title.contains("إضافة محتوى")) return "add_lesson";
+    if (title.contains("إضافة Quiz")) return "add_quiz";
+    if (title.contains("إضافة خبر")) return "add_news";
+    if (title.contains("إضافة طالب")) return "add_student";
+    if (title.contains("إدارة الكورسات")) return "courses";
+    if (title.contains("إدارة التصنيفات")) return "categories";
+    if (title.contains("الإشعارات")) return "notifications";
+    if (title.contains("المدفوعات")) return "payments";
+    if (title.contains("المستخدمين")) return "users";
+    if (title.contains("إدارة الطلاب")) return "students";
+    if (title.contains("طلبات المدرسين")) return "instructor_requests";
+    if (title.contains("Analytics")) return "analytics";
+    if (title.contains("إدارة الأخبار")) return "news";
+    if (title.contains("CRM")) return "students_crm";
+    if (title.contains("QR")) return "qr";
+    if (title.contains("البار")) return "admin_navigation";
+    if (title.contains("الأسعار")) return "pricing";
+    if (title.contains("الصلاحيات")) return "permissions";
+    if (title.contains("Permissions")) return "permissions";
+    if (title.contains("إدارة الصلاحيات")) return "permissions";
+    return "";
+  }
+
+  bool _canShowItem(Map<String, dynamic> item) {
+    if (!_ready) return true;
+
+    final visible = item['visible'];
+    if (visible is bool && visible == false) return false;
+
+    final rawPermissionKey = item['permissionKey'];
+    final String permissionKey = rawPermissionKey == null
+        ? _permissionKeyForTitle((item['title'] ?? "").toString())
+        : rawPermissionKey.toString().trim();
+
+    if (permissionKey.isEmpty) return true;
+
+    return PermissionService.canAccess(
+      role: _role,
+      page: permissionKey,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final visiblePages = widget.pages.where(_canShowItem).toList();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -20,8 +101,12 @@ class AdminButtons extends StatelessWidget {
                     ? 3
                     : 2;
 
+        if (visiblePages.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
         return GridView.builder(
-          itemCount: pages.length,
+          itemCount: visiblePages.length,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -32,11 +117,14 @@ class AdminButtons extends StatelessWidget {
             mainAxisSpacing: 10,
           ),
           itemBuilder: (context, index) {
-            final item = pages[index];
-            final String title = item['title'] ?? "";
+            final item = visiblePages[index];
+            final String title = (item['title'] ?? "").toString();
             final IconData icon = _getIcon(title);
+            final Widget page = item['page'] is Widget
+                ? item['page'] as Widget
+                : const SizedBox.shrink();
 
-            return _buildAdminButton(context, title, icon, item['page']);
+            return _buildAdminButton(context, title, icon, page);
           },
         );
       },
@@ -44,7 +132,11 @@ class AdminButtons extends StatelessWidget {
   }
 
   Widget _buildAdminButton(
-      BuildContext context, String title, IconData icon, Widget page) {
+    BuildContext context,
+    String title,
+    IconData icon,
+    Widget page,
+  ) {
     return _AnimatedAdminCard(
       title: title,
       icon: icon,
@@ -64,10 +156,14 @@ class AdminButtons extends StatelessWidget {
     if (title.contains("إشعارات")) return Icons.notifications_active_rounded;
     if (title.contains("مدفوعات")) return Icons.account_balance_wallet_rounded;
     if (title.contains("المستخدمين")) return Icons.people_alt_rounded;
+    if (title.contains("طالب")) return Icons.person_rounded;
     if (title.contains("طلاب")) return Icons.local_library_rounded;
     if (title.contains("مدرس")) return Icons.person_add_alt_1_rounded;
+    if (title.contains("QR")) return Icons.qr_code_rounded;
     if (title.contains("Analytics")) return Icons.insights_rounded;
     if (title.contains("أخبار")) return Icons.newspaper_rounded;
+    if (title.contains("صلاحيات")) return Icons.lock_outline_rounded;
+    if (title.contains("Permissions")) return Icons.lock_outline_rounded;
 
     return Icons.grid_view_rounded;
   }

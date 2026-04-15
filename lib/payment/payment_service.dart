@@ -846,13 +846,12 @@ class PaymentService {
         subscriptionEnd = getEndDate(plan)?.toIso8601String();
       }
 
-      // ✅ تحديث payment نفسه
       await paymentsRef.doc(paymentId).set({
         "status": "approved",
         "approvedAt": FieldValue.serverTimestamp(),
         "approvedBy": approvedByUserId ?? "",
         "subscriptionEnd": subscriptionEnd ?? "",
-        "courseTitle": courseTitle, // 🔥 استخدمناه هنا
+        "courseTitle": courseTitle,
         "updatedAt": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -861,7 +860,6 @@ class PaymentService {
       final userRef =
           FirebaseService.firestore.collection(AppConstants.users).doc(userId);
 
-      // ✅ اشتراك عام
       if (plan == AppConstants.planMonthly || plan == AppConstants.planYearly) {
         await userRef.set({
           "subscribed": true,
@@ -871,7 +869,6 @@ class PaymentService {
         }, SetOptions(merge: true));
       }
 
-      // ✅ كورس
       if (plan == AppConstants.planSingleCourse &&
           courseId.isNotEmpty &&
           remaining <= 0) {
@@ -879,24 +876,22 @@ class PaymentService {
           "unlockedCourses": FieldValue.arrayUnion([courseId]),
           "enrolledCourses": FieldValue.arrayUnion([courseId]),
           "latestPaymentStatus": "approved",
-          "lastCourseTitle": courseTitle, // 🔥 مهم للداشبورد
+          "lastCourseTitle": courseTitle,
           "updatedAt": FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        // ✅ تحديث student (CRM)
         if (studentId.isNotEmpty) {
           await FirebaseService.firestore
               .collection("students")
               .doc(studentId)
               .set({
             "enrolledCourses": FieldValue.arrayUnion([courseId]),
-            "lastCourseTitle": courseTitle, // 🔥 ربط CRM
+            "lastCourseTitle": courseTitle,
             "updatedAt": FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
       }
 
-      // ✅ مزامنة عامة
       await _syncLinkedState(
         userId,
         latestPaymentStatus: "approved",

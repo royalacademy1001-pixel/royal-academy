@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'core/colors.dart';
 import 'core/firebase_service.dart';
+import 'core/permission_service.dart';
 
 import 'features/profile/controller/student_profile_controller.dart';
 
@@ -37,6 +38,14 @@ class _StudentProfilePageState extends State<StudentProfilePage>
     super.initState();
     controller = StudentProfileController();
     controller.loadData();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    await PermissionService.load();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -63,6 +72,13 @@ class _StudentProfilePageState extends State<StudentProfilePage>
     return int.tryParse(value?.toString() ?? "0") ?? 0;
   }
 
+  bool _canShowStudentQr() {
+    return PermissionService.canAccess(
+      role: controller.role,
+      page: "qr",
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -84,6 +100,8 @@ class _StudentProfilePageState extends State<StudentProfilePage>
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
+        final showStudentQr = _canShowStudentQr();
+
         return Scaffold(
           backgroundColor: AppColors.background,
           appBar: AppBar(
@@ -118,33 +136,24 @@ class _StudentProfilePageState extends State<StudentProfilePage>
                     children: [
                       ProfileHeader(controller: controller),
                       const SizedBox(height: 16),
-
                       ProfileOverview(controller: controller),
                       const SizedBox(height: 16),
-
                       ProfileStats(
                         coursesCount: controller.enrolledCourses.length,
-                        totalPaid:
-                            _safeInt(controller.studentData?['totalPaid']),
-                        remaining:
-                            _safeInt(controller.studentData?['remaining']),
+                        totalPaid: _safeInt(controller.studentData?['totalPaid']),
+                        remaining: _safeInt(controller.studentData?['remaining']),
                         completion: controller.profileCompletion(),
                       ),
                       const SizedBox(height: 16),
-
                       ProfileCourses(controller: controller),
                       const SizedBox(height: 16),
-
                       ProfileAttendance(uid: user.uid),
                       const SizedBox(height: 16),
-
                       ProfileFinance(uid: user.uid),
                       const SizedBox(height: 16),
-
                       ProfileEdit(controller: controller),
                       const SizedBox(height: 16),
-
-                      if (controller.studentData?['vip'] == true)
+                      if (showStudentQr)
                         Container(
                           width: double.infinity,
                           margin: const EdgeInsets.only(bottom: 16),
@@ -174,14 +183,12 @@ class _StudentProfilePageState extends State<StudentProfilePage>
                             ),
                           ),
                         ),
-
                       ProfileActions(controller: controller),
                       const SizedBox(height: 30),
                     ],
                   ),
                 ),
               ),
-
               if (controller.loading)
                 Container(
                   color: Colors.black54,

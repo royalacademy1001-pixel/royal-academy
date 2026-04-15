@@ -8,6 +8,8 @@ class AnalyticsService {
   static DateTime? _lastEventTime;
   static final Map<String, DateTime> _eventLock = {};
   static final Map<String, int> _cacheCounts = {};
+  static final List<Map<String, dynamic>> _queue = [];
+  static bool _sending = false;
 
   static bool _canLog([String key = "global"]) {
     final now = DateTime.now();
@@ -15,7 +17,8 @@ class AnalyticsService {
     if (_locked) return false;
 
     if (_eventLock.containsKey(key)) {
-      if (now.difference(_eventLock[key]!).inMilliseconds < 800) {
+      final last = _eventLock[key];
+      if (last != null && now.difference(last).inMilliseconds < 800) {
         return false;
       }
     }
@@ -38,14 +41,39 @@ class AnalyticsService {
     }
   }
 
+  static Future<void> _flushQueue() async {
+    if (_sending) return;
+    if (_queue.isEmpty) return;
+
+    _sending = true;
+
+    try {
+      final firestore = FirebaseService.firestore;
+
+      while (_queue.isNotEmpty) {
+        final item = _queue.removeAt(0);
+
+        try {
+          await firestore.collection("analytics_events").add(item);
+        } catch (_) {
+          _queue.insert(0, item);
+          await Future.delayed(const Duration(milliseconds: 500));
+          break;
+        }
+      }
+    } catch (_) {} finally {
+      _sending = false;
+    }
+  }
+
   static Future<void> _log(Map<String, dynamic> data,
       {String key = "global"}) async {
+
     try {
 
       if (!_canLog(key)) return;
 
       final user = FirebaseService.auth.currentUser;
-      final firestore = FirebaseService.firestore;
 
       final payload = {
         ...data,
@@ -53,7 +81,8 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       };
 
-      await firestore.collection("analytics_events").add(payload);
+      _queue.add(payload);
+      _flushQueue();
 
     } catch (e) {
       debugPrint("🔥 Analytics Error: $e");
@@ -105,10 +134,12 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       };
 
-      await firestore.collection("analytics_events").add({
+      _queue.add({
         ...baseData,
         "type": "course_view",
       });
+
+      _flushQueue();
 
       _cacheCounts["views_$courseId"] =
           (_cacheCounts["views_$courseId"] ?? 0) + 1;
@@ -143,10 +174,12 @@ class AnalyticsService {
         "timestamp": FieldValue.serverTimestamp(),
       };
 
-      await firestore.collection("analytics_events").add({
+      _queue.add({
         ...baseData,
         "type": "purchase",
       });
+
+      _flushQueue();
 
       if (courseId != null) {
         _cacheCounts["purchase_$courseId"] =
@@ -167,11 +200,13 @@ class AnalyticsService {
       final user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
-      await FirebaseService.firestore.collection("analytics_events").add({
+      _queue.add({
         "type": "active_user",
         "userId": user.uid,
         "timestamp": FieldValue.serverTimestamp(),
       });
+
+      _flushQueue();
 
     } catch (e) {
       debugPrint("🔥 Active User Error: $e");

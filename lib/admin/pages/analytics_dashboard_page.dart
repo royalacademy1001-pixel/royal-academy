@@ -700,7 +700,7 @@ class _AnalyticsDashboardPageState extends State<AnalyticsDashboardPage> {
           return _loadingBox();
         }
 
-        if (!adminSnap.hasData || !adminSnap.data!.exists) {
+        if (!adminSnap.hasData || adminSnap.data == null || !adminSnap.data!.exists) {
           return const Scaffold(
             backgroundColor: AppColors.background,
             body: Center(

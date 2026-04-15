@@ -7,8 +7,10 @@ import '../core/firebase_service.dart';
 import '../core/constants.dart';
 import '../core/utils.dart';
 import '../core/colors.dart';
+import '../core/permission_service.dart';
+import '../core/audit_service.dart';
 
-import '../core/analytics_service.dart';
+import '../shared/services/analytics_service.dart';
 
 import '../shared/widgets/custom_button.dart';
 import '../shared/widgets/custom_textfield.dart';
@@ -60,8 +62,12 @@ class _PaymentPageState extends State<PaymentPage> {
   bool isVIP = false;
   bool checkingAdmin = true;
 
+  String currentRole = "guest";
+
   Future<void> _checkAdmin() async {
     try {
+      await PermissionService.load();
+
       final user = FirebaseService.auth.currentUser;
       if (user == null) return;
 
@@ -74,12 +80,24 @@ class _PaymentPageState extends State<PaymentPage> {
 
       isAdmin = data['isAdmin'] == true;
       isVIP = data['isVIP'] == true;
+      currentRole = PermissionService.getRole(data);
 
     } catch (_) {}
 
     if (mounted) {
       setState(() => checkingAdmin = false);
     }
+  }
+
+  bool _blockedByPermission() {
+    if (!PermissionService.isLoaded) return true;
+
+    final allowed = PermissionService.canAccess(
+      role: currentRole,
+      page: "payments",
+    );
+
+    return !allowed;
   }
 
   Future<void> _loadInitialCourse() async {
@@ -125,7 +143,7 @@ class _PaymentPageState extends State<PaymentPage> {
   }
 
   Future pickImage() async {
-    if (isLoading || lockedUI || _hardLock || _PaymentGuard.locked || isAdmin || isVIP) return;
+    if (isLoading || lockedUI || _hardLock || _PaymentGuard.locked || isAdmin || isVIP || _blockedByPermission()) return;
 
     try {
       final picked = await picker.pickImage(source: ImageSource.gallery);
@@ -150,8 +168,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   bool validate() {
 
-    if (isAdmin || isVIP) {
-      showSnack(context, "❌ غير مسموح للأدمن أو VIP بالدفع", color: Colors.red);
+    if (isAdmin || isVIP || _blockedByPermission()) {
+      showSnack(context, "❌ غير مسموح بالدفع", color: Colors.red);
       return false;
     }
 
@@ -217,8 +235,8 @@ class _PaymentPageState extends State<PaymentPage> {
 
   Future submit() async {
 
-    if (isAdmin || isVIP) {
-      showSnack(context, "❌ غير مسموح للأدمن أو VIP بالدفع", color: Colors.red);
+    if (isAdmin || isVIP || _blockedByPermission()) {
+      showSnack(context, "❌ غير مسموح بالدفع", color: Colors.red);
       return;
     }
 
@@ -305,6 +323,15 @@ class _PaymentPageState extends State<PaymentPage> {
         },
       );
 
+      await AuditService.log(
+        action: "payment_created",
+        data: {
+          "price": price,
+          "paid": paid,
+          "courseId": effectiveCourseId,
+        },
+      );
+
       if (!mounted) return;
 
       showSnack(context, "تم إرسال الطلب بنجاح 🎉");
@@ -365,17 +392,17 @@ class _PaymentPageState extends State<PaymentPage> {
   @override
   Widget build(BuildContext context) {
 
-    if (checkingAdmin) {
+    if (checkingAdmin || !PermissionService.isLoaded) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (isAdmin || isVIP) {
+    if (isAdmin || isVIP || _blockedByPermission()) {
       return const Scaffold(
         body: Center(
           child: Text(
-            "❌ غير مسموح للأدمن أو VIP بالدفع",
+            "❌ غير مسموح بالدفع",
             style: TextStyle(color: Colors.white),
           ),
         ),

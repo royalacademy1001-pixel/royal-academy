@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../core/colors.dart';
 import '../../core/constants.dart';
@@ -19,15 +18,13 @@ class StudentsManagementPage extends StatefulWidget {
 class _StudentsManagementPageState extends State<StudentsManagementPage> {
   final ScrollController _scroll = ScrollController();
 
-  final Map<String, Future<bool>> _adminFutureCache = {};
-
   Future<List<Map<String, dynamic>>>? _usersFuture;
 
   bool loading = false;
   bool actionLock = false;
 
   String search = "";
-  String filterMode = "vip";
+  String filterMode = "all";
 
   @override
   void initState() {
@@ -67,28 +64,10 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     return {};
   }
 
-  Future<bool> _checkAdmin(String uid) async {
-    try {
-      final doc = await FirebaseService.firestore
-          .collection(AppConstants.users)
-          .doc(uid)
-          .get();
-
-      final data = _safeMap(doc.data());
-      final role = _text(data['role']).toLowerCase();
-
-      return _bool(data['isAdmin']) || role == 'admin';
-    } catch (e) {
-      debugPrint("Admin Check Error: $e");
-      return false;
-    }
-  }
-
   Future<List<Map<String, dynamic>>> _loadUsers() async {
     try {
-      final snap = await FirebaseService.firestore
-          .collection(AppConstants.users)
-          .get();
+      final snap =
+          await FirebaseService.firestore.collection(AppConstants.users).get();
 
       final users = snap.docs.map((doc) {
         final data = _safeMap(doc.data());
@@ -110,24 +89,11 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
         return nameA.compareTo(nameB);
       });
 
-      return users.where(_isStudentUser).toList();
+      return users;
     } catch (e) {
       debugPrint("Load Users Error: $e");
       rethrow;
     }
-  }
-
-  bool _isStudentUser(Map<String, dynamic> data) {
-    final role = _text(data['role']).toLowerCase();
-    final isAdmin = _bool(data['isAdmin']);
-    final instructorApproved = _bool(data['instructorApproved']);
-    final instructorRequest = _bool(data['instructorRequest']);
-
-    return !isAdmin &&
-        role != "admin" &&
-        role != "instructor" &&
-        !instructorApproved &&
-        !instructorRequest;
   }
 
   bool _isVip(Map<String, dynamic> data) {
@@ -147,9 +113,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
   }
 
   bool _vipActionAllowed(Map<String, dynamic> data) {
-    if (_isVip(data)) return true;
-    show("هذه العملية متاحة لطلاب VIP فقط");
-    return false;
+    return true;
   }
 
   void show(String msg) {
@@ -218,7 +182,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     Map<String, dynamic>? data,
   ]) async {
     final userData = data ?? {};
-    if (userData.isNotEmpty && !_vipActionAllowed(userData)) return;
 
     await runSafe(() async {
       await FirebaseService.firestore.collection("attendance").add({
@@ -323,7 +286,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     Map<String, dynamic>? data,
   ]) async {
     final userData = data ?? {};
-    if (userData.isNotEmpty && !_vipActionAllowed(userData)) return;
 
     showCoursesDialog(
       context,
@@ -361,7 +323,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     Map<String, dynamic>? data,
   ]) async {
     final userData = data ?? {};
-    if (userData.isNotEmpty && !_vipActionAllowed(userData)) return;
 
     final scoreController = TextEditingController();
     String? selectedCourseId;
@@ -401,8 +362,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
                 ),
                 ElevatedButton(
                   onPressed: () async {
-                    final score =
-                        int.tryParse(scoreController.text.trim()) ?? 0;
+                    final score = int.tryParse(scoreController.text.trim()) ?? 0;
 
                     if (score <= 0) return;
 
@@ -461,8 +421,6 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     Map<String, dynamic>? data,
   ]) async {
     final userData = data ?? {};
-
-    if (userData.isNotEmpty && !_vipActionAllowed(userData)) return;
 
     final studentsSnap = await FirebaseService.firestore
         .collection("students")
@@ -635,9 +593,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
 
     if (parts.isEmpty) return "S";
     if (parts.length == 1) {
-      return parts.first.isNotEmpty
-          ? parts.first[0].toUpperCase()
-          : "S";
+      return parts.first.isNotEmpty ? parts.first[0].toUpperCase() : "S";
     }
 
     final first = parts.first.isNotEmpty ? parts.first[0] : "S";
@@ -726,9 +682,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
       selectedColor: AppColors.gold,
       backgroundColor: AppColors.black.withValues(alpha: 0.45),
       side: BorderSide(
-        color: selected
-            ? AppColors.gold
-            : Colors.white.withValues(alpha: 0.08),
+        color: selected ? AppColors.gold : Colors.white.withValues(alpha: 0.08),
       ),
     );
   }
@@ -869,7 +823,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "إدارة الطلاب VIP فقط",
+                    "إدارة الطلاب",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -1289,7 +1243,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
             onPressed: () {
               setState(() {
                 search = "";
-                filterMode = "vip";
+                filterMode = "all";
                 _usersFuture = _loadUsers();
               });
             },
@@ -1297,49 +1251,19 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
           ),
         ],
       ),
-      body: StreamBuilder<User?>(
-        stream: FirebaseService.auth.authStateChanges(),
-        builder: (context, authSnap) {
-          if (authSnap.connectionState == ConnectionState.waiting) {
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _usersFuture,
+        builder: (context, usersSnap) {
+          if (usersSnap.connectionState == ConnectionState.waiting) {
             return const LoadingWidget();
           }
 
-          final user = authSnap.data;
-          if (user == null) {
-            return _unauthorizedView();
+          if (usersSnap.hasError) {
+            return _errorView("❌ حصل خطأ في تحميل بيانات الطلاب");
           }
 
-          final adminFuture =
-              _adminFutureCache.putIfAbsent(user.uid, () => _checkAdmin(user.uid));
-
-          return FutureBuilder<bool>(
-            future: adminFuture,
-            builder: (context, adminSnap) {
-              if (adminSnap.connectionState == ConnectionState.waiting) {
-                return const LoadingWidget();
-              }
-
-              if (adminSnap.data != true) {
-                return _unauthorizedView();
-              }
-
-              return FutureBuilder<List<Map<String, dynamic>>>(
-                future: _usersFuture,
-                builder: (context, usersSnap) {
-                  if (usersSnap.connectionState == ConnectionState.waiting) {
-                    return const LoadingWidget();
-                  }
-
-                  if (usersSnap.hasError) {
-                    return _errorView("❌ حصل خطأ في تحميل بيانات الطلاب");
-                  }
-
-                  final users = usersSnap.data ?? [];
-                  return _buildContent(users);
-                },
-              );
-            },
-          );
+          final users = usersSnap.data ?? [];
+          return _buildContent(users);
         },
       ),
     );

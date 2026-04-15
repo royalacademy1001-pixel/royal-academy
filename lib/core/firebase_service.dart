@@ -74,12 +74,15 @@ class FirebaseService {
   static final Map<String, DateTime> _lock = {};
   static final Map<String, String> _imageCache = {};
   static final Map<String, Future<String>> _imageFutureCache = {};
+  static final Map<String, dynamic> _memoryCache = {};
+  static final Map<String, DateTime> _memoryCacheTime = {};
 
   static bool canRun(String key, {int seconds = 10}) {
     final now = DateTime.now();
 
     if (_lock.containsKey(key)) {
-      if (now.difference(_lock[key]!).inSeconds < seconds) {
+      final last = _lock[key];
+      if (last != null && now.difference(last).inSeconds < seconds) {
         return false;
       }
     }
@@ -99,6 +102,16 @@ class FirebaseService {
 
     _imageCache.removeWhere((key, _) => key.startsWith("$clean|"));
     _imageFutureCache.removeWhere((key, _) => key.startsWith("$clean|"));
+  }
+
+  static void clearMemoryCache({String? key}) {
+    if (key == null) {
+      _memoryCache.clear();
+      _memoryCacheTime.clear();
+      return;
+    }
+    _memoryCache.remove(key);
+    _memoryCacheTime.remove(key);
   }
 
   static Future<User?> refreshCurrentUser() async {
@@ -151,6 +164,36 @@ class FirebaseService {
       return await safeFirestoreCall(() => ref.add(data));
     } catch (e) {
       debugPrint("🔥 Safe Add Error: $e");
+      return null;
+    }
+  }
+
+  static Future<DocumentSnapshot?> cachedDoc(
+    String path, {
+    int seconds = 10,
+  }) async {
+    final now = DateTime.now();
+
+    if (_memoryCache.containsKey(path) &&
+        _memoryCacheTime.containsKey(path)) {
+      final last = _memoryCacheTime[path];
+      if (last != null && now.difference(last).inSeconds < seconds) {
+        return _memoryCache[path];
+      }
+    }
+
+    try {
+      final doc = await safeFirestoreCall(
+        () => firestore.doc(path).get(),
+      );
+
+      if (doc != null) {
+        _memoryCache[path] = doc;
+        _memoryCacheTime[path] = now;
+      }
+
+      return doc;
+    } catch (_) {
       return null;
     }
   }
@@ -266,6 +309,7 @@ class FirebaseService {
     }
 
     clearImageCache();
+    clearMemoryCache();
     await auth.signOut();
   }
 
@@ -283,6 +327,18 @@ class FirebaseService {
         } catch (_) {}
       }
 
+      final cacheKey = "user_${user.uid}";
+
+      if (!refresh &&
+          _memoryCache.containsKey(cacheKey) &&
+          _memoryCacheTime.containsKey(cacheKey)) {
+        final last = _memoryCacheTime[cacheKey];
+        if (last != null &&
+            DateTime.now().difference(last).inSeconds < 15) {
+          return Map<String, dynamic>.from(_memoryCache[cacheKey] ?? {});
+        }
+      }
+
       final doc = await safeFirestoreCall(
         () => firestore.collection("users").doc(user.uid).get(),
       );
@@ -291,6 +347,9 @@ class FirebaseService {
 
       final data = doc.data();
       if (data == null) return {};
+
+      _memoryCache[cacheKey] = data;
+      _memoryCacheTime[cacheKey] = DateTime.now();
 
       return Map<String, dynamic>.from(data);
     } catch (e) {
@@ -305,7 +364,8 @@ class FirebaseService {
     final now = DateTime.now();
 
     if (_xpLock.containsKey(lessonId)) {
-      if (now.difference(_xpLock[lessonId]!).inSeconds < 10) {
+      final last = _xpLock[lessonId];
+      if (last != null && now.difference(last).inSeconds < 10) {
         return false;
       }
     }

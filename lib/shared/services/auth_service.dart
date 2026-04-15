@@ -34,7 +34,7 @@ class AuthService {
       }
 
       _fetchingUser = true;
-      _userCompleter = Completer();
+      _userCompleter = Completer<Map<String, dynamic>>();
 
       await FirebaseService.refreshCurrentUser();
 
@@ -52,12 +52,13 @@ class AuthService {
                   .doc(user.uid)
                   .get()));
 
-      _userCache = doc?.data() ?? {};
+      final data = doc?.data();
+      _userCache = data is Map<String, dynamic> ? data : {};
       _lastFetchTime = now;
 
-      _completeUser(_userCache!);
+      _completeUser(_userCache ?? {});
 
-      return _userCache!;
+      return _userCache ?? {};
 
     } catch (e) {
       debugPrint("🔥 getUserData Error: $e");
@@ -73,7 +74,9 @@ class AuthService {
       final user = FirebaseService.auth.currentUser;
 
       if (!kIsWeb) {
-        await FirebaseService.messaging.deleteToken();
+        try {
+          await FirebaseService.messaging.deleteToken();
+        } catch (_) {}
       }
 
       if (user != null) {
@@ -105,9 +108,9 @@ class AuthService {
   static void _completeUser(Map<String, dynamic> data) {
     _fetchingUser = false;
 
-    if (_userCompleter != null &&
-        !_userCompleter!.isCompleted) {
-      _userCompleter!.complete(data);
+    final completer = _userCompleter;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(data);
     }
   }
 }

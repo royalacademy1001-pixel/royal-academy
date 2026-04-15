@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../core/firebase_service.dart';
 import '../../../core/constants.dart';
+import '../../../core/permission_service.dart';
 
 class StudentProfileController extends ChangeNotifier {
   final name = TextEditingController();
@@ -41,6 +42,8 @@ class StudentProfileController extends ChangeNotifier {
   Map<String, dynamic>? studentData;
 
   String? _activeStudentId;
+
+  String role = "normal";
 
   String _text(dynamic value) {
     return value == null ? "" : value.toString();
@@ -147,6 +150,20 @@ class StudentProfileController extends ChangeNotifier {
     if (isAdmin || instructorApproved || isVIP) {
       validSubscription = true;
     }
+
+    role = PermissionService.getRole(data);
+
+    if (role.isEmpty) {
+      if (isAdmin) {
+        role = "admin";
+      } else if (isVIP) {
+        role = "vip";
+      } else if (validSubscription) {
+        role = "subscriber";
+      } else {
+        role = "normal";
+      }
+    }
   }
 
   Future<void> _listenStudentDoc(String sid) async {
@@ -156,7 +173,7 @@ class StudentProfileController extends ChangeNotifier {
       return;
     }
 
-    _studentSub?.cancel();
+    await _studentSub?.cancel();
     _activeStudentId = sid;
 
     _studentSub = FirebaseService.firestore
@@ -280,6 +297,8 @@ class StudentProfileController extends ChangeNotifier {
     }
 
     try {
+      await PermissionService.load();
+
       final doc = await FirebaseService.firestore
           .collection(AppConstants.users)
           .doc(user.uid)
@@ -295,7 +314,7 @@ class StudentProfileController extends ChangeNotifier {
       loading = false;
       notifyListeners();
 
-      _userSub?.cancel();
+      await _userSub?.cancel();
       _userSub = FirebaseService.firestore
           .collection(AppConstants.users)
           .doc(user.uid)

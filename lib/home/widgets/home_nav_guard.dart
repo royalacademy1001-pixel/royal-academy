@@ -1,11 +1,21 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../core/permission_service.dart';
 
 class HomeNavGuard {
   static bool navigating = false;
 
-  static void go(VoidCallback action) {
+  static void go(VoidCallback action, {String? role, String? page}) {
     if (navigating) return;
+
+    if (role != null && page != null) {
+      final allowed = PermissionService.canAccess(
+        role: role,
+        page: page,
+      );
+      if (!allowed) return;
+    }
+
     navigating = true;
 
     try {
@@ -19,8 +29,17 @@ class HomeNavGuard {
     });
   }
 
-  static Future<void> goAsync(Future<void> Function() action) async {
+  static Future<void> goAsync(Future<void> Function() action, {String? role, String? page}) async {
     if (navigating) return;
+
+    if (role != null && page != null) {
+      final allowed = PermissionService.canAccess(
+        role: role,
+        page: page,
+      );
+      if (!allowed) return;
+    }
+
     navigating = true;
 
     try {

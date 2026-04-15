@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../core/firebase_service.dart';
 import '../core/constants.dart';
+import '../core/permission_service.dart';
+import '../shared/services/analytics_service.dart';
 
 import 'widgets/home_hero.dart';
 import 'widgets/home_stats_card.dart';
@@ -34,6 +36,9 @@ class _HomePageState extends State<HomePage>
   final ScrollController _scrollController = ScrollController();
   bool loading = true;
   bool _disposed = false;
+  bool _permissionReady = false;
+  bool _allowed = false;
+  String _role = "guest";
 
   bool get isAdmin => userData?['isAdmin'] == true;
   bool get isVIP => userData?['isVIP'] == true;
@@ -56,18 +61,32 @@ class _HomePageState extends State<HomePage>
         .collection(AppConstants.notifications)
         .snapshots();
 
+    AnalyticsService.logScreen("home");
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels > 300) {
+        AnalyticsService.logEvent("home_scroll_deep");
+      }
+    });
+
     _init();
   }
 
   Future<void> _init() async {
     try {
+      await PermissionService.load();
+
       final user = FirebaseService.auth.currentUser;
 
       if (user == null) {
+        _role = "guest";
+        _allowed = PermissionService.canAccess(role: _role, page: "home");
+
         if (!_disposed && mounted) {
           setState(() {
             userData = {};
             loading = false;
+            _permissionReady = true;
           });
         }
         return;
@@ -79,6 +98,15 @@ class _HomePageState extends State<HomePage>
 
       userData = data;
 
+      _role = PermissionService.getRole(data);
+      _allowed = PermissionService.canAccess(role: _role, page: "home");
+
+      AnalyticsService.logEvent("home_loaded", params: {
+        "isAdmin": isAdmin,
+        "isVIP": isVIP,
+        "subscribed": subscribed,
+      });
+
       if (notificationStream == null) {
         notificationStream = FirebaseService.firestore
             .collection(AppConstants.notifications)
@@ -86,13 +114,18 @@ class _HomePageState extends State<HomePage>
       }
 
       if (!_disposed && mounted) {
-        setState(() => loading = false);
+        setState(() {
+          loading = false;
+          _permissionReady = true;
+        });
       }
     } catch (_) {
       if (!_disposed && mounted) {
         setState(() {
           userData = {};
           loading = false;
+          _permissionReady = true;
+          _allowed = false;
         });
       }
     }
@@ -109,8 +142,16 @@ class _HomePageState extends State<HomePage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    if (loading) {
+    if (loading || !_permissionReady) {
       return const HomeSkeleton();
+    }
+
+    if (!_allowed) {
+      return const Scaffold(
+        body: Center(
+          child: Text("🚫 غير مسموح بالدخول"),
+        ),
+      );
     }
 
     final currentUserData = userData ?? {};
@@ -142,6 +183,7 @@ class _HomePageState extends State<HomePage>
                   HomeHero(
                     userName: userName,
                     onStartTap: () {
+                      AnalyticsService.logEvent("home_start_clicked");
                       if (!context.mounted) return;
                       Navigator.pushNamed(context, '/courses');
                     },

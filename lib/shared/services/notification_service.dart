@@ -8,6 +8,8 @@ import '../../core/constants.dart';
 class NotificationService {
   static bool _initialized = false;
   static String? _lastTokenSaved;
+  static DateTime? _lastTokenTime;
+  static bool _saving = false;
 
   static Future<void> init() async {
     try {
@@ -21,7 +23,11 @@ class NotificationService {
 
       await updateToken();
 
-      FirebaseMessaging.instance.onTokenRefresh.listen(_saveToken);
+      FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+        if (token.isNotEmpty) {
+          _saveToken(token);
+        }
+      });
 
       FirebaseMessaging.onMessage.listen((message) {
         debugPrint("🔔 ${message.notification?.title}");
@@ -37,8 +43,8 @@ class NotificationService {
     try {
       await FirebaseInit.init();
 
-      if (!kIsWeb) {
-        await FirebaseMessaging.instance.subscribeToTopic(topic);
+      if (!kIsWeb && topic.trim().isNotEmpty) {
+        await FirebaseMessaging.instance.subscribeToTopic(topic.trim());
       }
     } catch (e) {
       debugPrint("🔥 Topic Subscribe Error: $e");
@@ -49,20 +55,41 @@ class NotificationService {
     try {
       await FirebaseInit.init();
 
-      final user = FirebaseService.auth.currentUser;
-      if (user == null || token.isEmpty) return;
+      if (token.isEmpty) return;
 
-      if (_lastTokenSaved == token) return;
+      final now = DateTime.now();
+
+      if (_saving) return;
+
+      final lastTime = _lastTokenTime;
+      if (_lastTokenSaved == token &&
+          lastTime != null &&
+          now.difference(lastTime).inSeconds < 30) {
+        return;
+      }
+
+      _saving = true;
+
+      final user = FirebaseService.auth.currentUser;
+      if (user == null || user.uid.isEmpty) {
+        _saving = false;
+        return;
+      }
+
       _lastTokenSaved = token;
+      _lastTokenTime = now;
 
       await FirebaseService.firestore
           .collection(AppConstants.users)
           .doc(user.uid)
           .set({
         "fcmTokens": FieldValue.arrayUnion([token]),
+        "lastTokenUpdate": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
     } catch (e) {
       debugPrint("🔥 Token Error: $e");
+    } finally {
+      _saving = false;
     }
   }
 

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../core/firebase_service.dart';
 import '../../core/colors.dart';
+import '../../core/permission_service.dart';
+import '../../core/audit_service.dart';
 
 class AdminNavigationControlPage extends StatefulWidget {
   const AdminNavigationControlPage({super.key});
@@ -201,6 +203,12 @@ class _AdminNavigationControlPageState
       "roles": ["admin"],
     },
     {
+      "id": "admin_permissions",
+      "title": "الصلاحيات",
+      "icon": "settings",
+      "roles": ["admin"],
+    },
+    {
       "id": "admin_categories",
       "title": "إدارة التصنيفات",
       "icon": "categories",
@@ -311,7 +319,7 @@ class _AdminNavigationControlPageState
       if (entry is! Map) continue;
 
       final item = Map<String, dynamic>.from(entry);
-      item["id"] = (item["id"] ?? "").toString().trim();
+      item["id"] = (item["id"] ?? "").toString().trim().toLowerCase();
       item["title"] = (item["title"] ?? "").toString().trim();
       item["icon"] = (item["icon"] ?? "settings").toString().trim();
       item["order"] = item["order"] is int
@@ -321,7 +329,8 @@ class _AdminNavigationControlPageState
 
       final rawRoles = item["roles"];
       if (rawRoles is List) {
-        item["roles"] = rawRoles.map((e) => e.toString()).toList();
+        item["roles"] =
+            rawRoles.map((e) => e.toString().toLowerCase()).toList();
       } else {
         item["roles"] = ["all"];
       }
@@ -345,7 +354,7 @@ class _AdminNavigationControlPageState
   List<String> _normalizeRoles(dynamic raw) {
     if (raw is List) {
       final rolesList = raw
-          .map((e) => e.toString().trim())
+          .map((e) => e.toString().toLowerCase().trim())
           .where((e) => e.isNotEmpty)
           .toSet();
       if (rolesList.isEmpty) return ["all"];
@@ -399,6 +408,7 @@ class _AdminNavigationControlPageState
   }
 
   Future<void> _bootstrap() async {
+    await PermissionService.load();
     final navRef =
         FirebaseService.firestore.collection("app_settings").doc("navigation");
 
@@ -471,40 +481,8 @@ class _AdminNavigationControlPageState
     }
   }
 
-  Future<void> saveAll() async {
-    if (saving) return;
-
-    if (!mounted) return;
-    setState(() => saving = true);
-
-    try {
-      final sortedItems = _cloneItems(items);
-      sortedItems.sort((a, b) {
-        final aOrder = a["order"] is int
-            ? a["order"] as int
-            : int.tryParse(a["order"].toString()) ?? 0;
-        final bOrder = b["order"] is int
-            ? b["order"] as int
-            : int.tryParse(b["order"].toString()) ?? 0;
-        return aOrder.compareTo(bOrder);
-      });
-
-      await FirebaseService.firestore
-          .collection("app_settings")
-          .doc("navigation")
-          .set({
-        "items": sortedItems,
-      }, SetOptions(merge: true));
-    } catch (_) {
-    } finally {
-      if (mounted) {
-        setState(() => saving = false);
-      }
-    }
-  }
-
   void addItem() {
-    final pageId = idController.text.trim();
+    final pageId = idController.text.trim().toLowerCase();
     final title = titleController.text.trim();
     final icon = iconController.text.trim();
 
@@ -515,11 +493,11 @@ class _AdminNavigationControlPageState
       "title": title,
       "icon": icon.isEmpty ? "settings" : icon,
       "order": order,
-      "roles": roles.toList(),
+      "roles": roles.map((e) => e.toLowerCase()).toList(),
       "enabled": true,
     };
 
-    final index = _indexOfItem(pageId);
+    final index = items.indexWhere((e) => (e["id"] ?? "").toString() == pageId);
 
     if (index != -1) {
       items[index] = newItem;
@@ -527,18 +505,12 @@ class _AdminNavigationControlPageState
       items.add(newItem);
     }
 
-    items.sort((a, b) {
-      final aOrder = a["order"] is int
-          ? a["order"] as int
-          : int.tryParse(a["order"].toString()) ?? 0;
-      final bOrder = b["order"] is int
-          ? b["order"] as int
-          : int.tryParse(b["order"].toString()) ?? 0;
-      return aOrder.compareTo(bOrder);
-    });
-
-    clearForm();
     saveAll();
+
+    AuditService.log(
+      action: "nav_add_or_update",
+      data: newItem,
+    );
 
     if (mounted) {
       setState(() {});
@@ -552,16 +524,22 @@ class _AdminNavigationControlPageState
     order = items.length + 1;
     roles = {"all"};
     selectedPageId = "home";
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void deleteItem(int index) {
     if (index < 0 || index >= items.length) return;
     final item = items[index];
-    final isHome = (item["id"] ?? "").toString() == "home";
-    if (isHome) return;
 
     items.removeAt(index);
     saveAll();
+
+    AuditService.log(
+      action: "nav_delete",
+      data: item,
+    );
 
     if (mounted) {
       setState(() {});
@@ -569,10 +547,11 @@ class _AdminNavigationControlPageState
   }
 
   void toggleRole(String role) {
-    if (roles.contains(role)) {
-      roles.remove(role);
+    final r = role.toLowerCase();
+    if (roles.contains(r)) {
+      roles.remove(r);
     } else {
-      roles.add(role);
+      roles.add(r);
     }
 
     if (roles.isEmpty) {
@@ -581,6 +560,32 @@ class _AdminNavigationControlPageState
 
     if (mounted) {
       setState(() {});
+    }
+  }
+
+  Future<void> saveAll() async {
+    if (saving) return;
+
+    if (!mounted) return;
+    setState(() => saving = true);
+
+    try {
+      await FirebaseService.firestore
+          .collection("app_settings")
+          .doc("navigation")
+          .set({
+        "items": items,
+      }, SetOptions(merge: true));
+
+      await AuditService.log(
+        action: "nav_save",
+        data: {"count": items.length},
+      );
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() => saving = false);
+      }
     }
   }
 
@@ -605,7 +610,13 @@ class _AdminNavigationControlPageState
 
   void updateField(int index, String key, dynamic value) {
     if (index < 0 || index >= items.length) return;
-    items[index][key] = value;
+    if (key == "roles" && value is List) {
+      items[index][key] = value.map((e) => e.toString().toLowerCase()).toList();
+    } else if (key == "id") {
+      items[index][key] = value.toString().toLowerCase();
+    } else {
+      items[index][key] = value;
+    }
     saveAll();
 
     if (mounted) {
@@ -712,7 +723,7 @@ class _AdminNavigationControlPageState
         availablePages.any((page) => page["id"].toString() == selectedPageId);
 
     return DropdownButtonFormField<String>(
-      initialValue: hasSelected ? selectedPageId : null, // ✅ بدل value
+      initialValue: hasSelected ? selectedPageId : null,
       dropdownColor: AppColors.black,
       decoration: InputDecoration(
         labelText: "اختار الصفحة",
@@ -786,10 +797,11 @@ class _AdminNavigationControlPageState
   }
 
   Widget roleChip(String role) {
-    final selected = roles.contains(role);
+    final r = role.toLowerCase();
+    final selected = roles.contains(r);
 
     return GestureDetector(
-      onTap: () => toggleRole(role),
+      onTap: () => toggleRole(r),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
@@ -813,7 +825,9 @@ class _AdminNavigationControlPageState
     final itemId = (item["id"] ?? "").toString();
     final itemOrder = item["order"]?.toString() ?? "0";
     final itemRoles = item["roles"] is List
-        ? (item["roles"] as List).map((e) => e.toString()).toList()
+        ? (item["roles"] as List)
+            .map((e) => e.toString().toLowerCase())
+            .toList()
         : <String>[];
 
     return Container(
@@ -1019,9 +1033,11 @@ class _AdminNavigationControlPageState
                                 ),
                               ),
                               onChanged: (v) {
-                                final trimmed = v.trim();
+                                final trimmed = v.trim().toLowerCase();
                                 final found = availablePages
-                                    .where((e) => e["id"] == trimmed)
+                                    .where((e) =>
+                                        e["id"].toString().toLowerCase() ==
+                                        trimmed)
                                     .toList();
                                 if (found.isNotEmpty &&
                                     titleController.text.isEmpty) {

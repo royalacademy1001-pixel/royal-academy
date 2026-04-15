@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../core/firebase_service.dart';
 import '../core/colors.dart';
+import '../core/permission_service.dart';
 
 class StudentQRPage extends StatefulWidget {
   const StudentQRPage({super.key});
@@ -12,11 +13,11 @@ class StudentQRPage extends StatefulWidget {
 }
 
 class _StudentQRPageState extends State<StudentQRPage> {
-
   String qrData = "";
   String userName = "";
   bool loading = true;
   bool blocked = false;
+  bool canViewPage = true;
 
   @override
   void initState() {
@@ -25,15 +26,28 @@ class _StudentQRPageState extends State<StudentQRPage> {
   }
 
   Future<void> generateQR() async {
+    if (loading) return;
+
+    if (!mounted) return;
+    setState(() {
+      loading = true;
+      blocked = false;
+      qrData = "";
+      userName = "";
+      canViewPage = true;
+    });
+
     try {
+      await PermissionService.load();
+
       final user = FirebaseService.auth.currentUser;
 
       if (user == null) {
-        if (mounted) {
-          setState(() {
-            loading = false;
-          });
-        }
+        if (!mounted) return;
+        setState(() {
+          loading = false;
+          canViewPage = false;
+        });
         return;
       }
 
@@ -42,19 +56,30 @@ class _StudentQRPageState extends State<StudentQRPage> {
           .doc(user.uid)
           .get();
 
-      final data = doc.data();
+      final data = doc.data() ?? {};
 
-      if (data != null && data['blocked'] == true) {
-        if (mounted) {
-          setState(() {
-            blocked = true;
-            loading = false;
-          });
-        }
+      final role = PermissionService.getRole(data);
+      final allowed = PermissionService.canAccess(role: role, page: "qr");
+
+      if (!allowed) {
+        if (!mounted) return;
+        setState(() {
+          canViewPage = false;
+          loading = false;
+        });
         return;
       }
 
-      final name = (data?['name'] ?? user.email ?? "Student").toString();
+      if (data['blocked'] == true) {
+        if (!mounted) return;
+        setState(() {
+          blocked = true;
+          loading = false;
+        });
+        return;
+      }
+
+      final name = (data['name'] ?? user.email ?? "Student").toString();
 
       final qrMap = {
         "type": "student",
@@ -82,6 +107,18 @@ class _StudentQRPageState extends State<StudentQRPage> {
   Widget _buildQR() {
     if (loading) {
       return const CircularProgressIndicator(color: AppColors.gold);
+    }
+
+    if (!canViewPage) {
+      return const Text(
+        "🚫 غير مصرح لك بالدخول لهذه الصفحة",
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+        textAlign: TextAlign.center,
+      );
     }
 
     if (blocked) {

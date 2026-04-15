@@ -14,6 +14,7 @@ import 'firebase_options.dart';
 import 'core/colors.dart';
 import 'core/constants.dart';
 import 'core/firebase_service.dart';
+import 'core/permission_service.dart';
 import 'shared/services/analytics_service.dart';
 import 'shared/services/auth_service.dart';
 import 'shared/services/notification_service.dart';
@@ -30,6 +31,7 @@ import 'web/verify_web_page.dart';
 import 'features/quiz/student_quiz_page.dart';
 import 'features/quiz/admin_add_quiz_page.dart';
 import 'features/quiz/quiz_results_page.dart';
+import 'admin/pages/permissions_admin_page.dart';
 
 import 'admin/pages/admin_navigation_control_page.dart';
 import 'admin/pages/analytics_dashboard_page.dart';
@@ -115,6 +117,7 @@ Future<void> main() async {
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: false,
     );
+    await PermissionService.load();
   } catch (_) {}
 
   if (!kIsWeb) {
@@ -161,6 +164,7 @@ class _RoyalAppState extends State<RoyalApp> {
         FirebaseFirestore.instance.settings = const Settings(
           persistenceEnabled: false,
         );
+        await PermissionService.load();
       } catch (_) {}
 
       try {
@@ -170,7 +174,7 @@ class _RoyalAppState extends State<RoyalApp> {
       }
 
       try {
-        await AnalyticsService.logEvent(type: "app_started");
+        await AnalyticsService.logEvent("app_started");
       } catch (e) {
         debugPrint("Analytics Error: $e");
       }
@@ -224,24 +228,68 @@ class _RoyalAppState extends State<RoyalApp> {
   Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     final args = settings.arguments;
 
+    Widget secure(Widget page, String permission) {
+      return FutureBuilder(
+        future: PermissionService.load(),
+        builder: (context, snapshot) {
+          if (!PermissionService.isLoaded) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          final role = PermissionService.getRole(
+            FirebaseService.auth.currentUser == null ? {} : {},
+          );
+
+          final allowed = PermissionService.canAccess(
+            role: role,
+            page: permission,
+          );
+
+          if (!allowed) {
+            return const Scaffold(
+              body: Center(
+                child: Text(
+                  "🚫 غير مصرح بالدخول",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+            );
+          }
+
+          return page;
+        },
+      );
+    }
+
     switch (settings.name) {
       case '/':
       case '/home':
-        return MaterialPageRoute(builder: (_) => MainNavigationPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(MainNavigationPage(), "home"),
+        );
 
       case '/login':
         return MaterialPageRoute(builder: (_) => LoginPage());
 
       case '/courses':
-        return MaterialPageRoute(builder: (_) => const CoursesPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(const CoursesPage(), "courses"),
+        );
 
       case '/profile':
-        return MaterialPageRoute(builder: (_) => const StudentProfilePage());
+        return MaterialPageRoute(
+          builder: (_) => secure(const StudentProfilePage(), "profile"),
+        );
 
       case '/payment':
         return MaterialPageRoute(
-          builder: (_) => PaymentPage(
-            courseId: args is Map ? _asString(args['courseId']) : null,
+          builder: (_) => secure(
+            PaymentPage(
+              courseId: args is Map ? _asString(args['courseId']) : null,
+            ),
+            "payments",
           ),
         );
 
@@ -249,28 +297,34 @@ class _RoyalAppState extends State<RoyalApp> {
         if (args is Map) {
           final map = _asMap(args);
           return MaterialPageRoute(
-            builder: (_) => CheckoutPage(
-              phone: _asString(map['phone']),
-              price: int.tryParse(_asString(map['price'])) ?? 0,
-              paid: int.tryParse(_asString(map['paid'])) ?? 0,
-              remaining: int.tryParse(_asString(map['remaining'])) ?? 0,
-              plan: _asString(map['plan']),
-              courseId: _asString(map['courseId']).isEmpty
-                  ? null
-                  : _asString(map['courseId']),
-              imageUrl: _asString(map['imageUrl']),
+            builder: (_) => secure(
+              CheckoutPage(
+                phone: _asString(map['phone']),
+                price: int.tryParse(_asString(map['price'])) ?? 0,
+                paid: int.tryParse(_asString(map['paid'])) ?? 0,
+                remaining: int.tryParse(_asString(map['remaining'])) ?? 0,
+                plan: _asString(map['plan']),
+                courseId: _asString(map['courseId']).isEmpty
+                    ? null
+                    : _asString(map['courseId']),
+                imageUrl: _asString(map['imageUrl']),
+              ),
+              "payments",
             ),
           );
         }
         return MaterialPageRoute(
-          builder: (_) => const CheckoutPage(
-            phone: '',
-            price: 0,
-            paid: 0,
-            remaining: 0,
-            plan: '',
-            courseId: null,
-            imageUrl: '',
+          builder: (_) => secure(
+            const CheckoutPage(
+              phone: '',
+              price: 0,
+              paid: 0,
+              remaining: 0,
+              plan: '',
+              courseId: null,
+              imageUrl: '',
+            ),
+            "payments",
           ),
         );
 
@@ -281,7 +335,10 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['certId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => VerifyCertificatePage(certId: certId),
+          builder: (_) => secure(
+            VerifyCertificatePage(certId: certId),
+            "verify_certificate",
+          ),
         );
 
       case '/verifyWeb':
@@ -291,7 +348,10 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['certId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => VerifyWebPage(certId: certId),
+          builder: (_) => secure(
+            VerifyWebPage(certId: certId),
+            "verify_certificate",
+          ),
         );
 
       case '/quiz':
@@ -301,7 +361,10 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['lessonId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => QuizPage(lessonId: lessonId),
+          builder: (_) => secure(
+            QuizPage(lessonId: lessonId),
+            "courses",
+          ),
         );
 
       case '/addQuiz':
@@ -311,7 +374,10 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['lessonId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => AddQuizPage(lessonId: lessonId),
+          builder: (_) => secure(
+            AddQuizPage(lessonId: lessonId),
+            "courses",
+          ),
         );
 
       case '/quizResults':
@@ -321,63 +387,95 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['lessonId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => QuizResultsPage(lessonId: lessonId),
+          builder: (_) => secure(
+            QuizResultsPage(lessonId: lessonId),
+            "courses",
+          ),
         );
 
       case '/center':
-        return MaterialPageRoute(builder: (_) => CenterManagementPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(CenterManagementPage(), "admin"),
+        );
 
       case '/dashboard':
-        return MaterialPageRoute(builder: (_) => DashboardPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(DashboardPage(), "admin"),
+        );
 
       case '/analytics':
-        return MaterialPageRoute(builder: (_) => AnalyticsDashboardPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(AnalyticsDashboardPage(), "analytics"),
+        );
 
       case '/attendanceTake':
-        return MaterialPageRoute(builder: (_) => AttendanceTakePage());
+        return MaterialPageRoute(
+          builder: (_) => secure(AttendanceTakePage(), "attendance"),
+        );
 
       case '/attendanceReport':
-        return MaterialPageRoute(builder: (_) => AttendanceReportPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(AttendanceReportPage(), "attendance"),
+        );
 
       case '/subjects':
-        return MaterialPageRoute(builder: (_) => SubjectsPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(SubjectsPage(), "admin"),
+        );
 
       case '/subjectSessions':
         if (args is Map<String, dynamic>) {
           return MaterialPageRoute(
-            builder: (_) => SubjectSessionsPage(
-              subjectId: _asString(args['subjectId']),
-              subjectName: _asString(args['subjectName']),
+            builder: (_) => secure(
+              SubjectSessionsPage(
+                subjectId: _asString(args['subjectId']),
+                subjectName: _asString(args['subjectName']),
+              ),
+              "admin",
             ),
           );
         }
         if (args is Map) {
           final map = _asMap(args);
           return MaterialPageRoute(
-            builder: (_) => SubjectSessionsPage(
-              subjectId: _asString(map['subjectId']),
-              subjectName: _asString(map['subjectName']),
+            builder: (_) => secure(
+              SubjectSessionsPage(
+                subjectId: _asString(map['subjectId']),
+                subjectName: _asString(map['subjectName']),
+              ),
+              "admin",
             ),
           );
         }
         return MaterialPageRoute(
-          builder: (_) => CenterManagementPage(),
+          builder: (_) => secure(CenterManagementPage(), "admin"),
         );
 
       case '/adminNavControl':
-        return MaterialPageRoute(builder: (_) => AdminNavigationControlPage());
+        return MaterialPageRoute(
+          builder: (_) =>
+              secure(AdminNavigationControlPage(), "admin_navigation"),
+        );
 
       case '/coursesAdmin':
-        return MaterialPageRoute(builder: (_) => CoursesAdminPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(CoursesAdminPage(), "courses"),
+        );
 
       case '/studentsManagement':
-        return MaterialPageRoute(builder: (_) => StudentsManagementPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(StudentsManagementPage(), "students"),
+        );
 
       case '/studentsCrm':
-        return MaterialPageRoute(builder: (_) => const StudentsCRMPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(const StudentsCRMPage(), "students_crm"),
+        );
 
       case '/studentFinancial':
-        return MaterialPageRoute(builder: (_) => StudentFinancialPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(StudentFinancialPage(), "finance"),
+        );
 
       case '/studentFinancialDetails':
         final userId = args is String
@@ -386,11 +484,16 @@ class _RoyalAppState extends State<RoyalApp> {
                 ? _asString(_asMap(args)['userId'])
                 : "";
         return MaterialPageRoute(
-          builder: (_) => StudentFinancialDetailsPage(userId: userId),
+          builder: (_) => secure(
+            StudentFinancialDetailsPage(userId: userId),
+            "finance",
+          ),
         );
 
       case '/topStudents':
-        return MaterialPageRoute(builder: (_) => TopStudentsPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(TopStudentsPage(), "analytics"),
+        );
 
       case '/comments':
         String lessonId = "";
@@ -402,15 +505,31 @@ class _RoyalAppState extends State<RoyalApp> {
           lessonId = _asString(_asMap(args)['lessonId']);
         }
         return MaterialPageRoute(
-          builder: (_) => CommentsPage(lessonId: lessonId),
+          builder: (_) => secure(
+            CommentsPage(lessonId: lessonId),
+            "courses",
+          ),
         );
 
       case '/financeReports':
-        return MaterialPageRoute(builder: (_) => FinanceReportsPage());
+        return MaterialPageRoute(
+          builder: (_) => secure(FinanceReportsPage(), "finance"),
+        );
 
       case '/instructorRequests':
         return MaterialPageRoute(
-          builder: (_) => InstructorRequestsAdminPage(),
+          builder: (_) => secure(
+            InstructorRequestsAdminPage(),
+            "instructor_requests",
+          ),
+        );
+
+      case '/permissions':
+        return MaterialPageRoute(
+          builder: (_) => secure(
+            PermissionsAdminPage(),
+            "permissions",
+          ),
         );
 
       default:

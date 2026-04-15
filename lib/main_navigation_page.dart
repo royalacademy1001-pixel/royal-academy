@@ -1,9 +1,9 @@
-// 🔥 IMPORTS FIRST (IMPORTANT)
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// 🔥 Pages
 import 'home/home_page.dart';
 import 'features/courses/pages/courses_page.dart';
 import 'student_profile_page.dart';
@@ -21,19 +21,18 @@ import 'admin/pages/students_management_page.dart';
 import 'admin/pages/news_admin_page.dart';
 import 'admin/pages/students_crm_page.dart';
 import 'admin/pages/attendance_report_page.dart';
+import 'admin/pages/permissions_admin_page.dart';
 import 'features/center_management/pages/center_management_page.dart';
 
-// 🔥 Instructor
 import 'instructor/instructor_dashboard_page.dart';
 
-// 🔥 NEW
 import 'pages/student_dashboard_page.dart';
 import 'pages/qr_attendance_page.dart';
 
-// 🔥 Core
 import 'core/colors.dart';
 import 'core/firebase_service.dart';
 import 'core/constants.dart';
+import 'core/permission_service.dart';
 
 class NavGuard {
   static bool locked = false;
@@ -69,11 +68,14 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   bool isInstructor = false;
   bool isVIP = false;
 
+  String currentRole = "guest";
+
   bool _isLoadingUser = true;
   bool _deepLinkHandled = false;
   bool _redirectedToLogin = false;
 
-  Stream<QuerySnapshot>? _notificationStream;
+  Stream<QuerySnapshot<Map<String, dynamic>>>? _notificationStream;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _navSub;
 
   List<Map<String, dynamic>> dynamicNav = [];
 
@@ -161,6 +163,14 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       "order": 10,
       "enabled": true,
     },
+    {
+      "id": "admin_permissions",
+      "title": "الصلاحيات",
+      "icon": "settings",
+      "roles": ["admin"],
+      "order": 11,
+      "enabled": true,
+    },
   ];
 
   @override
@@ -181,13 +191,20 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     _initAll();
   }
 
+  List<Map<String, dynamic>> _cloneItems(List<Map<String, dynamic>> source) {
+    return source.map((e) => Map<String, dynamic>.from(e)).toList();
+  }
+
   Future<void> _initAll() async {
     try {
+      await PermissionService.load();
+
       final data = await FirebaseService.getUserData(refresh: true);
 
       isAdmin = data['isAdmin'] == true;
       isInstructor = data['instructorApproved'] == true;
       isVIP = data['isVIP'] == true;
+      currentRole = PermissionService.getRole(data);
     } catch (e) {
       debugPrint("User Load Error: $e");
     }
@@ -204,33 +221,50 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     }
 
     try {
-      FirebaseService.firestore
-          .collection("app_settings")
-          .doc("navigation")
-          .snapshots()
-          .listen((doc) {
+      final navRef =
+          FirebaseService.firestore.collection("app_settings").doc("navigation");
+
+      _navSub = navRef.snapshots().listen((doc) {
         try {
           final data = doc.data();
 
           if (data == null || data['items'] == null) {
-            dynamicNav = fallbackNav;
-            if (mounted) setState(() {});
+            dynamicNav = _cloneItems(fallbackNav);
+            if (mounted) {
+              setState(() {
+                if (currentIndex >= dynamicNav.length) {
+                  currentIndex = 0;
+                }
+              });
+            }
             return;
           }
 
           List items = data['items'];
 
           if (items.isEmpty) {
-            dynamicNav = fallbackNav;
-            if (mounted) setState(() {});
+            dynamicNav = _cloneItems(fallbackNav);
+            if (mounted) {
+              setState(() {
+                if (currentIndex >= dynamicNav.length) {
+                  currentIndex = 0;
+                }
+              });
+            }
             return;
           }
 
           items = items.where((e) => (e['enabled'] ?? true) == true).toList();
 
           if (items.isEmpty) {
-            dynamicNav = fallbackNav;
-            if (mounted) setState(() {});
+            dynamicNav = _cloneItems(fallbackNav);
+            if (mounted) {
+              setState(() {
+                if (currentIndex >= dynamicNav.length) {
+                  currentIndex = 0;
+                }
+              });
+            }
             return;
           }
 
@@ -238,16 +272,26 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
           dynamicNav = items.cast<Map<String, dynamic>>();
 
-          if (mounted) setState(() {});
+          if (mounted) {
+            setState(() {
+              if (currentIndex >= _activeNav().length) {
+                currentIndex = 0;
+              }
+            });
+          }
         } catch (e) {
-          debugPrint("Nav Stream Error: $e");
-          dynamicNav = fallbackNav;
-          if (mounted) setState(() {});
+          dynamicNav = _cloneItems(fallbackNav);
+          if (mounted) {
+            setState(() {
+              if (currentIndex >= dynamicNav.length) {
+                currentIndex = 0;
+              }
+            });
+          }
         }
       });
     } catch (e) {
-      debugPrint("Nav Listen Error: $e");
-      dynamicNav = fallbackNav;
+      dynamicNav = _cloneItems(fallbackNav);
     }
 
     if (mounted) {
@@ -282,9 +326,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           );
         }
       }
-    } catch (e) {
-      debugPrint("DeepLink Error: $e");
-    }
+    } catch (_) {}
   }
 
   void _onTap(int index) {
@@ -299,50 +341,65 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     });
   }
 
+  String _permissionKeyForNavId(String id) {
+    if (id == "admin_permissions") return "permissions";
+    if (id == "admin_students") return "students";
+    if (id == "admin_crm") return "students_crm";
+    if (id == "admin_center") return "admin";
+    if (id == "admin_attendance") return "attendance";
+    if (id == "payment") return "payments";
+    return id.trim().toLowerCase();
+  }
+
+  Widget _guard(String page, Widget child) {
+    if (!PermissionService.isLoaded) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final allowed = PermissionService.canAccess(
+      role: currentRole,
+      page: page,
+    );
+
+    if (!allowed) {
+      return const Scaffold(
+        body: Center(
+          child: Text("🚫 غير مسموح بالدخول"),
+        ),
+      );
+    }
+
+    return child;
+  }
+
   Widget _getPage(String id) {
     switch (id) {
       case "home":
-        return _notificationWrapper(const HomePage());
+        return _guard("home", const HomePage());
       case "student_dashboard":
-        return StudentDashboardPage();
+        return _guard("home", const StudentDashboardPage());
       case "courses":
-        return const CoursesPage();
+        return _guard("courses", const CoursesPage());
       case "qr_attendance":
-        return QRAttendancePage();
+        return _guard("qr", const QRAttendancePage());
       case "payment":
-        return const PaymentPage();
+        return _guard("payments", const PaymentPage());
       case "profile":
-        return const StudentProfilePage();
-      case "admin_crm":
-        return const StudentsCRMPage();
+        return _guard("profile", const StudentProfilePage());
       case "admin_center":
-        return const CenterManagementPage();
-      case "admin_attendance":
-        return const AttendanceReportPage();
-      case "instructor":
-        return const InstructorDashboardPage();
-      case "admin_payments":
-        return const PaymentsAdminPage();
-      case "admin_requests":
-        return const InstructorRequestsAdminPage();
-      case "admin_analytics":
-        return const analytics.AnalyticsDashboardPage();
-      case "admin_users":
-        return const UsersPage();
-      case "admin_nav_control":
-        return const AdminNavigationControlPage();
-      case "admin_courses":
-        return const CoursesAdminPage();
-      case "admin_categories":
-        return const CategoriesAdminPage();
-      case "admin_notifications":
-        return const NotificationsAdminPage();
+        return _guard("admin", CenterManagementPage());
       case "admin_students":
-        return const StudentsManagementPage();
-      case "admin_news":
-        return const NewsAdminPage();
+        return _guard("students", const StudentsManagementPage());
+      case "admin_attendance":
+        return _guard("attendance", const AttendanceReportPage());
+      case "admin_crm":
+        return _guard("students_crm", const StudentsCRMPage());
+      case "admin_permissions":
+        return _guard("permissions", const PermissionsAdminPage());
       default:
-        return const HomePage();
+        return _guard("home", const HomePage());
     }
   }
 
@@ -350,46 +407,32 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     switch (name) {
       case "home":
         return Icons.home;
-      case "courses":
-        return Icons.school;
-      case "payment":
-        return Icons.payment;
-      case "profile":
-        return Icons.person;
-      case "dashboard":
-        return Icons.dashboard;
-      case "qr":
-        return Icons.qr_code_scanner;
-      case "admin":
-        return Icons.admin_panel_settings;
-      case "analytics":
-        return Icons.analytics;
-      case "users":
-        return Icons.group;
-      case "instructor":
-        return Icons.workspace_premium;
-      case "settings":
-        return Icons.settings;
-      case "categories":
-        return Icons.category;
-      case "notifications":
-        return Icons.notifications;
-      case "news":
-        return Icons.campaign;
-      case "attendance":
-        return Icons.fact_check;
       default:
         return Icons.circle;
     }
   }
 
-  bool _allowItem(List roles) {
-    if (roles.contains("all")) return true;
-    if (roles.contains("admin") && isAdmin) return true;
-    if (roles.contains("instructor") && isInstructor) return true;
-    if (roles.contains("vip") && isVIP) return true;
-    if (roles.contains("user") && !isAdmin) return true;
-    return false;
+  bool _allowItem(Map<String, dynamic> item, String pageId) {
+    if (!PermissionService.isLoaded) return false;
+    if (item['enabled'] == false) return false;
+
+    final rolesRaw = item['roles'];
+    List roles = [];
+
+    if (rolesRaw is List) {
+      roles = rolesRaw.map((e) => e.toString().toLowerCase()).toList();
+    }
+
+    final allowByRole =
+        roles.contains("all") ||
+        (roles.contains("admin") && isAdmin);
+
+    final hasPermission = PermissionService.canAccess(
+      role: currentRole,
+      page: _permissionKeyForNavId(pageId),
+    );
+
+    return allowByRole && hasPermission;
   }
 
   List<Map<String, dynamic>> _activeNav() {
@@ -407,14 +450,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
       if (id == "home") continue;
 
-      if (_allowItem(item['roles'] ?? [])) {
-        result.add(item);
-      }
-    }
-
-    if (result.length == 1) {
-      for (final item in fallbackNav) {
-        if ((item['id'] ?? "").toString() == "home") continue;
+      if (_allowItem(item, id)) {
         result.add(item);
       }
     }
@@ -430,131 +466,56 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   Widget _notificationWrapper(Widget child) {
     if (_notificationStream == null) return child;
 
-    return Stack(
-      children: [
-        child,
-        Positioned(
-          top: 10,
-          right: 10,
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _notificationStream,
-            builder: (context, snapshot) {
-              final count = snapshot.data?.docs.length ?? 0;
-
-              if (count == 0) return const SizedBox();
-
-              return Container(
-                padding: const EdgeInsets.all(6),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: Text(
-                  count > 9 ? "9+" : count.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
+    return child;
   }
 
   Widget _buildCustomNav(List<Map<String, dynamic>> items) {
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final width = MediaQuery.of(context).size.width;
-    final compact = items.length <= 4;
-    final itemWidth = compact ? (width / items.length) : 92.0;
 
-    return FadeTransition(
-      opacity: _fadeAnim,
-      child: Container(
-        height: 90,
-        decoration: BoxDecoration(
-          color: AppColors.black,
-          border: Border(
-            top: BorderSide(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-          ),
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final selected = index == currentIndex;
+    return Container(
+      height: 80,
+      color: AppColors.black,
+      child: Row(
+        children: items.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
 
-                return GestureDetector(
-                  onTap: () => _onTap(index),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: itemWidth,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppColors.gold.withValues(alpha: 0.14)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selected ? AppColors.gold : Colors.transparent,
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedScale(
-                          duration: const Duration(milliseconds: 200),
-                          scale: selected ? 1.2 : 1,
-                          child: Icon(
-                            _getIcon((item['icon'] ?? '').toString()),
-                            color: selected ? AppColors.gold : Colors.white70,
-                            size: selected ? 26 : 24,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          (item['title'] ?? '').toString(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: selected ? AppColors.gold : Colors.white70,
-                            fontSize: 12,
-                            fontWeight:
-                                selected ? FontWeight.bold : FontWeight.w600,
-                            height: 1.0,
-                          ),
-                        ),
-                      ],
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => _onTap(index),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _getIcon((item['icon'] ?? "").toString()),
+                    color: currentIndex == index
+                        ? AppColors.gold
+                        : Colors.white,
+                  ),
+                  Text(
+                    (item['title'] ?? "").toString(),
+                    style: TextStyle(
+                      color: currentIndex == index
+                          ? AppColors.gold
+                          : Colors.white,
                     ),
                   ),
-                );
-              }).toList(),
+                ],
+              ),
             ),
-          ),
-        ),
+          );
+        }).toList(),
       ),
     );
   }
 
   @override
   void dispose() {
+    _navSub?.cancel();
     _navAnim.dispose();
     super.dispose();
   }
@@ -562,14 +523,8 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   @override
   Widget build(BuildContext context) {
     final user = FirebaseService.auth.currentUser;
+
     if (user == null) {
-      if (!_redirectedToLogin) {
-        _redirectedToLogin = true;
-        Future.microtask(() {
-          if (!mounted) return;
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
-        });
-      }
       return const SizedBox();
     }
 
@@ -581,32 +536,12 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
     final pages = _pages();
 
-    if (pages.isEmpty) {
-      return const Scaffold(
-        body: Center(
-          child: Text("⚠️ لا توجد صفحات متاحة"),
-        ),
-      );
-    }
-
-    if (currentIndex >= pages.length) {
-      currentIndex = 0;
-    }
-
-    final navItems = _activeNav();
-
     return Scaffold(
-      body: SafeArea(
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 250),
-          child: IndexedStack(
-            key: ValueKey(currentIndex),
-            index: currentIndex,
-            children: pages,
-          ),
-        ),
+      body: IndexedStack(
+        index: currentIndex,
+        children: pages,
       ),
-      bottomNavigationBar: _buildCustomNav(navItems),
+      bottomNavigationBar: _buildCustomNav(_activeNav()),
     );
   }
 }

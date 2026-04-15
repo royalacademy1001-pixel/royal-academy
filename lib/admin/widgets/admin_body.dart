@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/colors.dart';
+import '../../core/permission_service.dart';
 import '../../shared/widgets/loading_widget.dart';
 import '../widgets/admin_stats.dart';
 import '../widgets/admin_buttons.dart';
@@ -20,6 +21,7 @@ import '../pages/students_crm_page.dart';
 import '../pages/admin_navigation_control_page.dart';
 import '../pages/analytics_dashboard_page.dart' as analytics;
 import '../admin_qr_generator_page.dart';
+import '../pages/permissions_admin_page.dart';
 
 class AdminBody extends StatelessWidget {
   final bool checkingAdmin;
@@ -40,24 +42,19 @@ class AdminBody extends StatelessWidget {
     required this.onAdd,
   });
 
+  bool _canShowSection(String page) {
+    return PermissionService.canAccess(
+      role: "admin",
+      page: page,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (checkingAdmin) {
       return const Scaffold(
         backgroundColor: AppColors.background,
         body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (!isAdmin) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(
-          child: Text(
-            "🚫 غير مصرح بالدخول لمسؤولين فقط",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ),
       );
     }
 
@@ -94,6 +91,9 @@ class AdminBody extends StatelessWidget {
             }
 
             final data = snapshot.data ?? {};
+            final showPricing = _canShowSection("pricing");
+            final showNavigation = _canShowSection("admin_navigation");
+            final showPermissions = _canShowSection("permissions");
 
             return RefreshIndicator(
               color: AppColors.gold,
@@ -111,81 +111,158 @@ class AdminBody extends StatelessWidget {
                         child: AdminStats(data: data),
                       ),
                       const SizedBox(height: 30),
-                      AdminSection(
-                        title: "⚙ إعدادات الاشتراك",
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.black.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          child: ListTile(
-                            leading: const Icon(Icons.monetization_on, color: AppColors.gold),
-                            title: const Text(
-                              "💰 تعديل الأسعار",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      if (showPricing)
+                        AdminSection(
+                          title: "⚙ إعدادات الاشتراك",
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(25),
                             ),
-                            subtitle: const Text(
-                              "تعديل الاشتراك الشهري والسنوي",
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                            child: ListTile(
+                              leading: const Icon(Icons.monetization_on, color: AppColors.gold),
+                              title: const Text(
+                                "💰 تعديل الأسعار",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: const Text(
+                                "تعديل الاشتراك الشهري والسنوي",
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const PricingPage(),
+                                  ),
+                                );
+                              },
                             ),
-                            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const PricingPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      AdminSection(
-                        title: "⚙ التحكم في البار",
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.black.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(25),
-                          ),
-                          child: ListTile(
-                            leading: const Icon(Icons.tune, color: AppColors.gold),
-                            title: const Text(
-                              "🎛 تعديل البار",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: const Text(
-                              "إظهار / إخفاء / ترتيب الأيقونات",
-                              style: TextStyle(color: Colors.grey, fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const AdminNavigationControlPage(),
-                                ),
-                              );
-                            },
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
+                      if (showPricing) const SizedBox(height: 30),
+                      if (showNavigation)
+                        AdminSection(
+                          title: "⚙ التحكم في البار",
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(Icons.tune, color: AppColors.gold),
+                              title: const Text(
+                                "🎛 تعديل البار",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: const Text(
+                                "إظهار / إخفاء / ترتيب الأيقونات",
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const AdminNavigationControlPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      if (showNavigation) const SizedBox(height: 30),
+                      if (showPermissions)
+                        AdminSection(
+                          title: "⚙ الصلاحيات",
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(Icons.security, color: AppColors.gold),
+                              title: const Text(
+                                "🔐 إدارة الصلاحيات",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: const Text(
+                                "التحكم في إظهار الصفحات لكل رول",
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const PermissionsAdminPage(),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      if (showPermissions) const SizedBox(height: 30),
                       AdminSection(
                         title: "الأدوات الإدارية",
                         child: AdminButtons(
                           pages: [
-                            {"title": "📚 إدارة الكورسات", "page": const CoursesAdminPage()},
-                            {"title": "📂 إدارة التصنيفات", "page": const CategoriesAdminPage()},
-                            {"title": "🔔 الإشعارات", "page": const NotificationsAdminPage()},
-                            {"title": "💰 المدفوعات", "page": const PaymentsAdminPage()},
-                            {"title": "📷 توليد QR الحضور", "page": const AdminQRGeneratorPage()},
-                            {"title": "👥 المستخدمين", "page": const UsersPage()},
-                            {"title": "🎓 إدارة الطلاب", "page": const StudentsManagementPage()},
-                            {"title": "👨‍🏫 طلبات المدرسين", "page": const InstructorRequestsAdminPage()},
-                            {"title": "📊 Analytics", "page": analytics.AnalyticsDashboardPage()},
-                            {"title": "📰 إدارة الأخبار", "page": NewsAdminPage()},
-                            {"title": "📊 CRM الطلاب", "page": const StudentsCRMPage()},
+                            {
+                              "title": "📚 إدارة الكورسات",
+                              "page": const CoursesAdminPage(),
+                              "permissionKey": "courses",
+                            },
+                            {
+                              "title": "📂 إدارة التصنيفات",
+                              "page": const CategoriesAdminPage(),
+                              "permissionKey": "categories",
+                            },
+                            {
+                              "title": "🔔 الإشعارات",
+                              "page": const NotificationsAdminPage(),
+                              "permissionKey": "notifications",
+                            },
+                            {
+                              "title": "💰 المدفوعات",
+                              "page": const PaymentsAdminPage(),
+                              "permissionKey": "payments",
+                            },
+                            {
+                              "title": "📷 توليد QR الحضور",
+                              "page": const AdminQRGeneratorPage(),
+                              "permissionKey": "qr",
+                            },
+                            {
+                              "title": "👥 المستخدمين",
+                              "page": const UsersPage(),
+                              "permissionKey": "users",
+                            },
+                            {
+                              "title": "🎓 إدارة الطلاب",
+                              "page": const StudentsManagementPage(),
+                              "permissionKey": "students",
+                            },
+                            {
+                              "title": "👨‍🏫 طلبات المدرسين",
+                              "page": const InstructorRequestsAdminPage(),
+                              "permissionKey": "instructor_requests",
+                            },
+                            {
+                              "title": "📊 Analytics",
+                              "page": analytics.AnalyticsDashboardPage(),
+                              "permissionKey": "analytics",
+                            },
+                            {
+                              "title": "📰 إدارة الأخبار",
+                              "page": NewsAdminPage(),
+                              "permissionKey": "news",
+                            },
+                            {
+                              "title": "📊 CRM الطلاب",
+                              "page": const StudentsCRMPage(),
+                              "permissionKey": "students_crm",
+                            },
                           ],
                         ),
                       ),

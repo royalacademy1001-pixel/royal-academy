@@ -31,6 +31,7 @@ class _AdminPageState extends State<AdminPage> {
     {"id": "admin_analytics", "title": "Analytics", "icon": "analytics"},
     {"id": "admin_news", "title": "إدارة الأخبار", "icon": "news"},
     {"id": "admin_crm", "title": "CRM", "icon": "analytics"},
+    {"id": "admin_permissions", "title": "إدارة الصلاحيات", "icon": "settings"},
   ];
 
   @override

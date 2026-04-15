@@ -53,6 +53,13 @@ class AdminController {
     }
   }
 
+  void handleNavigation(BuildContext context, String pageId) {
+    if (pageId == "admin_permissions") {
+      Navigator.pushNamed(context, '/permissions');
+      return;
+    }
+  }
+
   Future<void> refresh(VoidCallback updateUI) async {
     if (loadingRefresh) return;
 

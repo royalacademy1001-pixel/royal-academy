@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:royal_academy/core/firebase_service.dart';
 import 'package:royal_academy/core/constants.dart';
 import 'package:royal_academy/core/colors.dart';
+import 'package:royal_academy/core/permission_service.dart';
 import 'package:royal_academy/core/analytics_service.dart';
 
 import 'package:royal_academy/features/courses/widgets/course_progress.dart';
@@ -42,6 +43,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
   bool hasAccess = false;
   bool loading = true;
+  bool _canViewPage = true;
 
   int views = 0;
   int purchases = 0;
@@ -51,9 +53,15 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
   String resolvedImage = "";
 
+  DateTime? _enterTime;
+
   @override
   void initState() {
     super.initState();
+
+    _enterTime = DateTime.now();
+
+    AnalyticsService.logScreen("course_details");
 
     _tabController = TabController(length: 3, vsync: this);
 
@@ -69,6 +77,12 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
       setState(() {
         scrollOffset = _scrollController.offset;
       });
+
+      if (_scrollController.offset > 400) {
+        AnalyticsService.logEvent("course_scroll_deep", params: {
+          "courseId": widget.courseId,
+        });
+      }
     });
 
     loadAllData();
@@ -76,6 +90,16 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
   @override
   void dispose() {
+    if (_enterTime != null) {
+      final seconds =
+          DateTime.now().difference(_enterTime!).inSeconds;
+
+      AnalyticsService.logEvent("course_time_spent", params: {
+        "courseId": widget.courseId,
+        "seconds": seconds,
+      });
+    }
+
     _tabController.dispose();
     _anim.dispose();
     _scrollController.dispose();
@@ -86,6 +110,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
     final user = FirebaseService.auth.currentUser;
 
     try {
+      await PermissionService.load();
+
       final results = await Future.wait([
         FirebaseService.firestore
             .collection(AppConstants.courses)
@@ -105,6 +131,11 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
       ]);
 
       if (results.isEmpty) {
+        hasAccess = false;
+        _canViewPage = PermissionService.canAccess(
+          role: PermissionService.getRole(userData),
+          page: "courses",
+        );
         loading = false;
         if (mounted) setState(() {});
         return;
@@ -173,11 +204,24 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
       purchases =
           await AnalyticsService.getCoursePurchases(widget.courseId);
 
+      AnalyticsService.logEvent("course_opened", params: {
+        "courseId": widget.courseId,
+        "title": widget.title,
+      });
+
       hasAccess = _calculateAccess(user);
+      _canViewPage = PermissionService.canAccess(
+        role: PermissionService.getRole(userData),
+        page: "courses",
+      );
 
       loading = false;
       if (mounted) setState(() {});
     } catch (e) {
+      _canViewPage = PermissionService.canAccess(
+        role: PermissionService.getRole(userData),
+        page: "courses",
+      );
       loading = false;
       if (mounted) setState(() {});
     }
@@ -196,6 +240,39 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
         isVIP ||
         subscribed ||
         unlocked.contains(widget.courseId);
+  }
+
+  Widget _accessDenied() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: AppColors.black.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline, color: AppColors.gold, size: 50),
+              SizedBox(height: 16),
+              Text(
+                "غير مصرح بالدخول لهذه الصفحة",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget header() {
@@ -311,6 +388,10 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
   Widget build(BuildContext context) {
     if (loading) {
       return const Scaffold(body: SkeletonLoader());
+    }
+
+    if (!_canViewPage) {
+      return _accessDenied();
     }
 
     final video =

@@ -4,9 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:royal_academy/core/firebase_service.dart';
 import 'package:royal_academy/core/constants.dart';
 import 'package:royal_academy/core/colors.dart';
-
+import 'package:royal_academy/core/permission_service.dart';
+import 'package:royal_academy/shared/services/analytics_service.dart';
 import 'package:royal_academy/payment/payment_page.dart';
-import '/course_details_page.dart';
+import 'package:royal_academy/course_details_page.dart';
+
 
 import '../logic/nav_guard.dart';
 import '../logic/course_helpers.dart';
@@ -23,7 +25,6 @@ class CoursesPage extends StatefulWidget {
 }
 
 class _CoursesPageState extends State<CoursesPage> {
-
   String search = "";
   String selected = "All";
 
@@ -34,11 +35,33 @@ class _CoursesPageState extends State<CoursesPage> {
   Map<String, dynamic>? userData;
   Map<String, String> categories = {"All": "الكل"};
 
+  bool _canViewPage = true;
+
   @override
   void initState() {
     super.initState();
+    AnalyticsService.logScreen("courses");
     loadData();
     loadCategories();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    try {
+      await PermissionService.load();
+    } catch (_) {}
+
+    if (!mounted) return;
+    _syncPageAccess();
+  }
+
+  void _syncPageAccess() {
+    final role = PermissionService.getRole(userData);
+    _canViewPage = PermissionService.canAccess(role: role, page: "courses");
+
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> loadData() async {
@@ -57,6 +80,7 @@ class _CoursesPageState extends State<CoursesPage> {
 
     if (!mounted) return;
     setState(() {});
+    _syncPageAccess();
   }
 
   Future<void> loadCategories() async {
@@ -77,12 +101,18 @@ class _CoursesPageState extends State<CoursesPage> {
   }
 
   bool hasAccess(String id) {
-    bool isAdmin = userData?['isAdmin'] == true;
-    bool isVIP = userData?['isVIP'] == true;
-    bool subscribed = userData?['subscribed'] == true;
+    final role = PermissionService.getRole(userData);
 
-    List unlocked = userData?['unlockedCourses'] ?? [];
-    List enrolled = userData?['enrolledCourses'] ?? [];
+    if (!PermissionService.canAccess(role: role, page: "courses")) {
+      return false;
+    }
+
+    final bool isAdmin = userData?['isAdmin'] == true;
+    final bool isVIP = userData?['isVIP'] == true;
+    final bool subscribed = userData?['subscribed'] == true;
+
+    final List unlocked = userData?['unlockedCourses'] ?? [];
+    final List enrolled = userData?['enrolledCourses'] ?? [];
 
     return isAdmin ||
         isVIP ||
@@ -91,8 +121,34 @@ class _CoursesPageState extends State<CoursesPage> {
         enrolled.contains(id);
   }
 
+  Widget _deniedView() {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        elevation: 0,
+        centerTitle: true,
+        title: const Text(
+          "📚 Courses",
+          style: TextStyle(
+            color: AppColors.gold,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: const Center(
+        child: Text(
+          "🚫 غير مصرح بالدخول لهذه الصفحة",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (!_canViewPage) {
+      return _deniedView();
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -105,38 +161,44 @@ class _CoursesPageState extends State<CoursesPage> {
               fontWeight: FontWeight.bold,
             )),
       ),
-
       body: SafeArea(
         child: Column(
           children: [
-
             const SizedBox(height: 10),
-
             SearchBarWidget(
-              onChanged: (v) => setState(() => search = v),
+              onChanged: (v) {
+                AnalyticsService.logEvent("courses_search", params: {"q": v});
+                setState(() => search = v);
+              },
             ),
-
             const SizedBox(height: 10),
-
             CategoryFilter(
               categories: categories,
               selected: selected,
-              onSelect: (v) => setState(() => selected = v),
+              onSelect: (v) {
+                AnalyticsService.logEvent("courses_category", params: {"cat": v});
+                setState(() => selected = v);
+              },
             ),
-
             const SizedBox(height: 10),
-
             AdvancedFilter(
               level: selectedLevel,
               price: selectedPrice,
               sort: selectedSort,
-              onLevel: (v) => setState(() => selectedLevel = v),
-              onPrice: (v) => setState(() => selectedPrice = v),
-              onSort: (v) => setState(() => selectedSort = v),
+              onLevel: (v) {
+                AnalyticsService.logEvent("courses_level", params: {"level": v});
+                setState(() => selectedLevel = v);
+              },
+              onPrice: (v) {
+                AnalyticsService.logEvent("courses_price", params: {"price": v});
+                setState(() => selectedPrice = v);
+              },
+              onSort: (v) {
+                AnalyticsService.logEvent("courses_sort", params: {"sort": v});
+                setState(() => selectedSort = v);
+              },
             ),
-
             const SizedBox(height: 10),
-
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseService.firestore
@@ -144,7 +206,6 @@ class _CoursesPageState extends State<CoursesPage> {
                     .orderBy("createdAt", descending: true)
                     .snapshots(),
                 builder: (context, snap) {
-
                   if (snap.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -180,7 +241,7 @@ class _CoursesPageState extends State<CoursesPage> {
 
                     final visible = isVisibleCourse(
                       data,
-                      userData?['isAdmin'] == true,
+                      PermissionService.getRole(userData) == "admin",
                     );
 
                     return matchesSearch &&
@@ -223,15 +284,19 @@ class _CoursesPageState extends State<CoursesPage> {
                       courses: courses,
                       hasAccess: hasAccess,
                       onTap: (c) {
-
                         final data = (c.data() as Map<String, dynamic>? ?? {});
 
                         if (data.isEmpty) return;
 
-                        NavGuard.go(() {
+                        AnalyticsService.logCourseView(
+                          c.id,
+                          title: (data['title'] ?? "").toString(),
+                        );
 
+                        NavGuard.go(() {
                           if (!hasAccess(c.id) &&
                               data['isFree'] != true) {
+                            AnalyticsService.logEvent("course_paywall");
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const PaymentPage()),

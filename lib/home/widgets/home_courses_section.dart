@@ -16,6 +16,10 @@ class HomeCoursesSection extends StatefulWidget {
 class _HomeCoursesSectionState extends State<HomeCoursesSection> {
   final ScrollController _scrollController = ScrollController();
 
+  static List<QueryDocumentSnapshot<Map<String, dynamic>>> _cachedCourses = [];
+  static DateTime? _lastFetchTime;
+  static bool _preloadedGlobal = false;
+
   int focusedIndex = 0;
 
   bool _didPreload = false;
@@ -143,18 +147,28 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
           final cardHeight = isWide ? 300.0 : 278.0;
           _itemExtent = cardWidth + 12;
 
+          final now = DateTime.now();
+          final useCache = _cachedCourses.isNotEmpty &&
+              _lastFetchTime != null &&
+              now.difference(_lastFetchTime!).inSeconds < 300;
+
           return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-            stream: FirebaseService.firestore
-                .collection(AppConstants.courses)
-                .orderBy("createdAt", descending: true)
-                .snapshots(),
+            stream: useCache
+                ? null
+                : FirebaseService.firestore
+                    .collection(AppConstants.courses)
+                    .orderBy("createdAt", descending: true)
+                    .snapshots(),
             builder: (context, snapshot) {
               final isLoading =
+                  !useCache &&
                   snapshot.connectionState == ConnectionState.waiting;
 
-              final rawDocs = snapshot.hasData && snapshot.data != null
-                  ? snapshot.data!.docs
-                  : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+              final rawDocs = useCache
+                  ? _cachedCourses
+                  : (snapshot.hasData && snapshot.data != null
+                      ? snapshot.data!.docs
+                      : <QueryDocumentSnapshot<Map<String, dynamic>>>[]);
 
               final courses = rawDocs.where((doc) {
                 final data = doc.data();
@@ -162,8 +176,13 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
                 return _isVisibleCourse(data);
               }).toList().cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
 
-              if (courses.isNotEmpty && !_didPreload) {
-                _didPreload = true;
+              if (!useCache && courses.isNotEmpty) {
+                _cachedCourses = courses;
+                _lastFetchTime = DateTime.now();
+              }
+
+              if (courses.isNotEmpty && !_preloadedGlobal) {
+                _preloadedGlobal = true;
                 _preloadImages(courses);
               }
 
@@ -204,6 +223,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
                                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                                     physics: const BouncingScrollPhysics(),
                                     itemCount: courses.length,
+                                    cacheExtent: 2000,
                                     itemBuilder: (context, index) {
                                       final course = courses[index];
                                       final data = course.data();

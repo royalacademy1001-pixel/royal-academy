@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -76,6 +77,8 @@ class FirebaseService {
   static final Map<String, Future<String>> _imageFutureCache = {};
   static final Map<String, dynamic> _memoryCache = {};
   static final Map<String, DateTime> _memoryCacheTime = {};
+  static final Map<String, ImageProvider> _imageProviderCache = {};
+  static final Map<String, DateTime> _imageProviderTime = {};
 
   static bool canRun(String key, {int seconds = 10}) {
     final now = DateTime.now();
@@ -97,11 +100,15 @@ class FirebaseService {
     if (clean == null || clean.isEmpty) {
       _imageCache.clear();
       _imageFutureCache.clear();
+      _imageProviderCache.clear();
+      _imageProviderTime.clear();
       return;
     }
 
     _imageCache.removeWhere((key, _) => key.startsWith("$clean|"));
     _imageFutureCache.removeWhere((key, _) => key.startsWith("$clean|"));
+    _imageProviderCache.removeWhere((key, _) => key.startsWith(clean));
+    _imageProviderTime.removeWhere((key, _) => key.startsWith(clean));
   }
 
   static void clearMemoryCache({String? key}) {
@@ -213,7 +220,6 @@ class FirebaseService {
 
         if (version != null && version.trim().isNotEmpty) {
           qp['v'] = version.trim();
-          qp['t'] = DateTime.now().millisecondsSinceEpoch.toString();
         }
 
         return uri.replace(queryParameters: qp).toString();
@@ -264,6 +270,38 @@ class FirebaseService {
     } finally {
       _imageFutureCache.remove(cacheKey);
     }
+  }
+
+  static ImageProvider getCachedImageProvider(String url) {
+    final clean = url.trim();
+    if (clean.isEmpty) {
+      return const AssetImage('assets/placeholder.png');
+    }
+
+    final now = DateTime.now();
+
+    if (_imageProviderCache.containsKey(clean) &&
+        _imageProviderTime.containsKey(clean)) {
+      final last = _imageProviderTime[clean];
+      if (last != null && now.difference(last).inMinutes < 10) {
+        return _imageProviderCache[clean]!;
+      }
+    }
+
+    final provider = NetworkImage(clean);
+    _imageProviderCache[clean] = provider;
+    _imageProviderTime[clean] = now;
+    return provider;
+  }
+
+  static Future<void> precacheImageUrl(BuildContext context, String url) async {
+    final clean = url.trim();
+    if (clean.isEmpty) return;
+
+    try {
+      final provider = getCachedImageProvider(clean);
+      await precacheImage(provider, context);
+    } catch (_) {}
   }
 
   static Future<String> _resolveInternal(
@@ -334,7 +372,7 @@ class FirebaseService {
           _memoryCacheTime.containsKey(cacheKey)) {
         final last = _memoryCacheTime[cacheKey];
         if (last != null &&
-            DateTime.now().difference(last).inSeconds < 15) {
+            DateTime.now().difference(last).inSeconds < 60) {
           return Map<String, dynamic>.from(_memoryCache[cacheKey] ?? {});
         }
       }

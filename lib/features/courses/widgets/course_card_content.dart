@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/colors.dart';
 import '../../../shared/widgets/press_effect.dart';
+import '../../../core/firebase_service.dart';
 
 class CourseCardContent extends StatefulWidget {
   final String imageUrl;
@@ -315,11 +316,12 @@ class _CourseCardImage extends StatelessWidget {
       return placeholder();
     }
 
-    return Image.network(
-      cleanUrl,
+    final provider = FirebaseService.getCachedImageProvider(cleanUrl);
+
+    return Image(
+      image: provider,
       key: ValueKey(cleanUrl),
       fit: BoxFit.cover,
-      gaplessPlayback: false,
       filterQuality: FilterQuality.low,
       errorBuilder: (_, __, ___) => placeholder(),
       frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
@@ -327,27 +329,6 @@ class _CourseCardImage extends StatelessWidget {
           return child;
         }
         return placeholder();
-      },
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        if (loadingProgress.expectedTotalBytes != null &&
-            loadingProgress.expectedTotalBytes! > 0 &&
-            loadingProgress.cumulativeBytesLoaded >=
-                loadingProgress.expectedTotalBytes!) {
-          return child;
-        }
-        return Container(
-          color: Colors.black,
-          alignment: Alignment.center,
-          child: SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppColors.gold.withValues(alpha: 0.85),
-            ),
-          ),
-        );
       },
     );
   }

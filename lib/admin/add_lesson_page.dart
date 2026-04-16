@@ -69,7 +69,14 @@ class _AddLessonPageState extends State<AddLessonPage> {
   Future<void> loadInstructorCourses() async {
     try {
       final user = FirebaseService.auth.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        if (mounted) {
+          setState(() {
+            loadingUser = false;
+          });
+        }
+        return;
+      }
 
       final doc = await FirebaseService.firestore
           .collection("users")
@@ -84,9 +91,17 @@ class _AddLessonPageState extends State<AddLessonPage> {
       }
 
       if (mounted) {
-        setState(() {});
+        setState(() {
+          loadingUser = false;
+        });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          loadingUser = false;
+        });
+      }
+    }
   }
 
   Stream<QuerySnapshot> getCourses() {
@@ -365,11 +380,6 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
     if (lessonTitle.isEmpty) {
       showSnack(context, "اكتب عنوان ❗", color: Colors.red);
-      return;
-    }
-
-    if (selectedBytes == null && linkController.text.trim().isEmpty) {
-      showSnack(context, "أدخل رابط أو ملف ❗", color: Colors.red);
       return;
     }
 

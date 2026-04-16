@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../admin/pages/admin_page.dart';
 import '../../features/center_management/pages/center_management_page.dart';
@@ -9,6 +10,7 @@ import '../../leaderboard_page.dart';
 import '../../payment/payment_page.dart';
 import '../widgets/home_nav_guard.dart';
 import '../../features/courses/pages/courses_page.dart';
+import '../../core/firebase_service.dart';
 
 class HomeGrid extends StatelessWidget {
   final bool isAdmin;
@@ -162,6 +164,77 @@ class HomeGrid extends StatelessWidget {
     return PermissionService.canAccess(role: role, page: key);
   }
 
+  List<Map<String, dynamic>> _defaultItems(BuildContext context, String role, bool safeIsAdmin, bool safeIsInstructor) {
+    return [
+      if (_allow(role, "courses"))
+        {
+          "id": "courses",
+          "title": "الكورسات",
+          "asset": "assets/images/courses.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CoursesPage()),
+              )),
+        },
+      if (_allow(role, "payment"))
+        {
+          "id": "payment",
+          "title": "الدفع",
+          "asset": "assets/images/payment.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PaymentPage()),
+              )),
+        },
+      if (_allow(role, "leaderboard"))
+        {
+          "id": "leaderboard",
+          "title": "المتصدرين",
+          "asset": "assets/images/leaderboard.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const LeaderboardPage(),
+                ),
+              )),
+        },
+      if ((safeIsInstructor || safeIsAdmin) && _allow(role, "instructor"))
+        {
+          "id": "instructor",
+          "title": "المدرس",
+          "asset": "assets/images/instructor.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const InstructorDashboardPage(),
+                ),
+              )),
+        },
+      if (safeIsAdmin && _allow(role, "admin"))
+        {
+          "id": "admin",
+          "title": "Admin",
+          "asset": "assets/images/admin.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AdminPage()),
+              )),
+        },
+      if (safeIsAdmin && _allow(role, "center_management"))
+        {
+          "id": "center",
+          "title": "السنتر",
+          "asset": "assets/images/admin.png",
+          "onTap": () => HomeNavGuard.go(() => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CenterManagementPage(),
+                ),
+              )),
+        },
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool safeIsAdmin = isAdmin == true;
@@ -174,76 +247,63 @@ class HomeGrid extends StatelessWidget {
       role = "instructor";
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _title("⚡ الوصول السريع"),
-        SizedBox(
-          height: 105,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            physics: const BouncingScrollPhysics(),
-            children: [
-              if (_allow(role, "courses"))
-                _item(context, "الكورسات", "assets/images/courses.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CoursesPage()),
-                      ));
-                }),
-              if (_allow(role, "payment"))
-                _item(context, "الدفع", "assets/images/payment.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const PaymentPage()),
-                      ));
-                }),
-              if (_allow(role, "leaderboard"))
-                _item(context, "المتصدرين", "assets/images/leaderboard.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LeaderboardPage(),
-                        ),
-                      ));
-                }),
-              if ((safeIsInstructor || safeIsAdmin) &&
-                  _allow(role, "instructor"))
-                _item(context, "المدرس", "assets/images/instructor.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const InstructorDashboardPage(),
-                        ),
-                      ));
-                }),
-              if (safeIsAdmin && _allow(role, "admin"))
-                _item(context, "Admin", "assets/images/admin.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AdminPage()),
-                      ));
-                }),
-              if (safeIsAdmin && _allow(role, "center_management"))
-                _item(context, "السنتر", "assets/images/admin.png", () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CenterManagementPage(),
-                        ),
-                      ));
-                }),
-            ],
-          ),
-        ),
-      ],
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseService.firestore
+          .collection("app_settings")
+          .doc("home_grid")
+          .snapshots(),
+      builder: (context, snapshot) {
+        List<Map<String, dynamic>> items =
+            _defaultItems(context, role, safeIsAdmin, safeIsInstructor);
+
+        if (snapshot.hasData && snapshot.data != null && snapshot.data!.data() != null) {
+          final data = snapshot.data!.data()!;
+          final raw = data['items'];
+
+          if (raw is List && raw.isNotEmpty) {
+            final List<Map<String, dynamic>> dynamicItems = [];
+
+            for (final e in raw) {
+              if (e is Map<String, dynamic>) {
+                final id = (e['id'] ?? "").toString();
+
+                final found = items.where((x) => x['id'] == id).toList();
+
+                if (found.isNotEmpty && (e['enabled'] ?? true) == true) {
+                  dynamicItems.add(found.first);
+                }
+              }
+            }
+
+            if (dynamicItems.isNotEmpty) {
+              items = dynamicItems;
+            }
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _title("⚡ الوصول السريع"),
+            SizedBox(
+              height: 105,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 15),
+                physics: const BouncingScrollPhysics(),
+                children: items.map((e) {
+                  return _item(
+                    context,
+                    e['title'],
+                    e['asset'],
+                    e['onTap'],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

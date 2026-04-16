@@ -7,6 +7,7 @@ import '../../admin/add_lesson_page.dart';
 import '../../admin/add_news_page.dart';
 import '../../features/quiz/admin_add_quiz_page.dart';
 import '../../admin/add_vip_student_page.dart';
+import '../../admin/pages/home_grid_admin_page.dart';
 
 class AdminAddMenu {
 
@@ -16,6 +17,7 @@ class AdminAddMenu {
     required BuildContext context,
     required Future<void> Function() refresh,
     required Future<String?> Function() pickLesson,
+    Future<void> Function()? onAddLesson,
   }) {
 
     if (openingMenu) return;
@@ -102,9 +104,40 @@ class AdminAddMenu {
 
                     if (!context.mounted) return;
 
+                    if (onAddLesson != null) {
+                      await onAddLesson();
+                    } else {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AddLessonPage()),
+                      );
+
+                      if (!context.mounted) return;
+
+                      await refresh();
+                    }
+                  },
+                ),
+
+                _item(
+                  icon: Icons.flash_on,
+                  color: Colors.amber,
+                  title: "إدارة الوصول السريع",
+                  subtitle: "تحكم في عناصر الصفحة الرئيسية",
+                  onTap: () async {
+                    if (Navigator.canPop(sheetContext)) {
+                      Navigator.pop(sheetContext);
+                    }
+
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    if (!context.mounted) return;
+
                     await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AddLessonPage()),
+                      MaterialPageRoute(
+                        builder: (_) => const HomeGridAdminPage(),
+                      ),
                     );
 
                     if (!context.mounted) return;

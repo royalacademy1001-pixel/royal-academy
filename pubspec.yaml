@@ -97,7 +97,8 @@ flutter:
 
   assets:
     - assets/logo.png
-    - assets/images/   # 🔥 مهم جدًا (خليه زي كده بالظبط)
+    - assets/images/
+    - assets/fonts/
 
   fonts:
     - family: Cairo

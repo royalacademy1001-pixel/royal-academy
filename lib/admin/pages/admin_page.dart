@@ -5,6 +5,8 @@ import '../widgets/admin_body.dart';
 import '../widgets/admin_add_menu.dart';
 
 import '../pick_lesson_page.dart';
+import '../add_lesson_page.dart';
+import 'admin_home_layout_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -32,6 +34,7 @@ class _AdminPageState extends State<AdminPage> {
     {"id": "admin_news", "title": "إدارة الأخبار", "icon": "news"},
     {"id": "admin_crm", "title": "CRM", "icon": "analytics"},
     {"id": "admin_permissions", "title": "إدارة الصلاحيات", "icon": "settings"},
+    {"id": "admin_home_layout", "title": "ترتيب الصفحة الرئيسية", "icon": "settings"},
   ];
 
   @override
@@ -82,6 +85,17 @@ class _AdminPageState extends State<AdminPage> {
       context: context,
       refresh: refresh,
       pickLesson: pickLesson,
+      onAddLesson: () async {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AddLessonPage(),
+          ),
+        );
+        if (!mounted) return;
+        await refresh();
+      },
     );
   }
 
@@ -96,6 +110,19 @@ class _AdminPageState extends State<AdminPage> {
       statsFuture: safeFuture,
       onRefresh: refresh,
       onAdd: openAddMenu,
+      onCustomPageTap: (id) async {
+        if (id == "admin_home_layout") {
+          if (!context.mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminHomeLayoutPage(),
+            ),
+          );
+          if (!context.mounted) return;
+          await refresh();
+        }
+      },
     );
   }
 }

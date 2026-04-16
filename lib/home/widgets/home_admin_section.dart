@@ -1,60 +1,114 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../admin/pages/admin_page.dart';
 import '../../features/center_management/pages/center_management_page.dart';
 import '../../core/colors.dart';
+import '../../core/firebase_service.dart';
 import 'home_nav_guard.dart';
 
 class HomeAdminSection extends StatelessWidget {
   const HomeAdminSection({super.key});
 
+  static bool? _cachedVisible;
+  static DateTime? _lastCheckTime;
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _title("🛠 لوحات الإدارة"),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Column(
-            children: [
-              _adminCard(
-                context,
-                title: "🏫 إدارة السنتر",
-                subtitle: "كل الصفحات الخاصة بالسنتر والـ VIP",
-                icon: Icons.apartment_rounded,
-                accent: const Color(0xFFFFD54F),
-                onTap: () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CenterManagementPage(),
-                        ),
-                      ));
-                },
+    final now = DateTime.now();
+    final useCache = _cachedVisible != null &&
+        _lastCheckTime != null &&
+        now.difference(_lastCheckTime!).inSeconds < 60;
+
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: useCache
+          ? null
+          : FirebaseService.firestore
+              .collection("app_settings")
+              .doc("home_sections")
+              .get(),
+      builder: (context, snapshot) {
+        bool visible = true;
+
+        if (useCache) {
+          visible = _cachedVisible ?? true;
+        } else {
+          if (snapshot.hasData &&
+              snapshot.data != null &&
+              snapshot.data!.data() != null) {
+            final config = snapshot.data!.data()!;
+            final sections = config['sections'];
+
+            if (sections is List) {
+              final found = sections.where((e) {
+                if (e is Map<String, dynamic>) {
+                  return e['id'] == "admin";
+                }
+                return false;
+              }).toList();
+
+              if (found.isNotEmpty) {
+                final item = found.first as Map<String, dynamic>;
+                visible = (item['enabled'] ?? true) == true;
+              }
+            }
+          }
+
+          _cachedVisible = visible;
+          _lastCheckTime = DateTime.now();
+        }
+
+        if (!visible) {
+          return const SizedBox();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _title("🛠 لوحات الإدارة"),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Column(
+                children: [
+                  _adminCard(
+                    context,
+                    title: "🏫 إدارة السنتر",
+                    subtitle: "كل الصفحات الخاصة بالسنتر والـ VIP",
+                    icon: Icons.apartment_rounded,
+                    accent: const Color(0xFFFFD54F),
+                    onTap: () {
+                      if (!context.mounted) return;
+                      HomeNavGuard.go(() => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const CenterManagementPage(),
+                            ),
+                          ));
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _adminCard(
+                    context,
+                    title: "💻 إدارة التطبيق",
+                    subtitle: "كل صفحات إدارة البرنامج الأونلاين",
+                    icon: Icons.dashboard_customize_rounded,
+                    accent: AppColors.gold,
+                    onTap: () {
+                      if (!context.mounted) return;
+                      HomeNavGuard.go(() => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const AdminPage(),
+                            ),
+                          ));
+                    },
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              _adminCard(
-                context,
-                title: "💻 إدارة التطبيق",
-                subtitle: "كل صفحات إدارة البرنامج الأونلاين",
-                icon: Icons.dashboard_customize_rounded,
-                accent: AppColors.gold,
-                onTap: () {
-                  if (!context.mounted) return;
-                  HomeNavGuard.go(() => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AdminPage(),
-                        ),
-                      ));
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -86,7 +86,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
     final position = _scrollController.offset / _itemExtent;
     final diff = (index - position).abs();
     final scale = 1 - (diff * 0.08);
-    return scale.clamp(0.88, 1.05);
+    return scale.clamp(0.9, 1.0);
   }
 
   double _calculateOpacity(int index) {
@@ -94,7 +94,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
 
     final position = _scrollController.offset / _itemExtent;
     final diff = (index - position).abs();
-    return (1 - (diff * 0.3)).clamp(0.6, 1.0);
+    return (1 - (diff * 0.25)).clamp(0.7, 1.0);
   }
 
   void _updateFocus() {
@@ -127,8 +127,8 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
     final target = safeIndex * _itemExtent;
     _scrollController.animateTo(
       target,
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
     );
   }
 
@@ -196,7 +196,6 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
                                 },
                                 child: NotificationListener<ScrollNotification>(
                                   onNotification: (_) {
-                                    if (mounted) setState(() {});
                                     return false;
                                   },
                                   child: ListView.builder(
@@ -222,32 +221,13 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
                                           duration: const Duration(milliseconds: 200),
                                           opacity: opacity,
                                           child: AnimatedContainer(
-                                            duration: const Duration(milliseconds: 220),
-                                            curve: Curves.easeOutCubic,
+                                            duration: const Duration(milliseconds: 200),
+                                            curve: Curves.easeOut,
                                             transform: Matrix4.identity()
-                                              ..scale(scale)
-                                              ..translate(0.0,
-                                                  (1 - scale) * (isFocused ? 10 : 25)),
+                                              ..scale(scale),
                                             width: cardWidth,
                                             height: cardHeight,
                                             margin: const EdgeInsets.only(right: 12),
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(22),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withValues(alpha: 0.4),
-                                                  blurRadius: 18,
-                                                  offset: const Offset(0, 10),
-                                                ),
-                                                BoxShadow(
-                                                  color: AppColors.gold.withValues(
-                                                      alpha: isFocused ? 0.18 : 0.05),
-                                                  blurRadius: isFocused ? 26 : 14,
-                                                  spreadRadius: isFocused ? 2 : 0,
-                                                  offset: const Offset(0, 0),
-                                                ),
-                                              ],
-                                            ),
                                             child: ClipRRect(
                                               borderRadius: BorderRadius.circular(22),
                                               child: CourseCard(

@@ -122,7 +122,7 @@ class _CourseCardState extends State<CourseCard> {
     return RepaintBoundary(
       child: SizedBox(
         width: isWide ? 275 : 235,
-        height: isWide ? 300 : 270,
+        height: isWide ? 300 : 265,
         child: CourseCardContent(
           key: ValueKey('${widget.id}_${_imageSignature(widget.data)}_$imageUrl'),
           imageUrl: imageUrl,

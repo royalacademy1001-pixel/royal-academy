@@ -114,13 +114,13 @@ class _CourseCardContentState extends State<CourseCardContent>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
               child: SizedBox(
-                height: double.infinity,
+                height: 250,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     RepaintBoundary(
                       child: SizedBox(
-                        height: 132,
+                        height: 120,
                         width: double.infinity,
                         child: Stack(
                           children: [
@@ -153,13 +153,13 @@ class _CourseCardContentState extends State<CourseCardContent>
                             ),
                             if (widget.isPopular)
                               Positioned(
-                                bottom: 8,
-                                left: 8,
+                                bottom: 6,
+                                left: 6,
                                 child: AnimatedScale(
                                   duration: const Duration(milliseconds: 200),
                                   scale: hovered ? 1.05 : 1,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: AppColors.gold,
                                       borderRadius: BorderRadius.circular(8),
@@ -168,7 +168,7 @@ class _CourseCardContentState extends State<CourseCardContent>
                                       "🔥 الأكثر مشاهدة",
                                       style: TextStyle(
                                         color: Colors.black,
-                                        fontSize: 10,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -177,17 +177,17 @@ class _CourseCardContentState extends State<CourseCardContent>
                               ),
                             if (!widget.hasAccess)
                               const Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Icon(Icons.lock, color: Colors.red, size: 18),
+                                top: 6,
+                                right: 6,
+                                child: Icon(Icons.lock, color: Colors.red, size: 16),
                               ),
                             Positioned(
-                              top: 8,
-                              left: 8,
+                              top: 6,
+                              left: 6,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                                  horizontal: 6,
+                                  vertical: 3,
                                 ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.72),
@@ -201,14 +201,14 @@ class _CourseCardContentState extends State<CourseCardContent>
                                     const Icon(
                                       Icons.star,
                                       color: Colors.amber,
-                                      size: 13,
+                                      size: 12,
                                     ),
-                                    const SizedBox(width: 4),
+                                    const SizedBox(width: 3),
                                     Text(
                                       safeRating.toStringAsFixed(1),
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 11,
+                                        fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -223,56 +223,53 @@ class _CourseCardContentState extends State<CourseCardContent>
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 8,
+                          horizontal: 8,
+                          vertical: 6,
                         ),
                         decoration: AppColors.premiumCard,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 200),
+                            Text(
+                              widget.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 color: hovered ? AppColors.gold : AppColors.white,
                                 fontWeight: FontWeight.bold,
-                                fontSize: hovered ? 13.5 : 13,
-                              ),
-                              child: Text(
-                                widget.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                                fontSize: 12,
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               "${widget.totalLessons} درس",
-                              style: const TextStyle(
-                                color: AppColors.grey,
-                                fontSize: 10,
-                              ),
-                            ),
-                            const SizedBox(height: 5),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: LinearProgressIndicator(
-                                value: safeProgress,
-                                minHeight: 6,
-                                color: AppColors.gold,
-                                backgroundColor: Colors.grey.shade900,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              "أكملت ${(safeProgress * 100).toInt()}%",
                               style: const TextStyle(
                                 color: AppColors.grey,
                                 fontSize: 9,
                               ),
                             ),
+                            const SizedBox(height: 4),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: LinearProgressIndicator(
+                                value: safeProgress,
+                                minHeight: 5,
+                                color: AppColors.gold,
+                                backgroundColor: Colors.grey.shade900,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              "أكملت ${(safeProgress * 100).toInt()}%",
+                              style: const TextStyle(
+                                color: AppColors.grey,
+                                fontSize: 8,
+                              ),
+                            ),
                             const Spacer(),
                             SizedBox(
                               width: double.infinity,
-                              height: 35,
+                              height: 32,
                               child: ElevatedButton(
                                 style: AppColors.goldButton,
                                 onPressed: () {
@@ -281,7 +278,7 @@ class _CourseCardContentState extends State<CourseCardContent>
                                 },
                                 child: Text(
                                   safeProgress > 0 ? "استكمال" : "ابدأ الآن",
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(fontSize: 11),
                                 ),
                               ),
                             ),

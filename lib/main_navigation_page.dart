@@ -502,9 +502,6 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       return const SizedBox.shrink();
     }
 
-    final width = MediaQuery.of(context).size.width;
-    final itemWidth = width / items.length;
-
     return Container(
       height: 60,
       color: AppColors.navBar,
@@ -513,33 +510,43 @@ class _MainNavigationPageState extends State<MainNavigationPage>
           final index = entry.key;
           final item = entry.value;
 
-          return SizedBox(
-            width: itemWidth,
+          return Expanded(
             child: GestureDetector(
               onTap: () => _onTap(index),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    _getIcon((item['icon'] ?? "").toString()),
-                    size: 20,
-                    color: currentIndex == index
-                        ? AppColors.gold
-                        : Colors.white,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    (item['title'] ?? "").toString(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: currentIndex == index
-                          ? AppColors.gold
-                          : Colors.white,
+              child: SizedBox(
+                height: 60,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      height: 22,
+                      child: Icon(
+                        _getIcon((item['icon'] ?? "").toString()),
+                        size: 20,
+                        color: currentIndex == index
+                            ? AppColors.gold
+                            : Colors.white,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 2),
+                    SizedBox(
+                      height: 14,
+                      child: Text(
+                        (item['title'] ?? "").toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 9,
+                          height: 1,
+                          color: currentIndex == index
+                              ? AppColors.gold
+                              : Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

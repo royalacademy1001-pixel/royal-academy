@@ -116,22 +116,29 @@ class _CourseCardState extends State<CourseCard> {
     final title = _text(widget.data['title'], "Course");
     final bool isPopular = _int(widget.data['views'], 0) > 100;
 
+    final media = MediaQuery.of(context).size;
+    final isWide = media.width > 900;
+
     return RepaintBoundary(
-      child: CourseCardContent(
-        key: ValueKey('${widget.id}_${_imageSignature(widget.data)}_$imageUrl'),
-        imageUrl: imageUrl,
-        rating: rating,
-        totalLessons: total,
-        title: title,
-        progress: progress,
-        hasAccess: userHasAccess,
-        isPopular: isPopular,
-        onOpen: () {
-          debugPrint("CLICK WORKING ✅");
-          if (!mounted) return;
-          if (!context.mounted) return;
-          _openCourse(context);
-        },
+      child: SizedBox(
+        width: isWide ? 275 : 235,
+        height: isWide ? 300 : 270,
+        child: CourseCardContent(
+          key: ValueKey('${widget.id}_${_imageSignature(widget.data)}_$imageUrl'),
+          imageUrl: imageUrl,
+          rating: rating,
+          totalLessons: total,
+          title: title,
+          progress: progress,
+          hasAccess: userHasAccess,
+          isPopular: isPopular,
+          onOpen: () {
+            debugPrint("CLICK WORKING ✅");
+            if (!mounted) return;
+            if (!context.mounted) return;
+            _openCourse(context);
+          },
+        ),
       ),
     );
   }

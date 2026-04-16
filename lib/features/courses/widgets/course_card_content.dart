@@ -114,7 +114,7 @@ class _CourseCardContentState extends State<CourseCardContent>
             child: ClipRRect(
               borderRadius: BorderRadius.circular(22),
               child: SizedBox(
-                height: 262,
+                height: double.infinity,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

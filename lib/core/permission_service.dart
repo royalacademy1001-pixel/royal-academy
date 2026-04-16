@@ -143,6 +143,8 @@ class PermissionService {
     final roleKey = _normalize(role);
     final pageKey = _normalize(page);
 
+    if (pageKey == "home" || pageKey == "profile") return true;
+
     if (roleKey == "admin") return true;
     if (!_loaded) return false;
     if (_permissions.isEmpty) return false;

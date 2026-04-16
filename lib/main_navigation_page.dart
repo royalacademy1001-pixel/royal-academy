@@ -407,6 +407,26 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     switch (name) {
       case "home":
         return Icons.home;
+      case "profile":
+        return Icons.person;
+      case "courses":
+        return Icons.school;
+      case "payment":
+        return Icons.payments;
+      case "qr":
+        return Icons.qr_code;
+      case "dashboard":
+        return Icons.dashboard;
+      case "users":
+        return Icons.group;
+      case "analytics":
+        return Icons.analytics;
+      case "attendance":
+        return Icons.fact_check;
+      case "settings":
+        return Icons.settings;
+      case "admin":
+        return Icons.admin_panel_settings;
       default:
         return Icons.circle;
     }
@@ -436,19 +456,27 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   }
 
   List<Map<String, dynamic>> _activeNav() {
-    final homeItem = fallbackNav.firstWhere(
-      (e) => e['id'] == 'home',
+    final source = dynamicNav.isEmpty ? fallbackNav : dynamicNav;
+
+    final List<Map<String, dynamic>> result = [];
+
+    final homeItem = source.firstWhere(
+      (e) => (e['id'] ?? "") == "home",
       orElse: () => fallbackNav.first,
     );
 
-    final List<Map<String, dynamic>> result = [homeItem];
+    final profileItem = source.firstWhere(
+      (e) => (e['id'] ?? "") == "profile",
+      orElse: () => fallbackNav.firstWhere((e) => (e['id'] ?? "") == "profile"),
+    );
 
-    final source = dynamicNav.isEmpty ? fallbackNav : dynamicNav;
+    result.add(homeItem);
+    result.add(profileItem);
 
     for (final item in source) {
       final id = (item['id'] ?? "").toString();
 
-      if (id == "home") continue;
+      if (id == "home" || id == "profile") continue;
 
       if (_allowItem(item, id)) {
         result.add(item);
@@ -475,16 +503,18 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     }
 
     final width = MediaQuery.of(context).size.width;
+    final itemWidth = width / items.length;
 
     return Container(
-      height: 80,
-      color: AppColors.black,
+      height: 60,
+      color: AppColors.navBar,
       child: Row(
         children: items.asMap().entries.map((entry) {
           final index = entry.key;
           final item = entry.value;
 
-          return Expanded(
+          return SizedBox(
+            width: itemWidth,
             child: GestureDetector(
               onTap: () => _onTap(index),
               child: Column(
@@ -492,13 +522,18 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                 children: [
                   Icon(
                     _getIcon((item['icon'] ?? "").toString()),
+                    size: 20,
                     color: currentIndex == index
                         ? AppColors.gold
                         : Colors.white,
                   ),
+                  const SizedBox(height: 3),
                   Text(
                     (item['title'] ?? "").toString(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
+                      fontSize: 9,
                       color: currentIndex == index
                           ? AppColors.gold
                           : Colors.white,

@@ -433,6 +433,11 @@ class _AdminNavigationControlPageState
           ..addAll(_normalizeItems(rawItems));
       }
 
+      items.removeWhere((e) {
+        final id = (e["id"] ?? "").toString();
+        return id == "home" || id == "profile";
+      });
+
       _applyTemplate(selectedPageId);
 
       _navSub = navRef.snapshots().listen(
@@ -446,6 +451,11 @@ class _AdminNavigationControlPageState
               (liveItems == null || liveItems is! List || liveItems.isEmpty)
                   ? _cloneItems(fallbackNav)
                   : _normalizeItems(liveItems);
+
+          nextItems.removeWhere((e) {
+            final id = (e["id"] ?? "").toString();
+            return id == "home" || id == "profile";
+          });
 
           setState(() {
             items
@@ -487,6 +497,8 @@ class _AdminNavigationControlPageState
     final icon = iconController.text.trim();
 
     if (pageId.isEmpty || title.isEmpty) return;
+
+    if (pageId == "home" || pageId == "profile") return;
 
     final newItem = {
       "id": pageId,
@@ -613,7 +625,9 @@ class _AdminNavigationControlPageState
     if (key == "roles" && value is List) {
       items[index][key] = value.map((e) => e.toString().toLowerCase()).toList();
     } else if (key == "id") {
-      items[index][key] = value.toString().toLowerCase();
+      final v = value.toString().toLowerCase();
+      if (v == "home" || v == "profile") return;
+      items[index][key] = v;
     } else {
       items[index][key] = value;
     }
@@ -734,7 +748,11 @@ class _AdminNavigationControlPageState
           borderRadius: BorderRadius.circular(15),
         ),
       ),
-      items: availablePages.map((page) {
+      items: availablePages
+          .where((page) =>
+              page["id"].toString() != "home" &&
+              page["id"].toString() != "profile")
+          .map((page) {
         final id = page["id"].toString();
         final title = page["title"].toString();
         final icon = page["icon"].toString();
@@ -862,16 +880,10 @@ class _AdminNavigationControlPageState
                   ],
                 ),
               ),
-              if (!isHome)
-                Switch(
-                  value: enabled == true,
-                  onChanged: (_) => toggleEnabled(index),
-                )
-              else
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.lock, color: Colors.green),
-                ),
+              Switch(
+                value: enabled == true,
+                onChanged: (_) => toggleEnabled(index),
+              ),
               ReorderableDragStartListener(
                 index: index,
                 child: const Icon(
@@ -965,11 +977,10 @@ class _AdminNavigationControlPageState
                     const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                 onPressed: () => _moveDown(index),
               ),
-              if (!isHome)
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => deleteItem(index),
-                ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => deleteItem(index),
+              ),
             ],
           ),
         ],

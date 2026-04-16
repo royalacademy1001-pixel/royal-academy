@@ -138,6 +138,13 @@ class _HomePageState extends State<HomePage>
     super.dispose();
   }
 
+  double _getMaxWidth(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width > 1100) return 1100;
+    if (width > 800) return 800;
+    return width;
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -160,61 +167,68 @@ class _HomePageState extends State<HomePage>
         (currentUserData['name'] ?? currentUserData['displayName'] ?? "أهلاً بيك")
             .toString();
 
+    final maxWidth = _getMaxWidth(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      body: CustomScrollView(
-        controller: _scrollController,
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            backgroundColor: Colors.black,
-            elevation: 0,
-            actions: [
-              HomeNotificationIcon(stream: notificationStream),
-              const SizedBox(width: 10),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: RepaintBoundary(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  HomeHero(
-                    userName: userName,
-                    onStartTap: () {
-                      AnalyticsService.logEvent("home_start_clicked");
-                      if (!context.mounted) return;
-                      Navigator.pushNamed(context, '/courses');
-                    },
-                  ),
-                  HomeVipCard(
-                    isAdmin: isAdmin,
-                    isVIP: isVIP,
-                    subscribed: subscribed,
-                  ),
-                  HomeStatsCard(
-                    isAdmin: isAdmin,
-                    isVIP: isVIP,
-                    subscribed: subscribed,
-                    userXP: userXP,
-                    streak: streak,
-                  ),
-                  HomeGrid(
-                    isAdmin: isAdmin,
-                    isInstructor: isInstructor,
-                  ),
-                  if (isAdmin) const RepaintBoundary(child: HomeAdminSection()),
-                  const RepaintBoundary(child: HomeNewsSection()),
-                  const RepaintBoundary(child: HomeContinueWatchingSection()),
-                  const RepaintBoundary(child: HomeRecommendedSection()),
-                  const RepaintBoundary(child: HomeCoursesSection()),
-                  const SizedBox(height: 50),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                backgroundColor: Colors.black,
+                elevation: 0,
+                actions: [
+                  HomeNotificationIcon(stream: notificationStream),
+                  const SizedBox(width: 10),
                 ],
               ),
-            ),
+              SliverToBoxAdapter(
+                child: RepaintBoundary(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      HomeHero(
+                        userName: userName,
+                        onStartTap: () {
+                          AnalyticsService.logEvent("home_start_clicked");
+                          if (!context.mounted) return;
+                          Navigator.pushNamed(context, '/courses');
+                        },
+                      ),
+                      HomeVipCard(
+                        isAdmin: isAdmin,
+                        isVIP: isVIP,
+                        subscribed: subscribed,
+                      ),
+                      HomeStatsCard(
+                        isAdmin: isAdmin,
+                        isVIP: isVIP,
+                        subscribed: subscribed,
+                        userXP: userXP,
+                        streak: streak,
+                      ),
+                      HomeGrid(
+                        isAdmin: isAdmin,
+                        isInstructor: isInstructor,
+                      ),
+                      if (isAdmin) const RepaintBoundary(child: HomeAdminSection()),
+                      const RepaintBoundary(child: HomeNewsSection()),
+                      const RepaintBoundary(child: HomeContinueWatchingSection()),
+                      const RepaintBoundary(child: HomeRecommendedSection()),
+                      const RepaintBoundary(child: HomeCoursesSection()),
+                      const SizedBox(height: 50),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

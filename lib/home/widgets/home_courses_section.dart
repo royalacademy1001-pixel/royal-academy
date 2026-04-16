@@ -19,6 +19,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
   int focusedIndex = 0;
 
   bool _didPreload = false;
+  double _itemExtent = 247.0;
 
   Widget _title(String text) => Padding(
         padding: const EdgeInsets.fromLTRB(15, 20, 15, 10),
@@ -45,9 +46,10 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
     return approved || status == "approved";
   }
 
-  Widget _loadingCard() {
+  Widget _loadingCard(double width, double height) {
     return Container(
-      width: 235,
+      width: width,
+      height: height,
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
@@ -81,7 +83,7 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
   double _calculateScale(int index) {
     if (!_scrollController.hasClients) return 1;
 
-    final position = _scrollController.offset / 247;
+    final position = _scrollController.offset / _itemExtent;
     final diff = (index - position).abs();
     final scale = 1 - (diff * 0.08);
     return scale.clamp(0.88, 1.05);
@@ -90,14 +92,14 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
   double _calculateOpacity(int index) {
     if (!_scrollController.hasClients) return 1;
 
-    final position = _scrollController.offset / 247;
+    final position = _scrollController.offset / _itemExtent;
     final diff = (index - position).abs();
     return (1 - (diff * 0.3)).clamp(0.6, 1.0);
   }
 
   void _updateFocus() {
     if (!_scrollController.hasClients) return;
-    final index = (_scrollController.offset / 247).round();
+    final index = (_scrollController.offset / _itemExtent).round();
     if (index != focusedIndex && mounted) {
       setState(() {
         focusedIndex = index;
@@ -120,9 +122,9 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
 
   void _snapToItem() {
     if (!_scrollController.hasClients) return;
-    final maxIndex = (_scrollController.position.maxScrollExtent / 247).round();
+    final maxIndex = (_scrollController.position.maxScrollExtent / _itemExtent).round();
     final safeIndex = focusedIndex.clamp(0, maxIndex);
-    final target = safeIndex * 247.0;
+    final target = safeIndex * _itemExtent;
     _scrollController.animateTo(
       target,
       duration: const Duration(milliseconds: 350),
@@ -133,129 +135,139 @@ class _HomeCoursesSectionState extends State<HomeCoursesSection> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 320,
-      child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: FirebaseService.firestore
-            .collection(AppConstants.courses)
-            .orderBy("createdAt", descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          final isLoading =
-              snapshot.connectionState == ConnectionState.waiting;
+      height: 340,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 900;
+          final cardWidth = isWide ? 275.0 : 235.0;
+          final cardHeight = isWide ? 300.0 : 278.0;
+          _itemExtent = cardWidth + 12;
 
-          final rawDocs = snapshot.hasData && snapshot.data != null
-              ? snapshot.data!.docs
-              : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+          return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+            stream: FirebaseService.firestore
+                .collection(AppConstants.courses)
+                .orderBy("createdAt", descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              final isLoading =
+                  snapshot.connectionState == ConnectionState.waiting;
 
-          final courses = rawDocs.where((doc) {
-            final data = doc.data();
-            if (data.isEmpty) return false;
-            return _isVisibleCourse(data);
-          }).toList().cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
+              final rawDocs = snapshot.hasData && snapshot.data != null
+                  ? snapshot.data!.docs
+                  : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
 
-          if (courses.isNotEmpty && !_didPreload) {
-            _didPreload = true;
-            _preloadImages(courses);
-          }
+              final courses = rawDocs.where((doc) {
+                final data = doc.data();
+                if (data.isEmpty) return false;
+                return _isVisibleCourse(data);
+              }).toList().cast<QueryDocumentSnapshot<Map<String, dynamic>>>();
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _title("🔥 الأكثر مشاهدة"),
-              Expanded(
-                child: isLoading
-                    ? ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: 4,
-                        itemBuilder: (context, index) {
-                          return _loadingCard();
-                        },
-                      )
-                    : courses.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "🚫 لا يوجد كورسات حالياً",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          )
-                        : NotificationListener<ScrollEndNotification>(
-                            onNotification: (_) {
-                              if (mounted) _snapToItem();
-                              return false;
+              if (courses.isNotEmpty && !_didPreload) {
+                _didPreload = true;
+                _preloadImages(courses);
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _title("🔥 الأكثر مشاهدة"),
+                  Expanded(
+                    child: isLoading
+                        ? ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: 4,
+                            itemBuilder: (context, index) {
+                              return _loadingCard(cardWidth, cardHeight);
                             },
-                            child: NotificationListener<ScrollNotification>(
-                              onNotification: (_) {
-                                if (mounted) setState(() {});
-                                return false;
-                              },
-                              child: ListView.builder(
-                                controller: _scrollController,
-                                scrollDirection: Axis.horizontal,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: courses.length,
-                                itemBuilder: (context, index) {
-                                  final course = courses[index];
-                                  final data = course.data();
+                          )
+                        : courses.isEmpty
+                            ? const Center(
+                                child: Text(
+                                  "🚫 لا يوجد كورسات حالياً",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              )
+                            : NotificationListener<ScrollEndNotification>(
+                                onNotification: (_) {
+                                  if (mounted) _snapToItem();
+                                  return false;
+                                },
+                                child: NotificationListener<ScrollNotification>(
+                                  onNotification: (_) {
+                                    if (mounted) setState(() {});
+                                    return false;
+                                  },
+                                  child: ListView.builder(
+                                    controller: _scrollController,
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: courses.length,
+                                    itemBuilder: (context, index) {
+                                      final course = courses[index];
+                                      final data = course.data();
 
-                                  if (data.isEmpty) {
-                                    return const SizedBox();
-                                  }
+                                      if (data.isEmpty) {
+                                        return const SizedBox();
+                                      }
 
-                                  final scale = _calculateScale(index);
-                                  final opacity = _calculateOpacity(index);
-                                  final isFocused = index == focusedIndex;
+                                      final scale = _calculateScale(index);
+                                      final opacity = _calculateOpacity(index);
+                                      final isFocused = index == focusedIndex;
 
-                                  return RepaintBoundary(
-                                    child: AnimatedOpacity(
-                                      duration: const Duration(milliseconds: 200),
-                                      opacity: opacity,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 220),
-                                        curve: Curves.easeOutCubic,
-                                        transform: Matrix4.identity()
-                                          ..scale(scale)
-                                          ..translate(0.0,
-                                              (1 - scale) * (isFocused ? 10 : 25)),
-                                        width: 235,
-                                        margin: const EdgeInsets.only(right: 12),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(22),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.4),
-                                              blurRadius: 18,
-                                              offset: const Offset(0, 10),
+                                      return RepaintBoundary(
+                                        child: AnimatedOpacity(
+                                          duration: const Duration(milliseconds: 200),
+                                          opacity: opacity,
+                                          child: AnimatedContainer(
+                                            duration: const Duration(milliseconds: 220),
+                                            curve: Curves.easeOutCubic,
+                                            transform: Matrix4.identity()
+                                              ..scale(scale)
+                                              ..translate(0.0,
+                                                  (1 - scale) * (isFocused ? 10 : 25)),
+                                            width: cardWidth,
+                                            height: cardHeight,
+                                            margin: const EdgeInsets.only(right: 12),
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(22),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withValues(alpha: 0.4),
+                                                  blurRadius: 18,
+                                                  offset: const Offset(0, 10),
+                                                ),
+                                                BoxShadow(
+                                                  color: AppColors.gold.withValues(
+                                                      alpha: isFocused ? 0.18 : 0.05),
+                                                  blurRadius: isFocused ? 26 : 14,
+                                                  spreadRadius: isFocused ? 2 : 0,
+                                                  offset: const Offset(0, 0),
+                                                ),
+                                              ],
                                             ),
-                                            BoxShadow(
-                                              color: AppColors.gold.withValues(
-                                                  alpha: isFocused ? 0.18 : 0.05),
-                                              blurRadius: isFocused ? 26 : 14,
-                                              spreadRadius: isFocused ? 2 : 0,
-                                              offset: const Offset(0, 0),
+                                            child: ClipRRect(
+                                              borderRadius: BorderRadius.circular(22),
+                                              child: CourseCard(
+                                                id: course.id,
+                                                data: data,
+                                                doneLessons: 0,
+                                                hasAccess: true,
+                                              ),
                                             ),
-                                          ],
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(22),
-                                          child: CourseCard(
-                                            id: course.id,
-                                            data: data,
-                                            doneLessons: 0,
-                                            hasAccess: true,
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                  );
-                                },
+                                      );
+                                    },
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           );
         },
       ),

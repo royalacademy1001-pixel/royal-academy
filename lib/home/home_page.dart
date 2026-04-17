@@ -79,7 +79,7 @@ class _HomePageState extends State<HomePage>
     if (_cachedUserData != null && !_builtOnce) {
       userData = Map<String, dynamic>.from(_cachedUserData!);
       _role = PermissionService.getRole(userData);
-      _allowed = PermissionService.canAccess(role: _role, page: "home");
+      _allowed = true;
       loading = false;
       _permissionReady = true;
       _builtOnce = true;
@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage>
           now.difference(_lastLoadTime!).inSeconds < 60) {
         userData = Map<String, dynamic>.from(_cachedUserData!);
         _role = PermissionService.getRole(userData);
-        _allowed = PermissionService.canAccess(role: _role, page: "home");
+        _allowed = true;
 
         if (!_disposed && mounted) {
           setState(() {
@@ -114,7 +114,7 @@ class _HomePageState extends State<HomePage>
 
       if (user == null) {
         _role = "guest";
-        _allowed = PermissionService.canAccess(role: _role, page: "home");
+        _allowed = true;
 
         if (!_disposed && mounted) {
           setState(() {
@@ -135,7 +135,7 @@ class _HomePageState extends State<HomePage>
       _lastLoadTime = DateTime.now();
 
       _role = PermissionService.getRole(data);
-      _allowed = PermissionService.canAccess(role: _role, page: "home");
+      _allowed = true;
 
       AnalyticsService.logEvent("home_loaded", params: {
         "isAdmin": isAdmin,
@@ -161,7 +161,7 @@ class _HomePageState extends State<HomePage>
           userData = {};
           loading = false;
           _permissionReady = true;
-          _allowed = false;
+          _allowed = true;
         });
       }
     }

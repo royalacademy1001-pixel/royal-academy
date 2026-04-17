@@ -7,6 +7,7 @@ import '../widgets/admin_add_menu.dart';
 import '../pick_lesson_page.dart';
 import '../add_lesson_page.dart';
 import 'admin_home_layout_page.dart';
+import '../pages/admin_quick_access_page.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -35,6 +36,7 @@ class _AdminPageState extends State<AdminPage> {
     {"id": "admin_crm", "title": "CRM", "icon": "analytics"},
     {"id": "admin_permissions", "title": "إدارة الصلاحيات", "icon": "settings"},
     {"id": "admin_home_layout", "title": "ترتيب الصفحة الرئيسية", "icon": "settings"},
+    {"id": "admin_quick_access", "title": "إدارة الوصول السريع", "icon": "settings"},
   ];
 
   @override
@@ -135,22 +137,6 @@ class _AdminPageState extends State<AdminPage> {
           await refresh();
         }
       },
-    );
-  }
-}
-
-class AdminQuickAccessPage extends StatelessWidget {
-  const AdminQuickAccessPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("إدارة الوصول السريع"),
-      ),
-      body: const Center(
-        child: Text("صفحة إدارة الوصول السريع"),
-      ),
     );
   }
 }

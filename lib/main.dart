@@ -233,32 +233,49 @@ class _RoyalAppState extends State<RoyalApp> {
         future: PermissionService.load(),
         builder: (context, snapshot) {
           if (!PermissionService.isLoaded) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
+            return page;
           }
 
-          final role = PermissionService.getRole(
-            FirebaseService.auth.currentUser == null ? {} : {},
-          );
+          final currentUser = FirebaseAuth.instance.currentUser;
 
-          final allowed = PermissionService.canAccess(
-            role: role,
-            page: permission,
-          );
-
-          if (!allowed) {
-            return const Scaffold(
-              body: Center(
-                child: Text(
-                  "🚫 غير مصرح بالدخول",
-                  style: TextStyle(fontSize: 18),
-                ),
-              ),
-            );
+          if (currentUser == null) {
+            return page;
           }
 
-          return page;
+          return FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .get(),
+            builder: (context, userSnapshot) {
+              if (userSnapshot.connectionState == ConnectionState.waiting) {
+                return page;
+              }
+
+              final userData =
+                  userSnapshot.data?.data() as Map<String, dynamic>?;
+
+              final role = PermissionService.getRole(userData);
+
+              final allowed = PermissionService.canAccess(
+                role: role,
+                page: permission,
+              );
+
+              if (!allowed) {
+                return const Scaffold(
+                  body: Center(
+                    child: Text(
+                      "🚫 غير مصرح بالدخول",
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                );
+              }
+
+              return page;
+            },
+          );
         },
       );
     }
@@ -275,7 +292,7 @@ class _RoyalAppState extends State<RoyalApp> {
 
       case '/courses':
         return MaterialPageRoute(
-          builder: (_) => secure(const CoursesPage(), "courses"),
+          builder: (_) => const CoursesPage(),
         );
 
       case '/profile':
@@ -285,11 +302,8 @@ class _RoyalAppState extends State<RoyalApp> {
 
       case '/payment':
         return MaterialPageRoute(
-          builder: (_) => secure(
-            PaymentPage(
-              courseId: args is Map ? _asString(args['courseId']) : null,
-            ),
-            "payments",
+          builder: (_) => PaymentPage(
+            courseId: args is Map ? _asString(args['courseId']) : null,
           ),
         );
 
@@ -297,34 +311,28 @@ class _RoyalAppState extends State<RoyalApp> {
         if (args is Map) {
           final map = _asMap(args);
           return MaterialPageRoute(
-            builder: (_) => secure(
-              CheckoutPage(
-                phone: _asString(map['phone']),
-                price: int.tryParse(_asString(map['price'])) ?? 0,
-                paid: int.tryParse(_asString(map['paid'])) ?? 0,
-                remaining: int.tryParse(_asString(map['remaining'])) ?? 0,
-                plan: _asString(map['plan']),
-                courseId: _asString(map['courseId']).isEmpty
-                    ? null
-                    : _asString(map['courseId']),
-                imageUrl: _asString(map['imageUrl']),
-              ),
-              "payments",
+            builder: (_) => CheckoutPage(
+              phone: _asString(map['phone']),
+              price: int.tryParse(_asString(map['price'])) ?? 0,
+              paid: int.tryParse(_asString(map['paid'])) ?? 0,
+              remaining: int.tryParse(_asString(map['remaining'])) ?? 0,
+              plan: _asString(map['plan']),
+              courseId: _asString(map['courseId']).isEmpty
+                  ? null
+                  : _asString(map['courseId']),
+              imageUrl: _asString(map['imageUrl']),
             ),
           );
         }
         return MaterialPageRoute(
-          builder: (_) => secure(
-            const CheckoutPage(
-              phone: '',
-              price: 0,
-              paid: 0,
-              remaining: 0,
-              plan: '',
-              courseId: null,
-              imageUrl: '',
-            ),
-            "payments",
+          builder: (_) => const CheckoutPage(
+            phone: '',
+            price: 0,
+            paid: 0,
+            remaining: 0,
+            plan: '',
+            courseId: null,
+            imageUrl: '',
           ),
         );
 

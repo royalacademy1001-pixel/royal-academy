@@ -140,9 +140,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
       } else {
         final rawOrder = lastLesson.docs.first.data()['order'];
 
-        final int lastOrder = rawOrder is int
-            ? rawOrder
-            : int.tryParse(rawOrder.toString()) ?? 0;
+        final int lastOrder =
+            rawOrder is int ? rawOrder : int.tryParse(rawOrder.toString()) ?? 0;
 
         nextOrder = lastOrder + 1;
       }
@@ -171,9 +170,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
       } else {
         final rawOrder = lastLesson.docs.first.data()['order'];
 
-        final int lastOrder = rawOrder is int
-            ? rawOrder
-            : int.tryParse(rawOrder.toString()) ?? 0;
+        final int lastOrder =
+            rawOrder is int ? rawOrder : int.tryParse(rawOrder.toString()) ?? 0;
 
         nextOrder = lastOrder + 1;
       }
@@ -266,7 +264,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: LinearProgressIndicator(
-              value: uploadingFile ? safeValue : (safeValue >= 1 ? 1 : safeValue),
+              value:
+                  uploadingFile ? safeValue : (safeValue >= 1 ? 1 : safeValue),
               minHeight: 8,
               color: AppColors.gold,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
@@ -347,11 +346,11 @@ class _AddLessonPageState extends State<AddLessonPage> {
       }
 
       return url;
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           uploadingFile = false;
-          uploadStatus = "فشل الرفع";
+          uploadStatus = e.toString();
         });
       }
       return null;
@@ -556,7 +555,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
                     trailing: selectedCourseId == c.id
                         ? const Icon(Icons.check, color: Colors.green)
                         : null,
-                    onTap: () => selectCourse(c.id, (data['title'] ?? "").toString()),
+                    onTap: () =>
+                        selectCourse(c.id, (data['title'] ?? "").toString()),
                   );
                 },
               );

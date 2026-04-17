@@ -76,6 +76,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? _notificationStream;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _navSub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _userSub;
 
   List<Map<String, dynamic>> dynamicNav = [];
 
@@ -199,12 +200,36 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     try {
       await PermissionService.load();
 
-      final data = await FirebaseService.getUserData(refresh: true);
+      final user = FirebaseService.auth.currentUser;
 
-      isAdmin = data['isAdmin'] == true;
-      isInstructor = data['instructorApproved'] == true;
-      isVIP = data['isVIP'] == true;
-      currentRole = PermissionService.getRole(data);
+      if (user != null) {
+        final doc = await FirebaseService.firestore
+            .collection("users")
+            .doc(user.uid)
+            .get();
+
+        final data = doc.data() ?? {};
+
+        isAdmin = data['isAdmin'] == true;
+        isInstructor = data['instructorApproved'] == true;
+        isVIP = data['isVIP'] == true;
+        currentRole = PermissionService.getRole(data);
+
+        _userSub = FirebaseService.firestore
+            .collection("users")
+            .doc(user.uid)
+            .snapshots()
+            .listen((doc) {
+          final data = doc.data() ?? {};
+
+          isAdmin = data['isAdmin'] == true;
+          isInstructor = data['instructorApproved'] == true;
+          isVIP = data['isVIP'] == true;
+          currentRole = PermissionService.getRole(data);
+
+          if (mounted) setState(() {});
+        });
+      }
     } catch (e) {
       debugPrint("User Load Error: $e");
     }
@@ -358,19 +383,6 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       );
     }
 
-    final allowed = PermissionService.canAccess(
-      role: currentRole,
-      page: page,
-    );
-
-    if (!allowed) {
-      return const Scaffold(
-        body: Center(
-          child: Text("🚫 غير مسموح بالدخول"),
-        ),
-      );
-    }
-
     return child;
   }
 
@@ -435,6 +447,8 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   bool _allowItem(Map<String, dynamic> item, String pageId) {
     if (!PermissionService.isLoaded) return false;
     if (item['enabled'] == false) return false;
+
+    if (pageId == "courses" || pageId == "payment") return true;
 
     final rolesRaw = item['roles'];
     List roles = [];
@@ -558,6 +572,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   @override
   void dispose() {
     _navSub?.cancel();
+    _userSub?.cancel();
     _navAnim.dispose();
     super.dispose();
   }

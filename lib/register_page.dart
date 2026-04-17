@@ -140,6 +140,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
         "subscribed": false,
         "subscriptionEnd": null,
+        "subscriptionStatus": "inactive",
 
         "enrolledCourses": [],
         "unlockedCourses": [],
@@ -148,7 +149,9 @@ class _RegisterPageState extends State<RegisterPage> {
         "lastLessonId": null,
         "lastVideoTitle": null,
 
-        "role": "student",
+        "role": "user",
+        "accountType": "user",
+
         "instructorRequest": false,
         "instructorApproved": false,
 

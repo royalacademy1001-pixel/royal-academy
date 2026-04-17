@@ -161,6 +161,7 @@ class HomeGrid extends StatelessWidget {
   }
 
   bool _allow(String role, String key) {
+    if (key == "courses" || key == "payment") return true;
     return PermissionService.canAccess(role: role, page: key);
   }
 
@@ -198,7 +199,7 @@ class HomeGrid extends StatelessWidget {
                 ),
               )),
         },
-      if ((safeIsInstructor || safeIsAdmin) && _allow(role, "instructor"))
+      if ((safeIsInstructor || safeIsAdmin))
         {
           "id": "instructor",
           "title": "المدرس",
@@ -210,7 +211,7 @@ class HomeGrid extends StatelessWidget {
                 ),
               )),
         },
-      if (safeIsAdmin && _allow(role, "admin"))
+      if (safeIsAdmin)
         {
           "id": "admin",
           "title": "Admin",
@@ -220,7 +221,7 @@ class HomeGrid extends StatelessWidget {
                 MaterialPageRoute(builder: (_) => const AdminPage()),
               )),
         },
-      if (safeIsAdmin && _allow(role, "center_management"))
+      if (safeIsAdmin)
         {
           "id": "center",
           "title": "السنتر",
@@ -240,7 +241,8 @@ class HomeGrid extends StatelessWidget {
     final bool safeIsAdmin = isAdmin == true;
     final bool safeIsInstructor = isInstructor == true;
 
-    String role = "guest";
+    String role = "user";
+
     if (safeIsAdmin) {
       role = "admin";
     } else if (safeIsInstructor) {
@@ -273,7 +275,7 @@ class HomeGrid extends StatelessWidget {
                 bool roleAllowed = true;
 
                 if (roles is List && roles.isNotEmpty) {
-                  roleAllowed = roles.contains(role);
+                  roleAllowed = roles.contains(role) || roles.contains("all");
                 }
 
                 if (found.isNotEmpty &&

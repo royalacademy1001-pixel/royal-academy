@@ -7,6 +7,17 @@ class ProfileFinance extends StatelessWidget {
 
   const ProfileFinance({super.key, required this.uid});
 
+  int _safeInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? "0") ?? 0;
+  }
+
+  String _safeString(dynamic v) {
+    if (v == null) return "";
+    return v.toString();
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
@@ -15,27 +26,101 @@ class ProfileFinance extends StatelessWidget {
           .where("userId", isEqualTo: uid)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const CircularProgressIndicator();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 80,
+            child: Center(child: CircularProgressIndicator()),
+          );
         }
 
-        final docs = snapshot.data!.docs;
+        if (snapshot.hasError) {
+          return const Center(
+            child: Text(
+              "خطأ في تحميل البيانات",
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
+
+        final docs = snapshot.data?.docs ?? [];
+
+        if (docs.isEmpty) {
+          return const Center(
+            child: Text(
+              "لا توجد مدفوعات",
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        int total = 0;
+        for (var d in docs) {
+          final data = d.data() as Map<String, dynamic>? ?? {};
+          total += _safeInt(data['amount']);
+        }
 
         return Column(
-          children: docs.map((doc) {
-            final data = doc.data() as Map<String, dynamic>;
+          children: [
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+              ),
+              child: Text(
+                "💰 إجمالي المدفوع: $total",
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ...docs.map((doc) {
+              final data = doc.data() as Map<String, dynamic>? ?? {};
+              final amount = _safeInt(data['amount']);
+              final note = _safeString(data['note']);
 
-            return ListTile(
-              title: Text(
-                "مدفوع: ${data['amount'] ?? 0}",
-                style: const TextStyle(color: Colors.white),
-              ),
-              subtitle: Text(
-                data['note'] ?? "",
-                style: const TextStyle(color: Colors.grey),
-              ),
-            );
-          }).toList(),
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.payments, color: Colors.green),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "مدفوع: $amount",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (note.isNotEmpty)
+                            Text(
+                              note,
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
         );
       },
     );

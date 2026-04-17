@@ -97,6 +97,10 @@ class _StudentProfilePageState extends State<StudentProfilePage>
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scale = screenWidth < 380 ? 0.85 : screenWidth < 420 ? 0.92 : 1.0;
+    final showInlineStats = false;
+
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -131,61 +135,66 @@ class _StudentProfilePageState extends State<StudentProfilePage>
                 },
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      ProfileHeader(controller: controller),
-                      const SizedBox(height: 16),
-                      ProfileOverview(controller: controller),
-                      const SizedBox(height: 16),
-                      ProfileStats(
-                        coursesCount: controller.enrolledCourses.length,
-                        totalPaid: _safeInt(controller.studentData?['totalPaid']),
-                        remaining: _safeInt(controller.studentData?['remaining']),
-                        completion: controller.profileCompletion(),
-                      ),
-                      const SizedBox(height: 16),
-                      ProfileCourses(controller: controller),
-                      const SizedBox(height: 16),
-                      ProfileAttendance(uid: user.uid),
-                      const SizedBox(height: 16),
-                      ProfileFinance(uid: user.uid),
-                      const SizedBox(height: 16),
-                      ProfileEdit(controller: controller),
-                      const SizedBox(height: 16),
-                      if (showStudentQr)
-                        Container(
-                          width: double.infinity,
-                          margin: const EdgeInsets.only(bottom: 16),
-                          child: ElevatedButton.icon(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.gold,
-                              padding: const EdgeInsets.all(14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(15),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const StudentQRPage(),
+                  padding: EdgeInsets.all(12 * scale),
+                  child: Transform.scale(
+                    scale: scale,
+                    alignment: Alignment.topCenter,
+                    child: Column(
+                      children: [
+                        ProfileHeader(controller: controller),
+                        SizedBox(height: 14 * scale),
+                        ProfileOverview(controller: controller),
+                        SizedBox(height: 14 * scale),
+                        if (showInlineStats)
+                          ProfileStats(
+                            coursesCount: controller.enrolledCourses.length,
+                            totalPaid: _safeInt(controller.studentData?['totalPaid']),
+                            remaining: _safeInt(controller.studentData?['remaining']),
+                            completion: controller.profileCompletion(),
+                          ),
+                        if (showInlineStats) SizedBox(height: 14 * scale),
+                        ProfileCourses(controller: controller),
+                        SizedBox(height: 14 * scale),
+                        ProfileAttendance(uid: user.uid),
+                        SizedBox(height: 14 * scale),
+                        ProfileFinance(uid: user.uid),
+                        SizedBox(height: 14 * scale),
+                        ProfileEdit(controller: controller),
+                        SizedBox(height: 14 * scale),
+                        if (showStudentQr)
+                          Container(
+                            width: double.infinity,
+                            margin: EdgeInsets.only(bottom: 14 * scale),
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.gold,
+                                padding: EdgeInsets.all(12 * scale),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14 * scale),
                                 ),
-                              );
-                            },
-                            icon: const Icon(Icons.qr_code, color: Colors.black),
-                            label: const Text(
-                              "📱 QR الخاص بي",
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const StudentQRPage(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.qr_code, color: Colors.black),
+                              label: const Text(
+                                "📱 QR الخاص بي",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ProfileActions(controller: controller),
-                      const SizedBox(height: 30),
-                    ],
+                        ProfileActions(controller: controller),
+                        SizedBox(height: 24 * scale),
+                      ],
+                    ),
                   ),
                 ),
               ),

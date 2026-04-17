@@ -109,11 +109,18 @@ class VideoController {
       return uri.queryParameters["v"] ?? "";
     }
 
+    if (uri.host.contains("youtu.be")) {
+      return uri.pathSegments.isNotEmpty ? uri.pathSegments.first : "";
+    }
+
     return "";
   }
 
   Future<void> initVideo(BuildContext context) async {
     if (_disposed) return;
+
+    if (initializedOnce) return;
+    initializedOnce = true;
 
     String url = videoUrl.trim();
 
@@ -171,10 +178,19 @@ class VideoController {
         return;
       }
 
-      youtubeController = YoutubePlayerController.fromVideoId(
-        videoId: id,
-        autoPlay: true,
-      );
+      try {
+        youtubeController = YoutubePlayerController.fromVideoId(
+          videoId: id,
+          autoPlay: true,
+          params: const YoutubePlayerParams(
+            showControls: true,
+            showFullscreenButton: true,
+          ),
+        );
+      } catch (_) {
+        videoError = true;
+        return;
+      }
 
       youtubeTimer?.cancel();
       youtubeTimer = Timer.periodic(const Duration(seconds: 1), (timer) async {
@@ -268,7 +284,7 @@ class VideoController {
         maxWatchedSecond = currentSecond;
       }
 
-      progress = maxWatchedSecond / totalSeconds;
+      progress = totalSeconds == 0 ? 0 : maxWatchedSecond / totalSeconds;
 
       if (currentSecond % 5 == 0 && !savingNow) {
         savingNow = true;

@@ -3,7 +3,7 @@ part of 'users_page.dart';
 extension UsersWidgets on _UsersPageState {
   Widget _badge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(30),
@@ -13,7 +13,7 @@ extension UsersWidgets on _UsersPageState {
         text,
         style: TextStyle(
           color: color,
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -28,24 +28,24 @@ extension UsersWidgets on _UsersPageState {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 6),
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -68,16 +68,17 @@ extension UsersWidgets on _UsersPageState {
         children: [
           Icon(
             icon,
-            size: 16,
+            size: 14,
             color: selected ? Colors.black : Colors.white,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(label),
         ],
       ),
       labelStyle: TextStyle(
         color: selected ? Colors.black : Colors.white,
         fontWeight: FontWeight.bold,
+        fontSize: 11,
       ),
       selectedColor: AppColors.gold,
       backgroundColor: AppColors.black.withValues(alpha: 0.45),
@@ -96,38 +97,38 @@ extension UsersWidgets on _UsersPageState {
     Color color,
   ) {
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(14),
+      width: 140,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 10),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   value,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -149,8 +150,8 @@ extension UsersWidgets on _UsersPageState {
     final instructors = users.where(UsersLogic.isInstructor).length;
 
     return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _statCard("الإجمالي", total.toString(), Icons.groups, Colors.white),
         _statCard("VIP", vip.toString(), Icons.star, AppColors.gold),
@@ -165,10 +166,10 @@ extension UsersWidgets on _UsersPageState {
 
   Widget _header() {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.38),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
@@ -178,11 +179,11 @@ extension UsersWidgets on _UsersPageState {
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
               hintText: "ابحث بالاسم أو الإيميل أو الهاتف أو Student ID...",
-              prefixIcon: const Icon(Icons.search, color: AppColors.gold),
+              prefixIcon: const Icon(Icons.search, color: AppColors.gold, size: 18),
               suffixIcon: search.isEmpty
                   ? null
                   : IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.grey),
+                      icon: const Icon(Icons.clear, color: Colors.grey, size: 18),
                       onPressed: () {
                         searchController.clear();
                         setState(() => search = "");
@@ -191,59 +192,59 @@ extension UsersWidgets on _UsersPageState {
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
             ),
             onChanged: (v) => setState(() => search = v),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _filterChip("all", "الكل", Icons.people),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("vip", "VIP فقط", Icons.star),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("subscribed", "مشترك", Icons.verified),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("linked", "مربوط", Icons.link),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("unlinked", "غير مربوط", Icons.link_off),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("blocked", "محظور", Icons.block),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("admins", "Admins", Icons.admin_panel_settings),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("instructors", "مدرسين", Icons.school),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("requests", "طلبات المدرسين", Icons.pending_actions),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("students", "طلاب فقط", Icons.person),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.gold.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.gold.withValues(alpha: 0.15)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.star, color: AppColors.gold),
-                SizedBox(width: 10),
+                Icon(Icons.star, color: AppColors.gold, size: 18),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     "لوحة تحكم المستخدمين كاملة: VIP / Admin / Instructor / Courses / Results / Attendance / Link / Block",
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                     ),
                   ),
                 ),
@@ -269,7 +270,7 @@ extension UsersWidgets on _UsersPageState {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: 320,
+          height: 280,
           child: Center(
             child: Text(
               message,
@@ -286,7 +287,7 @@ extension UsersWidgets on _UsersPageState {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: 300,
+          height: 260,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -294,24 +295,24 @@ extension UsersWidgets on _UsersPageState {
                 const Icon(
                   Icons.error_outline,
                   color: Colors.redAccent,
-                  size: 50,
+                  size: 40,
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 12),
                 Text(
                   message,
                   style: const TextStyle(
                     color: Colors.redAccent,
-                    fontSize: 16,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 const Text(
                   "اسحب لتحديث الصفحة",
                   style: TextStyle(
                     color: Colors.grey,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -325,18 +326,18 @@ extension UsersWidgets on _UsersPageState {
   Widget _unauthorizedView() {
     return Center(
       child: Container(
-        padding: const EdgeInsets.all(20),
-        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.black.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.block, color: Colors.redAccent, size: 48),
-            const SizedBox(height: 16),
+            const Icon(Icons.block, color: Colors.redAccent, size: 40),
+            const SizedBox(height: 12),
             const Text(
               "🚫 غير مصرح بالدخول",
               style: TextStyle(
@@ -345,13 +346,13 @@ extension UsersWidgets on _UsersPageState {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             const Text(
               "هذه الصفحة مخصصة للمسؤولين فقط",
-              style: TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: Colors.grey, fontSize: 11),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.gold,
@@ -375,27 +376,27 @@ extension UsersWidgets on _UsersPageState {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
               color: AppColors.black.withValues(alpha: 0.38),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: const Row(
               children: [
                 SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppColors.gold,
                   ),
                 ),
-                SizedBox(width: 12),
+                SizedBox(width: 10),
                 Text(
                   "جاري تحميل الكورسات...",
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Colors.grey, fontSize: 11),
                 ),
               ],
             ),
@@ -405,16 +406,16 @@ extension UsersWidgets on _UsersPageState {
         if (snapshot.hasError) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
               color: AppColors.black.withValues(alpha: 0.38),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: const Text(
               "❌ حدث خطأ في تحميل الكورسات",
-              style: TextStyle(color: Colors.redAccent),
+              style: TextStyle(color: Colors.redAccent, fontSize: 11),
             ),
           );
         }
@@ -424,16 +425,16 @@ extension UsersWidgets on _UsersPageState {
         if (courses.isEmpty) {
           return Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
               color: AppColors.black.withValues(alpha: 0.38),
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
             ),
             child: const Text(
               "لا توجد كورسات متاحة",
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey, fontSize: 11),
             ),
           );
         }
@@ -457,11 +458,11 @@ extension UsersWidgets on _UsersPageState {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(14),
-          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.only(top: 10),
           decoration: BoxDecoration(
             color: AppColors.black.withValues(alpha: 0.38),
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
           child: Column(
@@ -472,10 +473,10 @@ extension UsersWidgets on _UsersPageState {
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  fontSize: 12,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: selectedValue,
                 dropdownColor: AppColors.black,
@@ -487,7 +488,7 @@ extension UsersWidgets on _UsersPageState {
                   filled: true,
                   fillColor: Colors.white.withValues(alpha: 0.05),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 items: courses.map((course) {
@@ -543,11 +544,11 @@ extension UsersWidgets on _UsersPageState {
     final role = UsersLogic.text(data['role']);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: vip
               ? AppColors.gold.withValues(alpha: 0.35)
@@ -560,7 +561,7 @@ extension UsersWidgets on _UsersPageState {
           Row(
             children: [
               CircleAvatar(
-                radius: 24,
+                radius: 20,
                 backgroundColor: vip
                     ? AppColors.gold.withValues(alpha: 0.18)
                     : Colors.white.withValues(alpha: 0.08),
@@ -571,10 +572,11 @@ extension UsersWidgets on _UsersPageState {
                   style: TextStyle(
                     color: vip ? AppColors.gold : Colors.white,
                     fontWeight: FontWeight.bold,
+                    fontSize: 12,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -583,17 +585,17 @@ extension UsersWidgets on _UsersPageState {
                       name,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     if (email.isNotEmpty)
                       Text(
                         email,
                         style: const TextStyle(
                           color: Colors.grey,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     if (phone.isNotEmpty)
@@ -601,7 +603,7 @@ extension UsersWidgets on _UsersPageState {
                         phone,
                         style: const TextStyle(
                           color: Colors.grey,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     if (studentId.isNotEmpty)
@@ -609,7 +611,7 @@ extension UsersWidgets on _UsersPageState {
                         "Student ID: $studentId",
                         style: const TextStyle(
                           color: Colors.grey,
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                   ],
@@ -617,7 +619,7 @@ extension UsersWidgets on _UsersPageState {
               ),
               PopupMenuButton<String>(
                 color: AppColors.black,
-                icon: const Icon(Icons.more_vert, color: Colors.white70),
+                icon: const Icon(Icons.more_vert, color: Colors.white70, size: 20),
                 onSelected: (value) async {
                   switch (value) {
                     case "edit":
@@ -717,18 +719,18 @@ extension UsersWidgets on _UsersPageState {
                     ),
                   if (selectedCourseId != null) ...[
                     const PopupMenuDivider(),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: "unlockCourse",
                       child: Text(
                         "🔓 فتح الكورس المحدد",
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: "lockCourse",
                       child: Text(
                         "🔒 قفل الكورس المحدد",
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                   ],
@@ -741,11 +743,11 @@ extension UsersWidgets on _UsersPageState {
                     ),
                   ),
                   if (linked)
-                    PopupMenuItem(
+                    const PopupMenuItem(
                       value: "unlink",
                       child: Text(
                         "🔗 فصل الربط",
-                        style: const TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                   const PopupMenuDivider(),
@@ -792,10 +794,10 @@ extension UsersWidgets on _UsersPageState {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               if (vip) _badge("VIP", AppColors.gold),
               if (blocked) _badge("محظور", Colors.red),
@@ -807,31 +809,31 @@ extension UsersWidgets on _UsersPageState {
               if (studentId.isNotEmpty) _badge("Student Linked", Colors.teal),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             "آخر نتيجة: ${lastResultScore > 0 ? lastResultScore.toString() : "لا يوجد"}   |   آخر حضور: ${lastAttendanceAt.isNotEmpty ? lastAttendanceAt : "لا يوجد"}",
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
+            style: const TextStyle(color: Colors.grey, fontSize: 11),
           ),
           if (subscriptionEnd.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 3),
               child: Text(
                 "انتهاء الاشتراك: $subscriptionEnd",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
               ),
             ),
           if (role.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(top: 3),
               child: Text(
                 "Role: $role",
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
+                style: const TextStyle(color: Colors.grey, fontSize: 11),
               ),
             ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
+            runSpacing: 6,
             children: [
               _actionButton(
                 label: vip ? "إلغاء VIP" : "تفعيل VIP",
@@ -908,33 +910,33 @@ extension UsersWidgets on _UsersPageState {
         Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.all(12),
               child: _header(),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: _buildCourseSelector(),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: _statsSection(users),
             ),
             const SizedBox(height: 10),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: _statsSection(users),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   "عدد النتائج: ${filteredUsers.length}",
                   style: const TextStyle(
                     color: Colors.grey,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Expanded(
               child: RefreshIndicator(
                 color: AppColors.gold,

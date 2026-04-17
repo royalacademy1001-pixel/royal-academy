@@ -24,6 +24,8 @@ class CenterModulesGrid extends StatelessWidget {
     final q = search.toLowerCase().trim();
 
     final filtered = modules.where((m) {
+      if (!isAdmin) return false;
+
       if (!m.canAccess(
         isAdmin: isAdmin,
         isVIP: isVIP,

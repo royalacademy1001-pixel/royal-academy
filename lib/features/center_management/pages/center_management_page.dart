@@ -55,8 +55,14 @@ class _CenterManagementPageState extends State<CenterManagementPage> {
   Future<_CenterSummary> _loadSummary() async {
     final results = await Future.wait<QuerySnapshot<Map<String, dynamic>>>([
       FirebaseService.firestore.collection("courses").get(),
-      FirebaseService.firestore.collection("users").get(),
-      FirebaseService.firestore.collection("payments").get(),
+      FirebaseService.firestore
+          .collection("users")
+          .where("isVIP", isEqualTo: true)
+          .get(),
+      FirebaseService.firestore
+          .collection("payments")
+          .where("isVIP", isEqualTo: true)
+          .get(),
       FirebaseService.firestore.collection("attendance_sessions").get(),
       FirebaseService.firestore.collection("analytics_events").get(),
     ]);
@@ -262,6 +268,7 @@ class _CenterManagementPageState extends State<CenterManagementPage> {
           icon: m.icon,
           page: m.page,
           section: m.section,
+          requiresAdmin: true,
         )).toList();
 
         return Scaffold(

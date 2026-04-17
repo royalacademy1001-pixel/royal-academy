@@ -134,110 +134,114 @@ class _UsersPageState extends State<UsersPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          "👥 Users Dashboard",
-          style: TextStyle(
-            color: AppColors.gold,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () async {
-              searchController.clear();
-              setState(() {
-                search = "";
-                filterMode = "all";
-                selectedCourseId = null;
-                selectedCourseTitle = "";
-                _adminCache.clear();
-              });
-              await _refreshAll();
-            },
-            icon: const Icon(Icons.refresh, color: AppColors.gold),
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned(
-            top: -50,
-            left: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.gold.withValues(alpha: 0.05),
-                shape: BoxShape.circle,
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
-                child: const SizedBox(),
-              ),
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(textScaleFactor: 0.9),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text(
+            "👥 Users Dashboard",
+            style: TextStyle(
+              color: AppColors.gold,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          StreamBuilder<User?>(
-            stream: FirebaseAuth.instance.authStateChanges(),
-            builder: (context, authSnap) {
-              if (authSnap.connectionState == ConnectionState.waiting) {
-                return const Center(child: LoadingWidget());
-              }
+          backgroundColor: Colors.black,
+          elevation: 0,
+          centerTitle: true,
+          actions: [
+            IconButton(
+              onPressed: () async {
+                searchController.clear();
+                setState(() {
+                  search = "";
+                  filterMode = "all";
+                  selectedCourseId = null;
+                  selectedCourseTitle = "";
+                  _adminCache.clear();
+                });
+                await _refreshAll();
+              },
+              icon: const Icon(Icons.refresh, color: AppColors.gold),
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            Positioned(
+              top: -50,
+              left: -50,
+              child: Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                  child: const SizedBox(),
+                ),
+              ),
+            ),
+            StreamBuilder<User?>(
+              stream: FirebaseAuth.instance.authStateChanges(),
+              builder: (context, authSnap) {
+                if (authSnap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: LoadingWidget());
+                }
 
-              if (authSnap.hasError) {
-                return _errorView("❌ حدث خطأ أثناء قراءة حالة الدخول");
-              }
+                if (authSnap.hasError) {
+                  return _errorView("❌ حدث خطأ أثناء قراءة حالة الدخول");
+                }
 
-              final user = authSnap.data;
-              if (user == null) {
-                return _unauthorizedView();
-              }
+                final user = authSnap.data;
+                if (user == null) {
+                  return _unauthorizedView();
+                }
 
-              final adminFuture = _adminCache.putIfAbsent(
-                user.uid,
-                () => UsersLogic.checkAdmin(user.uid),
-              );
+                final adminFuture = _adminCache.putIfAbsent(
+                  user.uid,
+                  () => UsersLogic.checkAdmin(user.uid),
+                );
 
-              return FutureBuilder<bool>(
-                future: adminFuture,
-                builder: (context, adminSnap) {
-                  if (adminSnap.connectionState == ConnectionState.waiting) {
-                    return const Center(child: LoadingWidget());
-                  }
+                return FutureBuilder<bool>(
+                  future: adminFuture,
+                  builder: (context, adminSnap) {
+                    if (adminSnap.connectionState == ConnectionState.waiting) {
+                      return const Center(child: LoadingWidget());
+                    }
 
-                  if (adminSnap.hasError) {
-                    return _errorView("❌ حدث خطأ أثناء التحقق من الصلاحيات");
-                  }
+                    if (adminSnap.hasError) {
+                      return _errorView("❌ حدث خطأ أثناء التحقق من الصلاحيات");
+                    }
 
-                  if (adminSnap.data != true) {
-                    return _unauthorizedView();
-                  }
+                    if (adminSnap.data != true) {
+                      return _unauthorizedView();
+                    }
 
-                  return FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _usersFuture,
-                    builder: (context, usersSnap) {
-                      if (usersSnap.connectionState == ConnectionState.waiting) {
-                        return const Center(child: LoadingWidget());
-                      }
+                    return FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _usersFuture,
+                      builder: (context, usersSnap) {
+                        if (usersSnap.connectionState == ConnectionState.waiting) {
+                          return const Center(child: LoadingWidget());
+                        }
 
-                      if (usersSnap.hasError) {
-                        return _errorView("❌ حدث خطأ في تحميل بيانات المستخدمين");
-                      }
+                        if (usersSnap.hasError) {
+                          return _errorView("❌ حدث خطأ في تحميل بيانات المستخدمين");
+                        }
 
-                      final users = usersSnap.data ?? [];
-                      return _buildContent(users, user.uid);
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ],
+                        final users = usersSnap.data ?? [];
+                        return _buildContent(users, user.uid);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -30,6 +30,7 @@ class AdminModule {
     required bool isVIP,
     required bool isInstructor,
   }) {
+    if (!isAdmin) return false;
     if (requiresAdmin && !isAdmin) return false;
     if (requiresVIP && !isVIP) return false;
     if (requiresInstructor && !isInstructor) return false;

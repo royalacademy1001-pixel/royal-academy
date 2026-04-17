@@ -10,44 +10,44 @@ class ProfileOverview extends StatelessWidget {
     required this.controller,
   });
 
-  Widget _metricCard(String title, String value, Color color, IconData icon) {
+  Widget _metricCard(String title, String value, Color color, IconData icon, double scale) {
     return Expanded(
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(14),
+        margin: EdgeInsets.symmetric(horizontal: 4 * scale),
+        padding: EdgeInsets.all(10 * scale),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14 * scale),
           border: Border.all(color: Colors.white10),
         ),
         child: Row(
           children: [
             Container(
-              width: 42,
-              height: 42,
+              width: 34 * scale,
+              height: 34 * scale,
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10 * scale),
               ),
-              child: Icon(icon, color: color, size: 22),
+              child: Icon(icon, color: color, size: 18 * scale),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 8 * scale),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(color: Colors.grey, fontSize: 11),
+                    style: TextStyle(color: Colors.grey, fontSize: 10 * scale),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 3 * scale),
                   Text(
                     value,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 14 * scale,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -66,6 +66,9 @@ class ProfileOverview extends StatelessWidget {
     final remaining = controller.studentData?['remaining'] ?? 0;
     final completion = controller.profileCompletion();
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scale = screenWidth < 380 ? 0.85 : screenWidth < 420 ? 0.92 : 1.0;
+
     return Column(
       children: [
         Row(
@@ -75,16 +78,18 @@ class ProfileOverview extends StatelessWidget {
               controller.enrolledCourses.length.toString(),
               Colors.blue,
               Icons.menu_book,
+              scale,
             ),
             _metricCard(
               "المدفوع",
               "$totalPaid",
               Colors.green,
               Icons.payments_outlined,
+              scale,
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 6 * scale),
         Row(
           children: [
             _metricCard(
@@ -92,6 +97,7 @@ class ProfileOverview extends StatelessWidget {
               "$remaining",
               remaining > 0 ? Colors.red : Colors.green,
               Icons.request_quote_outlined,
+              scale,
             ),
             _metricCard(
               "اكتمال الملف",
@@ -102,6 +108,7 @@ class ProfileOverview extends StatelessWidget {
                       ? Colors.orange
                       : Colors.red,
               Icons.fact_check_outlined,
+              scale,
             ),
           ],
         ),

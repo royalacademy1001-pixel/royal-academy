@@ -30,6 +30,7 @@ class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
   late VideoController controller;
   bool isMini = false;
   bool _disposed = false;
+  bool _initStarted = false;
 
   @override
   void initState() {
@@ -48,24 +49,44 @@ class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
   }
 
   Future<void> init() async {
-    await controller.checkAccess();
+    if (_initStarted) return;
+    _initStarted = true;
 
-    if (_disposed) return;
+    try {
+      await controller.checkAccess();
 
-    if (!controller.hasAccess) {
+      if (_disposed) return;
+
+      if (!controller.hasAccess) {
+        if (!mounted) return;
+        setState(() => controller.loading = false);
+        return;
+      }
+
+      if (widget.videoUrl.trim().isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          controller.videoError = true;
+          controller.loading = false;
+        });
+        return;
+      }
+
+      await controller.initVideo(context);
+
+      if (_disposed) return;
       if (!mounted) return;
-      setState(() => controller.loading = false);
-      return;
+
+      setState(() {
+        controller.loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        controller.videoError = true;
+        controller.loading = false;
+      });
     }
-
-    await controller.initVideo(context);
-
-    if (_disposed) return;
-    if (!mounted) return;
-
-    setState(() {
-      controller.loading = false;
-    });
   }
 
   @override
@@ -143,16 +164,18 @@ class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
                   },
                   child: AspectRatio(
                     aspectRatio: 16 / 9,
-                    child: VideoPlayerWidget(
-                      videoError: controller.videoError,
-                      isPdf: controller.isPdf,
-                      isAudio: controller.isAudio,
-                      isYoutube: controller.isYoutube,
-                      videoUrl: widget.videoUrl,
-                      chewieController: controller.chewieController,
-                      youtubeController: controller.youtubeController,
-                      audioPlayer: controller.audioPlayer,
-                    ),
+                    child: controller.videoError
+                        ? const Center(child: Text("⚠️ الفيديو غير متاح"))
+                        : VideoPlayerWidget(
+                            videoError: controller.videoError,
+                            isPdf: controller.isPdf,
+                            isAudio: controller.isAudio,
+                            isYoutube: controller.isYoutube,
+                            videoUrl: widget.videoUrl,
+                            chewieController: controller.chewieController,
+                            youtubeController: controller.youtubeController,
+                            audioPlayer: controller.audioPlayer,
+                          ),
                   ),
                 ),
 
@@ -177,7 +200,7 @@ class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: VideoProgressBar(
                         watched: controller.maxWatchedSecond,
-                        total: controller.totalSeconds,
+                        total: controller.totalSeconds == 0 ? 1 : controller.totalSeconds,
                         onSeek: (value) {
                           if (controller.videoController != null) {
                             final sec =
@@ -231,16 +254,18 @@ class _VideoPageState extends State<VideoPage> with WidgetsBindingObserver {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: VideoPlayerWidget(
-                      videoError: controller.videoError,
-                      isPdf: controller.isPdf,
-                      isAudio: controller.isAudio,
-                      isYoutube: controller.isYoutube,
-                      videoUrl: widget.videoUrl,
-                      chewieController: controller.chewieController,
-                      youtubeController: controller.youtubeController,
-                      audioPlayer: controller.audioPlayer,
-                    ),
+                    child: controller.videoError
+                        ? const Center(child: Text("⚠️ خطأ"))
+                        : VideoPlayerWidget(
+                            videoError: controller.videoError,
+                            isPdf: controller.isPdf,
+                            isAudio: controller.isAudio,
+                            isYoutube: controller.isYoutube,
+                            videoUrl: widget.videoUrl,
+                            chewieController: controller.chewieController,
+                            youtubeController: controller.youtubeController,
+                            audioPlayer: controller.audioPlayer,
+                          ),
                   ),
                 ),
               ),

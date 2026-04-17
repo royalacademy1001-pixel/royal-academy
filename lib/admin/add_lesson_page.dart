@@ -307,8 +307,8 @@ class _AddLessonPageState extends State<AddLessonPage> {
       if (mounted) {
         setState(() {
           uploadingFile = true;
-          uploadProgress = 0;
-          uploadStatus = "جاري رفع الملف...";
+          uploadProgress = 0.01;
+          uploadStatus = "بدء الرفع...";
         });
       }
 
@@ -320,10 +320,12 @@ class _AddLessonPageState extends State<AddLessonPage> {
 
         final total = snapshot.totalBytes;
         final transferred = snapshot.bytesTransferred;
-        final progress = total <= 0 ? 0.0 : transferred / total;
+        double progress = total <= 0 ? 0.01 : transferred / total;
+
+        if (progress == 0) progress = 0.01;
 
         setState(() {
-          uploadProgress = progress.clamp(0.0, 1.0).toDouble();
+          uploadProgress = progress.clamp(0.01, 1.0).toDouble();
           uploadStatus = uploadProgress >= 1
               ? "انتهى الرفع"
               : "جاري الرفع ${(uploadProgress * 100).toInt()}%";

@@ -14,37 +14,37 @@ class ProfileCourses extends StatelessWidget {
     required this.controller,
   });
 
-  Widget _panel({required Widget child}) {
+  Widget _panel({required Widget child, required double scale}) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(14 * scale),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18 * scale),
         border: Border.all(color: Colors.white10),
       ),
       child: child,
     );
   }
 
-  Widget _sectionTitle(String title, {String? subtitle}) {
+  Widget _sectionTitle(String title, {String? subtitle, required double scale}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 14 * scale,
             fontWeight: FontWeight.bold,
           ),
         ),
         if (subtitle != null) ...[
-          const SizedBox(height: 4),
+          SizedBox(height: 3 * scale),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.grey,
-              fontSize: 12,
+              fontSize: 11 * scale,
             ),
           ),
         ],
@@ -54,37 +54,42 @@ class ProfileCourses extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scale = screenWidth < 380 ? 0.8 : screenWidth < 420 ? 0.9 : 1.0;
+
     if (controller.enrolledCourses.isEmpty) {
       return _panel(
+        scale: scale,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionTitle(
               "كورساتي",
               subtitle: "لا توجد كورسات مسجلة على الحساب",
+              scale: scale,
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 12 * scale),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(18),
+              padding: EdgeInsets.all(16 * scale),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14 * scale),
                 border: Border.all(color: Colors.white10),
               ),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.menu_book_outlined,
                     color: AppColors.gold,
-                    size: 32,
+                    size: 26 * scale,
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
+                  SizedBox(height: 8 * scale),
+                  Text(
                     "لم يتم تسجيل أي كورس بعد",
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: Colors.white, fontSize: 12 * scale),
                   ),
-                  const SizedBox(height: 10),
+                  SizedBox(height: 8 * scale),
                   CustomButton(
                     text: "💳 فتح الدفع والاشتراك",
                     onPressed: () {
@@ -107,23 +112,25 @@ class ProfileCourses extends StatelessWidget {
     final items = controller.enrolledCourses.toList();
 
     return _panel(
+      scale: scale,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionTitle(
             "كورساتي",
             subtitle: "اضغط على أي كورس لعرض التفاصيل",
+            scale: scale,
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 12 * scale),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 1,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: screenWidth < 350 ? 1 : 2,
+              childAspectRatio: screenWidth < 350 ? 1.3 : 1,
+              crossAxisSpacing: 8 * scale,
+              mainAxisSpacing: 8 * scale,
             ),
             itemBuilder: (context, index) {
               final id = items[index];
@@ -155,36 +162,36 @@ class ProfileCourses extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(16 * scale),
                     border: Border.all(color: color.withValues(alpha: 0.25)),
                   ),
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(10 * scale),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 48,
-                        height: 48,
+                        width: 40 * scale,
+                        height: 40 * scale,
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12 * scale),
                         ),
                         child: Icon(
                           Icons.menu_book,
                           color: color,
-                          size: 28,
+                          size: 22 * scale,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      SizedBox(height: 8 * scale),
                       Text(
                         title,
                         maxLines: 2,
                         textAlign: TextAlign.center,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          fontSize: 11 * scale,
                         ),
                       ),
                     ],

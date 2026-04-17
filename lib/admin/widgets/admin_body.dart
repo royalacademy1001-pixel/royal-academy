@@ -99,6 +99,7 @@ class AdminBody extends StatelessWidget {
             final showNavigation = _canShowSection("admin_navigation");
             final showPermissions = _canShowSection("permissions");
             final showHomeLayout = _canShowSection("home_layout");
+            final showQuickAccess = _canShowSection("quick_access");
 
             return RefreshIndicator(
               color: AppColors.gold,
@@ -213,6 +214,34 @@ class AdminBody extends StatelessWidget {
                           ),
                         ),
                       if (showHomeLayout) const SizedBox(height: 30),
+                      if (showQuickAccess)
+                        AdminSection(
+                          title: "⚙ الوصول السريع",
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withValues(alpha: 0.4),
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                            child: ListTile(
+                              leading: const Icon(Icons.flash_on, color: AppColors.gold),
+                              title: const Text(
+                                "⚡ إدارة الوصول السريع",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: const Text(
+                                "إظهار / إخفاء / ترتيب العناصر",
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 14),
+                              onTap: () async {
+                                if (onCustomPageTap != null) {
+                                  await onCustomPageTap!("admin_quick_access");
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      if (showQuickAccess) const SizedBox(height: 30),
                       if (showPermissions)
                         AdminSection(
                           title: "⚙ الصلاحيات",
@@ -297,11 +326,6 @@ class AdminBody extends StatelessWidget {
                               "title": "📰 إدارة الأخبار",
                               "page": NewsAdminPage(),
                               "permissionKey": "news",
-                            },
-                            {
-                              "title": "📊 CRM الطلاب",
-                              "page": const StudentsCRMPage(),
-                              "permissionKey": "students_crm",
                             },
                           ],
                         ),

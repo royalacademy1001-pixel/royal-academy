@@ -17,7 +17,7 @@ class StudentsCRMPage extends StatefulWidget {
 
 class _StudentsCRMPageState extends State<StudentsCRMPage> {
   String search = "";
-  String selectedFilter = "all";
+  String selectedFilter = "vip";
 
   bool isAdmin = false;
   bool loadingUser = true;
@@ -249,10 +249,6 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             child: Row(
               children: [
-                _chip("الكل", selectedFilter == "all", () {
-                  setState(() => selectedFilter = "all");
-                }),
-                const SizedBox(width: 8),
                 _chip("VIP", selectedFilter == "vip", () {
                   setState(() => selectedFilter = "vip");
                 }),
@@ -267,6 +263,7 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseService.firestore
                   .collection(AppConstants.users)
+                  .where("isVIP", isEqualTo: true)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -300,8 +297,8 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                   final name = _text(data['name']).toLowerCase();
                   final email = _text(data['email']).toLowerCase();
                   final phone = _text(data['phone']).toLowerCase();
-                  final vip = _bool(data['isVIP']);
                   final blocked = _bool(data['blocked']);
+                  final vip = _bool(data['isVIP']);
 
                   final searchLower = search.trim().toLowerCase();
                   final searchMatch = searchLower.isEmpty ||
@@ -309,18 +306,14 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                       email.contains(searchLower) ||
                       phone.contains(searchLower);
 
-                  final filterMatch = selectedFilter == "all" ||
-                      (selectedFilter == "vip" && vip) ||
+                  final filterMatch = (selectedFilter == "vip" && vip) ||
                       (selectedFilter == "blocked" && blocked);
 
                   return searchMatch && filterMatch;
                 }).toList();
 
                 final totalStudents = users.length;
-                final vipStudents = users.where((u) {
-                  final data = u.data() as Map<String, dynamic>? ?? {};
-                  return _bool(data['isVIP']);
-                }).length;
+                final vipStudents = users.length;
                 final blockedStudents = users.where((u) {
                   final data = u.data() as Map<String, dynamic>? ?? {};
                   return _bool(data['blocked']);
@@ -348,16 +341,16 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                       Row(
                         children: [
                           _metricCard(
-                            "إجمالي الطلاب",
-                            totalStudents.toString(),
-                            Colors.blue,
-                            Icons.group,
-                          ),
-                          _metricCard(
                             "VIP",
                             vipStudents.toString(),
                             Colors.green,
                             Icons.verified,
+                          ),
+                          _metricCard(
+                            "Blocked",
+                            blockedStudents.toString(),
+                            Colors.red,
+                            Icons.block,
                           ),
                         ],
                       ),
@@ -365,16 +358,16 @@ class _StudentsCRMPageState extends State<StudentsCRMPage> {
                       Row(
                         children: [
                           _metricCard(
-                            "Blocked",
-                            blockedStudents.toString(),
-                            Colors.red,
-                            Icons.block,
-                          ),
-                          _metricCard(
                             "النتائج",
                             filtered.length.toString(),
                             Colors.orange,
                             Icons.manage_search,
+                          ),
+                          _metricCard(
+                            "إجمالي",
+                            totalStudents.toString(),
+                            Colors.blue,
+                            Icons.group,
                           ),
                         ],
                       ),

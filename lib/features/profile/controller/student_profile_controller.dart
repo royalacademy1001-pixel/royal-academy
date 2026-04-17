@@ -45,6 +45,8 @@ class StudentProfileController extends ChangeNotifier {
 
   String role = "normal";
 
+  bool _disposed = false;
+
   String _text(dynamic value) {
     return value == null ? "" : value.toString();
   }
@@ -84,6 +86,11 @@ class StudentProfileController extends ChangeNotifier {
       return value.map((e) => e.toString()).toList();
     }
     return [];
+  }
+
+  void _notifySafe() {
+    if (_disposed) return;
+    notifyListeners();
   }
 
   int profileCompletion() {
@@ -167,13 +174,14 @@ class StudentProfileController extends ChangeNotifier {
   }
 
   Future<void> _listenStudentDoc(String sid) async {
-    if (sid.isEmpty) return;
+    if (_disposed || sid.isEmpty) return;
 
     if (_activeStudentId == sid && _studentSub != null) {
       return;
     }
 
     await _studentSub?.cancel();
+    _studentSub = null;
     _activeStudentId = sid;
 
     _studentSub = FirebaseService.firestore
@@ -181,8 +189,9 @@ class StudentProfileController extends ChangeNotifier {
         .doc(sid)
         .snapshots()
         .listen((doc) {
+      if (_disposed) return;
       studentData = doc.data() ?? {};
-      notifyListeners();
+      _notifySafe();
     });
   }
 
@@ -190,6 +199,8 @@ class StudentProfileController extends ChangeNotifier {
     String uid,
     Map<String, dynamic> data,
   ) async {
+    if (_disposed) return;
+
     final userName =
         _text(data['name']).isNotEmpty ? _text(data['name']) : name.text.trim();
     final userPhone =
@@ -225,6 +236,8 @@ class StudentProfileController extends ChangeNotifier {
       final docRef = FirebaseService.firestore.collection("students").doc(sid);
       final existing = await docRef.get();
 
+      if (_disposed) return;
+
       if (!existing.exists) {
         await docRef.set({
           "name": userName,
@@ -248,16 +261,22 @@ class StudentProfileController extends ChangeNotifier {
       }
     }
 
+    if (_disposed) return;
+
     studentId = sid;
     await _listenStudentDoc(sid);
   }
 
   Future<void> loadCoursesNames() async {
+    if (_disposed) return;
+
     final ids = enrolledCourses.where((e) => e.isNotEmpty).toList();
 
     courseNames.removeWhere((key, value) => !ids.contains(key));
 
     final futures = ids.map((id) async {
+      if (_disposed) return;
+
       if (_courseCache.containsKey(id)) {
         courseNames[id] = _courseCache[id]!;
         return;
@@ -269,6 +288,8 @@ class StudentProfileController extends ChangeNotifier {
             .doc(id)
             .get();
 
+        if (_disposed) return;
+
         if (doc.exists) {
           final data = doc.data() ?? {};
           final title = _text(data['title']).isNotEmpty
@@ -279,12 +300,13 @@ class StudentProfileController extends ChangeNotifier {
           _courseCache[id] = title;
         }
       } catch (_) {
+        if (_disposed) return;
         courseNames[id] = id;
       }
     });
 
     await Future.wait(futures);
-    notifyListeners();
+    _notifySafe();
   }
 
   Future<void> loadData() async {
@@ -292,17 +314,24 @@ class StudentProfileController extends ChangeNotifier {
 
     if (user == null) {
       loading = false;
-      notifyListeners();
+      _notifySafe();
       return;
     }
 
+    loading = true;
+    _notifySafe();
+
     try {
       await PermissionService.load();
+
+      if (_disposed) return;
 
       final doc = await FirebaseService.firestore
           .collection(AppConstants.users)
           .doc(user.uid)
           .get();
+
+      if (_disposed) return;
 
       final data = doc.data() ?? {};
 
@@ -311,8 +340,10 @@ class StudentProfileController extends ChangeNotifier {
       await _ensureStudentRecord(user.uid, data);
       await loadCoursesNames();
 
+      if (_disposed) return;
+
       loading = false;
-      notifyListeners();
+      _notifySafe();
 
       await _userSub?.cancel();
       _userSub = FirebaseService.firestore
@@ -320,31 +351,38 @@ class StudentProfileController extends ChangeNotifier {
           .doc(user.uid)
           .snapshots()
           .listen((doc) async {
+        if (_disposed) return;
         final data = doc.data() ?? {};
         _applyUserData(data);
         await loadCoursesNames();
-        notifyListeners();
+        _notifySafe();
       });
     } catch (_) {
+      if (_disposed) return;
       loading = false;
-      notifyListeners();
+      _notifySafe();
     }
   }
 
   Future<void> pickImage() async {
+    if (_disposed) return;
+
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
       maxWidth: 1400,
     );
 
+    if (_disposed) return;
     if (picked == null) return;
 
     profileImageBytes = await picked.readAsBytes();
-    notifyListeners();
+    _notifySafe();
   }
 
   Future<String?> uploadImage(Uint8List bytes) async {
+    if (_disposed) return imageUrl;
+
     try {
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
       final ref = FirebaseService.storage
@@ -360,10 +398,10 @@ class StudentProfileController extends ChangeNotifier {
 
   Future<void> saveData() async {
     final user = FirebaseService.auth.currentUser;
-    if (user == null) return;
+    if (user == null || _disposed) return;
 
     loading = true;
-    notifyListeners();
+    _notifySafe();
 
     try {
       String? url = imageUrl;
@@ -371,6 +409,8 @@ class StudentProfileController extends ChangeNotifier {
       if (profileImageBytes != null) {
         url = await uploadImage(profileImageBytes!);
       }
+
+      if (_disposed) return;
 
       await FirebaseService.firestore
           .collection(AppConstants.users)
@@ -388,11 +428,14 @@ class StudentProfileController extends ChangeNotifier {
       await loadData();
     } catch (_) {}
 
+    if (_disposed) return;
+
     loading = false;
-    notifyListeners();
+    _notifySafe();
   }
 
   void disposeController() {
+    _disposed = true;
     _userSub?.cancel();
     _studentSub?.cancel();
     name.dispose();

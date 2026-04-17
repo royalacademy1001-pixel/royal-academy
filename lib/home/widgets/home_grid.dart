@@ -266,10 +266,19 @@ class HomeGrid extends StatelessWidget {
             for (final e in raw) {
               if (e is Map<String, dynamic>) {
                 final id = (e['id'] ?? "").toString();
+                final roles = e['roles'];
 
                 final found = items.where((x) => x['id'] == id).toList();
 
-                if (found.isNotEmpty && (e['enabled'] ?? true) == true) {
+                bool roleAllowed = true;
+
+                if (roles is List && roles.isNotEmpty) {
+                  roleAllowed = roles.contains(role);
+                }
+
+                if (found.isNotEmpty &&
+                    (e['enabled'] ?? true) == true &&
+                    roleAllowed) {
                   dynamicItems.add(found.first);
                 }
               }

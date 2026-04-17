@@ -122,7 +122,35 @@ class _AdminPageState extends State<AdminPage> {
           if (!context.mounted) return;
           await refresh();
         }
+
+        if (id == "admin_quick_access") {
+          if (!context.mounted) return;
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AdminQuickAccessPage(),
+            ),
+          );
+          if (!context.mounted) return;
+          await refresh();
+        }
       },
+    );
+  }
+}
+
+class AdminQuickAccessPage extends StatelessWidget {
+  const AdminQuickAccessPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("إدارة الوصول السريع"),
+      ),
+      body: const Center(
+        child: Text("صفحة إدارة الوصول السريع"),
+      ),
     );
   }
 }

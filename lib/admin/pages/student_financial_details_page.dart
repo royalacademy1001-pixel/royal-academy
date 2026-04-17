@@ -23,6 +23,9 @@ class _StudentFinancialDetailsPageState
   Map<String, dynamic> userData = {};
   bool loadingUser = true;
 
+  int totalFees = 9000;
+  int totalTerms = 4;
+
   Map<String, dynamic> safeMap(dynamic raw) {
     if (raw is Map<String, dynamic>) return raw;
     if (raw is Map) {
@@ -42,6 +45,24 @@ class _StudentFinancialDetailsPageState
     return v.toString();
   }
 
+  int get termPrice {
+    if (totalTerms <= 0) return 0;
+    return (totalFees / totalTerms).round();
+  }
+
+  int getTermFromAmount(int amount) {
+    if (termPrice <= 0) return 0;
+    final terms = (amount / termPrice).floor();
+    if (terms < 0) return 0;
+    if (terms > totalTerms) return totalTerms;
+    return terms;
+  }
+
+  int getRemaining(int amount) {
+    final r = totalFees - amount;
+    return r < 0 ? 0 : r;
+  }
+
   Future loadUser() async {
     try {
       final doc = await FirebaseService.firestore
@@ -50,16 +71,35 @@ class _StudentFinancialDetailsPageState
           .get();
 
       userData = safeMap(doc.data());
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => loadingUser = false);
+  }
 
-      if (mounted) setState(() => loadingUser = false);
-    } catch (_) {
-      if (mounted) setState(() => loadingUser = false);
-    }
+  Future loadConfig() async {
+    try {
+      final doc = await FirebaseService.firestore
+          .collection("app_settings")
+          .doc("financial_config")
+          .get();
+
+      final data = doc.data();
+      if (data != null) {
+        final f = safeInt(data['totalFees']);
+        final t = safeInt(data['termCount']);
+
+        if (f > 0) totalFees = f;
+        if (t > 0) totalTerms = t;
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {});
   }
 
   @override
   void initState() {
     super.initState();
+    loadConfig();
     loadUser();
   }
 
@@ -97,6 +137,8 @@ class _StudentFinancialDetailsPageState
       ),
     );
 
+    controller.dispose();
+
     if (result == null || result <= 0) return;
 
     await FirebaseService.firestore
@@ -122,7 +164,6 @@ class _StudentFinancialDetailsPageState
           ? const LoadingWidget()
           : Column(
               children: [
-                /// 🔥 HEADER
                 Container(
                   margin: const EdgeInsets.all(12),
                   padding: const EdgeInsets.all(15),
@@ -146,12 +187,12 @@ class _StudentFinancialDetailsPageState
                   ),
                 ),
 
-                /// 🔥 LIST
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseService.firestore
                         .collection("financial")
                         .where("userId", isEqualTo: widget.userId)
+                        .where("isVIP", isEqualTo: true)
                         .orderBy("timestamp", descending: true)
                         .snapshots(),
                     builder: (context, snap) {
@@ -175,17 +216,32 @@ class _StudentFinancialDetailsPageState
                         total += safeInt(data['amount']);
                       }
 
+                      int completedTerms = getTermFromAmount(total);
+                      int remaining = getRemaining(total);
+
                       return Column(
                         children: [
-                          /// 🔥 TOTAL
                           Padding(
                             padding: const EdgeInsets.all(10),
-                            child: Text(
-                              "💵 الإجمالي: $total جنيه",
-                              style: const TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "💵 الإجمالي: $total جنيه",
+                                  style: const TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "📚 ترمات مكتملة: $completedTerms / $totalTerms",
+                                  style: const TextStyle(color: Colors.orange),
+                                ),
+                                Text(
+                                  "📉 المتبقي: $remaining جنيه",
+                                  style: const TextStyle(color: Colors.red),
+                                ),
+                              ],
                             ),
                           ),
 
@@ -214,8 +270,6 @@ class _StudentFinancialDetailsPageState
                                       const Icon(Icons.money,
                                           color: Colors.green),
                                       const SizedBox(width: 10),
-
-                                      /// DATA
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
@@ -233,8 +287,6 @@ class _StudentFinancialDetailsPageState
                                           ],
                                         ),
                                       ),
-
-                                      /// ACTIONS
                                       IconButton(
                                         icon: const Icon(Icons.edit,
                                             color: Colors.orange),

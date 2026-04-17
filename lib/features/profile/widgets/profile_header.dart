@@ -10,9 +10,9 @@ class ProfileHeader extends StatelessWidget {
     required this.controller,
   });
 
-  Widget _statusChip(String text, Color color) {
+  Widget _statusChip(String text, Color color, double scale) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 4 * scale),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(999),
@@ -22,7 +22,7 @@ class ProfileHeader extends StatelessWidget {
         text,
         style: TextStyle(
           color: color,
-          fontSize: 10,
+          fontSize: 9 * scale,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -34,6 +34,9 @@ class ProfileHeader extends StatelessWidget {
     final imageProvider = controller.avatarProvider();
     final completion = controller.profileCompletion();
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final scale = screenWidth < 380 ? 0.8 : screenWidth < 420 ? 0.9 : 1.0;
+
     final endDate = controller.subscriptionEnd;
     final daysLeft = controller.formatDate(endDate).isEmpty
         ? null
@@ -42,10 +45,10 @@ class ProfileHeader extends StatelessWidget {
             .inDays;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(14 * scale),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18 * scale),
         border: Border.all(color: Colors.white10),
       ),
       child: Column(
@@ -56,68 +59,69 @@ class ProfileHeader extends StatelessWidget {
               alignment: Alignment.bottomRight,
               children: [
                 CircleAvatar(
-                  radius: 54,
+                  radius: 44 * scale,
                   backgroundColor: AppColors.gold,
                   backgroundImage: imageProvider,
                   child: imageProvider == null
-                      ? const Icon(Icons.camera_alt, color: Colors.black)
+                      ? Icon(Icons.camera_alt, color: Colors.black, size: 18 * scale)
                       : null,
                 ),
                 Container(
-                  padding: const EdgeInsets.all(6),
+                  padding: EdgeInsets.all(5 * scale),
                   decoration: BoxDecoration(
                     color: AppColors.black,
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: Colors.white10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.edit,
-                    size: 14,
+                    size: 12 * scale,
                     color: AppColors.gold,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: 10 * scale),
           Text(
             controller.name.text.isEmpty
                 ? "اسم المستخدم"
                 : controller.name.text,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 18,
+              fontSize: 16 * scale,
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 4 * scale),
           Text(
             controller.email.isEmpty
                 ? "لا يوجد إيميل"
                 : controller.email,
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey, fontSize: 12 * scale),
           ),
           if (controller.phone.text.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            SizedBox(height: 3 * scale),
             Text(
               controller.phone.text,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: Colors.grey, fontSize: 12 * scale),
             ),
           ],
           if (controller.studentId != null &&
               controller.studentId!.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            SizedBox(height: 8 * scale),
             _statusChip(
               "Student ID: ${controller.studentId}",
               Colors.blue,
+              scale,
             ),
           ],
-          const SizedBox(height: 12),
+          SizedBox(height: 10 * scale),
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: completion / 100,
-              minHeight: 10,
+              minHeight: 8 * scale,
               backgroundColor: Colors.white.withValues(alpha: 0.08),
               valueColor: AlwaysStoppedAnimation<Color>(
                 completion >= 80
@@ -128,7 +132,7 @@ class ProfileHeader extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 6 * scale),
           Text(
             "اكتمال الملف: $completion%",
             style: TextStyle(
@@ -138,12 +142,13 @@ class ProfileHeader extends StatelessWidget {
                       ? Colors.orange
                       : Colors.red,
               fontWeight: FontWeight.bold,
+              fontSize: 12 * scale,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 10 * scale),
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: 5 * scale,
+            runSpacing: 5 * scale,
             alignment: WrapAlignment.center,
             children: [
               _statusChip(
@@ -151,29 +156,31 @@ class ProfileHeader extends StatelessWidget {
                     ? "اشتراك نشط"
                     : "اشتراك غير نشط",
                 controller.validSubscription ? Colors.green : Colors.red,
+                scale,
               ),
               if (controller.isAdmin)
-                _statusChip("Admin", Colors.orange),
+                _statusChip("Admin", Colors.orange, scale),
               if (controller.isVIP)
-                _statusChip("VIP", Colors.green),
+                _statusChip("VIP", Colors.green, scale),
               if (controller.instructorApproved)
-                _statusChip("Instructor", Colors.blue),
+                _statusChip("Instructor", Colors.blue, scale),
               if (controller.instructorRequest)
-                _statusChip("طلب مدرس", Colors.amber),
+                _statusChip("طلب مدرس", Colors.amber, scale),
               if (controller.blocked)
-                _statusChip("Blocked", Colors.red),
+                _statusChip("Blocked", Colors.red, scale),
               if (daysLeft != null)
                 _statusChip(
                   daysLeft >= 0 ? "باقي $daysLeft يوم" : "منتهي",
                   daysLeft >= 0 ? Colors.teal : Colors.red,
+                  scale,
                 ),
             ],
           ),
           if (controller.subscriptionEnd != null) ...[
-            const SizedBox(height: 12),
+            SizedBox(height: 10 * scale),
             Text(
               "ينتهي الاشتراك: ${controller.formatDate(controller.subscriptionEnd)}",
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: Colors.grey, fontSize: 11 * scale),
             ),
           ],
         ],

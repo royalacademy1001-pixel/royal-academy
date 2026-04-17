@@ -160,6 +160,20 @@ class PermissionService {
     return roleMap[pageKey] == true;
   }
 
+  static bool canAccessQuickAccess({
+    required String role,
+    required List<dynamic>? roles,
+  }) {
+    if (roles == null || roles.isEmpty) return true;
+
+    final roleKey = _normalize(role);
+
+    final normalizedRoles =
+        roles.map((e) => _normalize(e.toString())).toList();
+
+    return normalizedRoles.contains(roleKey);
+  }
+
   static Map<String, dynamic> get permissions {
     return Map<String, dynamic>.unmodifiable(_permissions);
   }

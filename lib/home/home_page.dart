@@ -34,6 +34,7 @@ class _HomePageState extends State<HomePage>
   static Map<String, dynamic>? _cachedUserData;
   static DateTime? _lastLoadTime;
   static bool _builtOnce = false;
+  static String? _cachedUid;
 
   static List<String>? _cachedLayout;
   static DateTime? _layoutTime;
@@ -64,6 +65,14 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
 
+    final currentUid = FirebaseService.auth.currentUser?.uid;
+    if (_cachedUid != null && currentUid != null && _cachedUid != currentUid) {
+      _cachedUserData = null;
+      _lastLoadTime = null;
+      _builtOnce = false;
+      _cachedUid = currentUid;
+    }
+
     notificationStream = FirebaseService.firestore
         .collection(AppConstants.notifications)
         .snapshots();
@@ -93,6 +102,14 @@ class _HomePageState extends State<HomePage>
       await PermissionService.load();
 
       final now = DateTime.now();
+      final currentUid = FirebaseService.auth.currentUser?.uid;
+
+      if (_cachedUid != currentUid) {
+        _cachedUserData = null;
+        _lastLoadTime = null;
+        _builtOnce = false;
+        _cachedUid = currentUid;
+      }
 
       if (_cachedUserData != null &&
           _lastLoadTime != null &&
@@ -133,6 +150,7 @@ class _HomePageState extends State<HomePage>
       userData = data;
       _cachedUserData = Map<String, dynamic>.from(data);
       _lastLoadTime = DateTime.now();
+      _cachedUid = user.uid;
 
       _role = PermissionService.getRole(data);
       _allowed = true;

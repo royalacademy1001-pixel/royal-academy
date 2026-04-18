@@ -73,6 +73,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   bool _isLoadingUser = true;
   bool _deepLinkHandled = false;
   bool _redirectedToLogin = false;
+  bool _navReady = false;
 
   Stream<QuerySnapshot<Map<String, dynamic>>>? _notificationStream;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _navSub;
@@ -260,6 +261,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                 if (currentIndex >= dynamicNav.length) {
                   currentIndex = 0;
                 }
+                _navReady = true;
               });
             }
             return;
@@ -274,6 +276,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                 if (currentIndex >= dynamicNav.length) {
                   currentIndex = 0;
                 }
+                _navReady = true;
               });
             }
             return;
@@ -288,6 +291,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
                 if (currentIndex >= dynamicNav.length) {
                   currentIndex = 0;
                 }
+                _navReady = true;
               });
             }
             return;
@@ -302,6 +306,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
               if (currentIndex >= _activeNav().length) {
                 currentIndex = 0;
               }
+              _navReady = true;
             });
           }
         } catch (e) {
@@ -311,12 +316,14 @@ class _MainNavigationPageState extends State<MainNavigationPage>
               if (currentIndex >= dynamicNav.length) {
                 currentIndex = 0;
               }
+              _navReady = true;
             });
           }
         }
       });
     } catch (e) {
       dynamicNav = _cloneItems(fallbackNav);
+      _navReady = true;
     }
 
     if (mounted) {
@@ -585,7 +592,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       return const SizedBox();
     }
 
-    if (_isLoadingUser) {
+    if (_isLoadingUser || !_navReady) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );

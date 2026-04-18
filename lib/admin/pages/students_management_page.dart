@@ -604,7 +604,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
 
   Widget _badge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(30),
@@ -614,7 +614,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
         text,
         style: TextStyle(
           color: color,
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -629,24 +629,24 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color.withValues(alpha: 0.28)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 6),
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 12,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -668,16 +668,17 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
         children: [
           Icon(
             icon,
-            size: 16,
+            size: 14,
             color: selected ? Colors.black : Colors.white,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Text(label),
         ],
       ),
       labelStyle: TextStyle(
         color: selected ? Colors.black : Colors.white,
         fontWeight: FontWeight.bold,
+        fontSize: 11,
       ),
       selectedColor: AppColors.gold,
       backgroundColor: AppColors.black.withValues(alpha: 0.45),
@@ -694,38 +695,30 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     Color color,
   ) {
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(14),
+      width: 130,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 10),
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: const TextStyle(color: Colors.grey, fontSize: 10),
                 ),
-                const SizedBox(height: 4),
                 Text(
                   value,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -745,8 +738,8 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     final subscribed = users.where(_isSubscribed).length;
 
     return Wrap(
-      spacing: 10,
-      runSpacing: 10,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _statCard("الطلاب", total.toString(), Icons.groups, Colors.white),
         _statCard("VIP", vip.toString(), Icons.star, AppColors.gold),
@@ -759,10 +752,10 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
 
   Widget _header() {
     return Container(
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.38),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
       child: Column(
@@ -770,7 +763,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
           TextField(
             style: const TextStyle(color: Colors.white),
             decoration: InputDecoration(
-              hintText: "ابحث بالاسم أو الإيميل أو الهاتف...",
+              hintText: "ابحث...",
               prefixIcon: const Icon(Icons.search, color: AppColors.gold),
               suffixIcon: search.isEmpty
                   ? null
@@ -783,53 +776,28 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
               filled: true,
               fillColor: Colors.white.withValues(alpha: 0.05),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(15),
+                borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
             ),
             onChanged: (v) => setState(() => search = v),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _filterChip("vip", "VIP فقط", Icons.star),
-                const SizedBox(width: 8),
+                _filterChip("vip", "VIP", Icons.star),
+                const SizedBox(width: 6),
                 _filterChip("all", "الكل", Icons.people),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("linked", "مربوط", Icons.link),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("unlinked", "غير مربوط", Icons.link_off),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("blocked", "محظور", Icons.block),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 _filterChip("subscribed", "مشترك", Icons.verified),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.gold.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.gold.withValues(alpha: 0.15)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.star, color: AppColors.gold),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "إدارة الطلاب",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -852,7 +820,7 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: 320,
+          height: 200,
           child: Center(
             child: Text(
               message,
@@ -869,35 +837,11 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
         SizedBox(
-          height: 300,
+          height: 200,
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.redAccent,
-                  size: 50,
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  message,
-                  style: const TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  "اسحب لتحديث الصفحة",
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.red),
             ),
           ),
         ),
@@ -905,257 +849,65 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     );
   }
 
-  Widget _unauthorizedView() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        margin: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.black.withValues(alpha: 0.45),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.block, color: Colors.redAccent, size: 48),
-            const SizedBox(height: 16),
-            const Text(
-              "🚫 غير مصرح بالدخول لمسؤولين فقط",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.gold,
-                foregroundColor: Colors.black,
-              ),
-              onPressed: () {
-                Navigator.of(context).maybePop();
-              },
-              child: const Text("رجوع"),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  bool _matchesFilter(Map<String, dynamic> data) {
-    final vip = _isVip(data);
-    final blocked = _isBlocked(data);
-    final linked = _isLinked(data);
-    final subscribed = _isSubscribed(data);
-
-    switch (filterMode) {
-      case "vip":
-        return vip;
-      case "all":
-        return true;
-      case "linked":
-        return linked;
-      case "blocked":
-        return blocked;
-      case "unlinked":
-        return !linked;
-      case "subscribed":
-        return subscribed;
-      default:
-        return vip;
-    }
-  }
-
-  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> users) {
-    final q = search.trim().toLowerCase();
-
-    final filtered = users.where((u) {
-      final name = _text(u['name']).toLowerCase();
-      final email = _text(u['email']).toLowerCase();
-      final phone = _text(u['phone']).toLowerCase();
-      final studentId = _text(u['studentId']).toLowerCase();
-
-      final matchesSearch = q.isEmpty ||
-          name.contains(q) ||
-          email.contains(q) ||
-          phone.contains(q) ||
-          studentId.contains(q);
-
-      return matchesSearch && _matchesFilter(u);
-    }).toList();
-
-    filtered.sort((a, b) {
-      final vipA = _isVip(a);
-      final vipB = _isVip(b);
-      if (vipA != vipB) return vipA ? -1 : 1;
-
-      final blockedA = _isBlocked(a);
-      final blockedB = _isBlocked(b);
-      if (blockedA != blockedB) return blockedA ? 1 : -1;
-
-      final nameA = _text(a['name']).toLowerCase();
-      final nameB = _text(b['name']).toLowerCase();
-      return nameA.compareTo(nameB);
-    });
-
-    return filtered;
-  }
-
   Widget _studentCard(Map<String, dynamic> data) {
     final userId = _text(data['_id']);
     final name = _text(data['name']).isEmpty ? "Student" : _text(data['name']);
-    final email = _text(data['email']);
-    final phone = _text(data['phone']);
     final vip = _isVip(data);
     final blocked = _isBlocked(data);
     final linked = _isLinked(data);
-    final subscribed = _isSubscribed(data);
-    final studentId = _text(data['studentId']);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppColors.black.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: vip
-              ? AppColors.gold.withValues(alpha: 0.35)
-              : Colors.white.withValues(alpha: 0.06),
-        ),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               CircleAvatar(
-                radius: 24,
-                backgroundColor: vip
-                    ? AppColors.gold.withValues(alpha: 0.18)
-                    : Colors.white.withValues(alpha: 0.08),
-                child: Text(
-                  _initials(name),
-                  style: TextStyle(
-                    color: vip ? AppColors.gold : Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                radius: 18,
+                backgroundColor: Colors.grey,
+                child: Text(_initials(name)),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (email.isNotEmpty)
-                      Text(
-                        email,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    if (phone.isNotEmpty)
-                      Text(
-                        phone,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    if (studentId.isNotEmpty)
-                      Text(
-                        "Student ID: $studentId",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
+                child: Text(
+                  name,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
                 ),
               ),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                alignment: WrapAlignment.end,
-                children: [
-                  if (vip) _badge("VIP", AppColors.gold),
-                  if (blocked) _badge("محظور", Colors.red),
-                  if (linked) _badge("مربوط", Colors.green),
-                  if (subscribed) _badge("مشترك", Colors.blue),
-                ],
-              ),
+              if (vip) _badge("VIP", AppColors.gold),
+              if (blocked) _badge("X", Colors.red),
+              if (linked) _badge("L", Colors.green),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 8),
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 6,
             children: [
               _actionButton(
-                label: vip ? "إلغاء VIP" : "تفعيل VIP",
+                label: "VIP",
                 icon: Icons.star,
-                color: vip ? Colors.amber : Colors.lightBlueAccent,
+                color: Colors.amber,
                 onTap: () => _toggleVip(userId, vip, data),
               ),
               _actionButton(
-                label: blocked ? "فك الحظر" : "حظر",
+                label: "Block",
                 icon: Icons.block,
-                color: Colors.redAccent,
+                color: Colors.red,
                 onTap: () => _toggleBlock(userId, blocked, data),
               ),
               _actionButton(
-                label: linked ? "فصل الربط" : "ربط طالب",
-                icon: linked ? Icons.link_off : Icons.link,
-                color: linked ? Colors.orange : Colors.green,
-                onTap: () => linked
-                    ? _unlinkStudent(userId, data)
-                    : _linkStudent(userId, data),
-              ),
-              _actionButton(
-                label: "تسجيل كورسات",
-                icon: Icons.playlist_add,
-                color: Colors.green,
-                onTap: () => _handleEnroll(userId, false, data),
-              ),
-              _actionButton(
-                label: "فتح كورسات",
-                icon: Icons.lock_open,
-                color: Colors.teal,
-                onTap: () => _handleEnroll(userId, true, data),
-              ),
-              _actionButton(
-                label: "إضافة نتيجة",
-                icon: Icons.grade,
-                color: Colors.purple,
-                onTap: () => _addResult(userId, data),
-              ),
-              _actionButton(
-                label: "حضور",
-                icon: Icons.check_circle,
-                color: Colors.blue,
-                onTap: () => _markAttendance(userId, data),
-              ),
-              _actionButton(
-                label: "تعديل",
+                label: "Edit",
                 icon: Icons.edit,
                 color: Colors.grey,
                 onTap: () => _editStudent(userId, data),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
@@ -1164,53 +916,21 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
   Widget _buildContent(List<Map<String, dynamic>> users) {
     final filteredUsers = _applyFilters(users);
 
-    Widget listBody;
-    if (filteredUsers.isEmpty) {
-      listBody = _emptyView("لا توجد بيانات مطابقة");
-    } else {
-      listBody = ListView.builder(
-        controller: _scroll,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 100),
-        itemCount: filteredUsers.length,
-        itemBuilder: (context, index) {
-          final data = filteredUsers[index];
-          return _studentCard(data);
-        },
-      );
-    }
-
     return Stack(
       children: [
         Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.all(10),
               child: _header(),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
               child: _statsSection(users),
             ),
-            const SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "عدد النتائج: ${filteredUsers.length}",
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Expanded(
               child: RefreshIndicator(
-                color: AppColors.gold,
-                backgroundColor: AppColors.black,
                 onRefresh: () async {
                   final next = _loadUsers();
                   setState(() {
@@ -1218,7 +938,14 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
                   });
                   await next;
                 },
-                child: listBody,
+                child: filteredUsers.isEmpty
+                    ? _emptyView("لا يوجد بيانات")
+                    : ListView.builder(
+                        controller: _scroll,
+                        itemCount: filteredUsers.length,
+                        itemBuilder: (_, i) =>
+                            _studentCard(filteredUsers[i]),
+                      ),
               ),
             ),
           ],
@@ -1228,42 +955,27 @@ class _StudentsManagementPageState extends State<StudentsManagementPage> {
     );
   }
 
+  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> users) {
+    final q = search.toLowerCase();
+    return users.where((u) {
+      final name = _text(u['name']).toLowerCase();
+      return name.contains(q);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text(
-          "🎓 إدارة الطلاب",
-          style: TextStyle(color: AppColors.gold),
-        ),
+        title: const Text("إدارة الطلاب"),
         backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            onPressed: () {
-              setState(() {
-                search = "";
-                filterMode = "all";
-                _usersFuture = _loadUsers();
-              });
-            },
-            icon: const Icon(Icons.refresh, color: AppColors.gold),
-          ),
-        ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _usersFuture,
-        builder: (context, usersSnap) {
-          if (usersSnap.connectionState == ConnectionState.waiting) {
-            return const LoadingWidget();
-          }
-
-          if (usersSnap.hasError) {
-            return _errorView("❌ حصل خطأ في تحميل بيانات الطلاب");
-          }
-
-          final users = usersSnap.data ?? [];
-          return _buildContent(users);
+        builder: (_, snap) {
+          if (!snap.hasData) return const LoadingWidget();
+          return _buildContent(snap.data!);
         },
       ),
     );

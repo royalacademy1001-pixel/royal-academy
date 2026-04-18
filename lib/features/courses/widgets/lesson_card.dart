@@ -185,17 +185,31 @@ class _LessonCardState extends State<LessonCard> {
         ),
       ),
       onTap: () async {
-        if (!LessonTapGuard.canTap(widget.lesson.id)) return;
+        if (tapLocked || navigating) return;
+        tapLocked = true;
+        navigating = true;
 
-        if (hasQuiz && !quizSolved) {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => QuizPage(lessonId: widget.lesson.id),
-            ),
-          );
-        } else {
-          await _handleTap(title, url);
+        try {
+          if (!LessonTapGuard.canTap(widget.lesson.id)) {
+            tapLocked = false;
+            navigating = false;
+            return;
+          }
+
+          if (hasQuiz && !quizSolved) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QuizPage(lessonId: widget.lesson.id),
+              ),
+            );
+          } else {
+            await _handleTap(title, url);
+          }
+        } catch (_) {} finally {
+          await Future.delayed(const Duration(milliseconds: 400));
+          tapLocked = false;
+          navigating = false;
         }
       },
     );

@@ -104,35 +104,37 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
       ),
 
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(15),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
             Container(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: AppColors.premiumCard,
               child: Row(
                 children: [
-                  const Icon(Icons.person, color: AppColors.gold, size: 35),
-                  const SizedBox(width: 10),
+                  const Icon(Icons.person, color: AppColors.gold, size: 28),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       (userData?['name'] ?? "Student").toString(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                   if (isVIP)
-                    const Icon(Icons.star, color: Colors.amber),
+                    const Icon(Icons.star, color: Colors.amber, size: 18),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             Row(
               children: [
@@ -157,18 +159,18 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             const Text(
               "📚 كورساتي",
               style: TextStyle(
                 color: AppColors.gold,
-                fontSize: 16,
+                fontSize: 15,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             if (enrolledCourses.isEmpty)
               const Text(
@@ -209,15 +211,17 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                                   : {});
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
+                        margin: const EdgeInsets.only(bottom: 8),
                         decoration: AppColors.premiumCard,
                         child: ListTile(
+                          dense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           title: Text(
                             (data['title'] ?? "Course").toString(),
-                            style: const TextStyle(color: Colors.white),
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
                           ),
                           trailing: const Icon(Icons.arrow_forward_ios,
-                              color: AppColors.gold, size: 16),
+                              color: AppColors.gold, size: 14),
                           onTap: () {
                             if (!context.mounted) return;
                             Navigator.push(
@@ -237,47 +241,40 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
                 },
               ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             Container(
-              padding: const EdgeInsets.all(15),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: AppColors.premiumCard,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-
-                  const Text(
-                    "💰 الاشتراك",
-                    style: TextStyle(
-                      color: AppColors.gold,
-                      fontWeight: FontWeight.bold,
+                  const Icon(Icons.workspace_premium, color: AppColors.gold, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isVIP ? "⭐ مفعل" : "❌ غير مفعل",
+                      style: TextStyle(
+                        color: isVIP ? Colors.green : Colors.red,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    isVIP ? "⭐ مفعل" : "❌ غير مفعل",
-                    style: TextStyle(
-                      color: isVIP ? Colors.green : Colors.red,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
                   if (!isVIP)
-                    ElevatedButton(
-                      style: AppColors.goldButton,
-                      onPressed: () {
-                        if (!context.mounted) return;
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const PaymentPage(),
-                          ),
-                        );
-                      },
-                      child: const Text("اشترك الآن"),
+                    SizedBox(
+                      height: 30,
+                      child: ElevatedButton(
+                        style: AppColors.goldButton,
+                        onPressed: () {
+                          if (!context.mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PaymentPage(),
+                            ),
+                          );
+                        },
+                        child: const Text("اشترك", style: TextStyle(fontSize: 12)),
+                      ),
                     )
                 ],
               ),
@@ -294,13 +291,13 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
         onTap: onTap,
         child: Container(
           margin: const EdgeInsets.only(right: 10),
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: AppColors.premiumCard,
           child: Column(
             children: [
-              Icon(icon, color: AppColors.gold),
-              const SizedBox(height: 5),
-              Text(title, style: const TextStyle(color: Colors.white)),
+              Icon(icon, color: AppColors.gold, size: 20),
+              const SizedBox(height: 4),
+              Text(title, style: const TextStyle(color: Colors.white, fontSize: 12)),
             ],
           ),
         ),

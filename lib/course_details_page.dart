@@ -55,6 +55,8 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
   DateTime? _enterTime;
 
+  bool _navLocked = false;
+
   @override
   void initState() {
     super.initState();
@@ -288,7 +290,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
     return Stack(
       children: [
         SizedBox(
-          height: 260,
+          height: 300,
           width: double.infinity,
           child: image.isEmpty
               ? Container(color: Colors.black)
@@ -301,12 +303,12 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                 ),
         ),
         Container(
-          height: 260,
+          height: 300,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 Colors.black.withOpacity(0.2 + opacity * 0.6),
-                Colors.black.withOpacity(0.9),
+                Colors.black.withOpacity(0.95),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -325,7 +327,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
                 Text(widget.title,
                     style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Row(
@@ -359,7 +361,14 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
           left: 10,
           child: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (_navLocked) return;
+              _navLocked = true;
+              Navigator.pop(context);
+              Future.delayed(const Duration(milliseconds: 400), () {
+                _navLocked = false;
+              });
+            },
           ),
         ),
       ],
@@ -368,7 +377,7 @@ class _CourseDetailsPageState extends State<CourseDetailsPage>
 
   Widget glassTabs() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: const EdgeInsets.fromLTRB(10, 14, 10, 10),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(20),
